@@ -63,3 +63,48 @@ export const TX_TYPE_COLOR: Record<string, string> = {
   fee:         'bg-red-100 text-red-700',
   interest:    'bg-red-100 text-red-700',
 }
+
+export interface InstallmentInfo {
+  currentMonth: number  // ke X
+  totalMonths: number   // dari Y
+  startPeriod: string   // "YYYY-MM"
+  endPeriod: string     // "YYYY-MM"
+  monthlyAmount: number
+  originalAmount: number
+}
+
+export function parseInstallmentDescription(
+  description: string,
+  amount: number,
+  billYear: number,
+  billMonth: number
+): InstallmentInfo | null {
+  const match = description.match(/CICILAN\s+BCA\s+KE\s+(\d+)\s+DARI\s+(\d+)/i)
+  if (!match) return null
+
+  const currentMonth = parseInt(match[1])
+  const totalMonths = parseInt(match[2])
+  const monthlyAmount = Math.abs(amount)
+
+  // Start = bill period − (currentMonth − 1) months
+  const startDate = new Date(billYear, billMonth - 1 - (currentMonth - 1))
+  const startPeriod = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`
+
+  // End = bill period + (totalMonths − currentMonth) months
+  const endDate = new Date(billYear, billMonth - 1 + (totalMonths - currentMonth))
+  const endPeriod = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}`
+
+  return {
+    currentMonth,
+    totalMonths,
+    startPeriod,
+    endPeriod,
+    monthlyAmount,
+    originalAmount: monthlyAmount * totalMonths,
+  }
+}
+
+export function periodLabelFromKey(key: string): string {
+  const [y, m] = key.split('-').map(Number)
+  return new Date(y, m - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+}

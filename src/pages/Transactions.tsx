@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, generateId, getExpenseForTransaction } from '../db'
 import {
-  formatRupiah, formatDateShort, TX_TYPE_LABEL, TX_TYPE_COLOR,
-  OWNER_COLOR_CLASSES,
+  formatRupiah, formatRupiahCompact, formatDateShort, TX_TYPE_LABEL, TX_TYPE_COLOR,
+  OWNER_COLOR_CLASSES, parseInstallmentDescription, periodLabelFromKey,
+  type InstallmentInfo,
 } from '../lib/format'
 import type { Transaction, Expense, Owner, InstallmentPlan } from '../types'
 
@@ -181,17 +182,73 @@ function EnrichSheet({
 }) {
   const [label, setLabel] = useState(initialExpense?.label ?? '')
   const [ownerId, setOwnerId] = useState(initialExpense?.ownerId ?? owners[0]?.id ?? '')
-  const [planId, setPlanId] = useState(initialExpense?.installmentPlanId ?? '')
   const [saving, setSaving] = useState(false)
+
+  // Load the bill period so we can compute installment dates
+  const period = useLiveQuery(() => db.periods.get(tx.periodId), [tx.periodId])
+
+  // Auto-parse installment info from description
+  const info: InstallmentInfo | null =
+    tx.type === 'installment' && period
+      ? parseInstallmentDescription(tx.description, tx.amount, period.year, period.month)
+      : null
+
+  // Find an existing plan that matches (same total months, same start, ~same monthly amount)
+  const matchingPlan = useLiveQuery(async () => {
+    if (!info) return null
+    const plans = await db.installmentPlans.toArray()
+    return (
+      plans.find(
+        (p) =>
+          p.totalMonths === info.totalMonths &&
+          p.startPeriod === info.startPeriod &&
+          Math.abs(p.monthlyAmount - info.monthlyAmount) <= info.monthlyAmount * 0.05
+      ) ?? null
+    )
+  }, [info?.startPeriod, info?.totalMonths, info?.monthlyAmount])
+
+  // Pre-fill label from matched plan if user hasn't typed anything
+  useEffect(() => {
+    if (matchingPlan && !label && !initialExpense?.label) {
+      setLabel(matchingPlan.name)
+    }
+  }, [matchingPlan])
 
   async function save() {
     setSaving(true)
+
+    let resolvedPlanId = initialExpense?.installmentPlanId ?? ''
+
+    if (info && tx.type === 'installment') {
+      if (matchingPlan) {
+        // Link to existing plan; update its name if user changed the label
+        resolvedPlanId = matchingPlan.id
+        if (label.trim() && label.trim() !== matchingPlan.name) {
+          await db.installmentPlans.update(matchingPlan.id, { name: label.trim() })
+        }
+      } else if (label.trim()) {
+        // Create a new plan from parsed info
+        const newPlan: InstallmentPlan = {
+          id: generateId(),
+          name: label.trim(),
+          originalAmount: info.originalAmount,
+          totalMonths: info.totalMonths,
+          monthlyAmount: info.monthlyAmount,
+          startPeriod: info.startPeriod,
+          ownerId,
+          notes: '',
+        }
+        await db.installmentPlans.put(newPlan)
+        resolvedPlanId = newPlan.id
+      }
+    }
+
     const expense: Expense = {
       id: initialExpense?.id ?? generateId(),
       transactionId: tx.id,
       label: label.trim(),
       ownerId,
-      installmentPlanId: planId || undefined,
+      installmentPlanId: resolvedPlanId || undefined,
       status: initialExpense?.status ?? 'unpaid',
     }
     await db.expenses.put(expense)
@@ -223,16 +280,64 @@ function EnrichSheet({
         </div>
 
         <div className="px-4 pt-2 pb-6 space-y-4">
+
+          {/* Auto-detected installment info */}
+          {info && (
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
+                  Installment Auto-Detected
+                </span>
+                {matchingPlan ? (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                    linked to existing plan
+                  </span>
+                ) : (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                    new plan will be created
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                <div>
+                  <span className="text-gray-400">Progress</span>
+                  <p className="font-semibold text-gray-800">
+                    Month {info.currentMonth} of {info.totalMonths}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Monthly</span>
+                  <p className="font-semibold text-gray-800">{formatRupiahCompact(info.monthlyAmount)}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Start</span>
+                  <p className="font-semibold text-gray-800">{periodLabelFromKey(info.startPeriod)}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">End</span>
+                  <p className="font-semibold text-gray-800">{periodLabelFromKey(info.endPeriod)}</p>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-gray-400">Original total</span>
+                  <p className="font-semibold text-gray-800">{formatRupiah(info.originalAmount)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Label */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Label <span className="text-gray-400 font-normal">(what is this?)</span>
+              {tx.type === 'installment'
+                ? <>What is this installment for? <span className="text-red-400">*</span></>
+                : <>Label <span className="text-gray-400 font-normal">(what is this?)</span></>
+              }
             </label>
             <input
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="e.g. Baby diapers, Gym membership…"
+              placeholder={tx.type === 'installment' ? 'e.g. Laptop Lenovo, iPhone 15…' : 'e.g. Baby diapers, Gym membership…'}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
@@ -257,28 +362,6 @@ function EnrichSheet({
               })}
             </div>
           </div>
-
-          {/* Installment plan link */}
-          {tx.type === 'installment' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Installment Plan <span className="text-gray-400 font-normal">(what item is this cicilan for?)</span>
-              </label>
-              <select
-                value={planId}
-                onChange={(e) => setPlanId(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm"
-              >
-                <option value="">— Not linked —</option>
-                {installmentPlans.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              <a href="#/installments" className="text-xs text-blue-600 mt-1 inline-block">
-                + Create new installment plan
-              </a>
-            </div>
-          )}
 
           <div className="flex gap-2 pt-2">
             <button
