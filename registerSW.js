@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/Cc-bill/sw.js', { scope: '/Cc-bill/' })})}

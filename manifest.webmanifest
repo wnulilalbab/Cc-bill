@@ -1,0 +1,1 @@
+{"name":"CC Bill","short_name":"CCBill","description":"Shared credit card expense tracker","start_url":"/Cc-bill/","display":"standalone","background_color":"#f9fafb","theme_color":"#1d4ed8","lang":"en","scope":"/Cc-bill/","orientation":"portrait","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
