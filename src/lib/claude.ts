@@ -58,14 +58,29 @@ Type rules:
 
 Return ONLY the JSON array.`
 
+export const CLAUDE_MODELS = [
+  { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', desc: 'Fast · cheapest' },
+  { id: 'claude-sonnet-4-6',         label: 'Sonnet 4.6', desc: 'Balanced · recommended' },
+  { id: 'claude-opus-4-7',           label: 'Opus 4.7',   desc: 'Most capable · slowest' },
+] as const
+
+export type ClaudeModelId = typeof CLAUDE_MODELS[number]['id']
+export const DEFAULT_MODEL: ClaudeModelId = 'claude-sonnet-4-6'
+
+async function getModel(): Promise<string> {
+  const m = await getSetting('claude_model')
+  return m ?? DEFAULT_MODEL
+}
+
 export async function parsePDFText(text: string): Promise<ParsedTransaction[]> {
   const apiKey = await getSetting('anthropic_api_key')
   if (!apiKey) throw new Error('Anthropic API key not set. Go to Settings first.')
 
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
+  const model = await getModel()
 
   const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model,
     max_tokens: 4096,
     messages: [
       {
@@ -86,9 +101,10 @@ export async function parseImageFile(
   if (!apiKey) throw new Error('Anthropic API key not set. Go to Settings first.')
 
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
+  const model = await getModel()
 
   const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model,
     max_tokens: 4096,
     messages: [
       {
