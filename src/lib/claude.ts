@@ -72,22 +72,21 @@ Type rules:
 
 Return ONLY the JSON array.`
 
-export async function parsePDFText(text: string): Promise<ParsedTransaction[]> {
+export async function parsePDFText(text: string, context?: string): Promise<ParsedTransaction[]> {
   const apiKey = await getSetting('anthropic_api_key')
   if (!apiKey) throw new Error('Anthropic API key not set. Go to Settings first.')
 
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
   const model = await getModel()
 
+  const prompt = context
+    ? `${PDF_PROMPT}\n\nAdditional context: ${context}\n\nStatement text:\n${text}`
+    : `${PDF_PROMPT}\n\nStatement text:\n${text}`
+
   const message = await client.messages.create({
     model,
     max_tokens: 4096,
-    messages: [
-      {
-        role: 'user',
-        content: `${PDF_PROMPT}\n\nStatement text:\n${text}`,
-      },
-    ],
+    messages: [{ role: 'user', content: prompt }],
   })
 
   return parseClaudeResponse(message)
@@ -95,13 +94,16 @@ export async function parsePDFText(text: string): Promise<ParsedTransaction[]> {
 
 export async function parseImageFile(
   base64: string,
-  mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+  mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+  context?: string
 ): Promise<ParsedTransaction[]> {
   const apiKey = await getSetting('anthropic_api_key')
   if (!apiKey) throw new Error('Anthropic API key not set. Go to Settings first.')
 
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
   const model = await getModel()
+
+  const promptText = context ? `${IMAGE_PROMPT}\n\nAdditional context: ${context}` : IMAGE_PROMPT
 
   const message = await client.messages.create({
     model,
@@ -110,7 +112,7 @@ export async function parseImageFile(
       {
         role: 'user',
         content: [
-          { type: 'text', text: IMAGE_PROMPT },
+          { type: 'text', text: promptText },
           {
             type: 'image',
             source: { type: 'base64', media_type: mediaType, data: base64 },
