@@ -29,6 +29,18 @@ export default function Dashboard() {
 
   const allAllocations = useLiveQuery(() => db.paymentAllocations.toArray(), []) ?? []
 
+  // Pending (unbilled) summary
+  const pendingSummary = useLiveQuery(async () => {
+    const unbilledPeriods = await db.periods.filter((p) => p.type === 'unbilled').toArray()
+    if (unbilledPeriods.length === 0) return null
+    const txs = await db.transactions
+      .where('periodId').anyOf(unbilledPeriods.map((p) => p.id))
+      .filter((t) => !t.hidden && t.amount > 0)
+      .toArray()
+    if (txs.length === 0) return null
+    return { count: txs.length, total: txs.reduce((s, t) => s + t.amount, 0) }
+  }, []) ?? null
+
   const expenseByTx = new Map(expenses.map((e) => [e.transactionId, e]))
 
   // Totals
@@ -107,6 +119,25 @@ export default function Dashboard() {
       </div>
 
       <div className="px-4 -mt-3 space-y-3 pb-6">
+        {/* Pending (unbilled) card */}
+        {pendingSummary && (
+          <button
+            onClick={() => navigate('/transactions')}
+            className="w-full bg-orange-50 border border-orange-200 rounded-2xl p-4 text-left flex items-center gap-3 shadow-sm"
+          >
+            <span className="text-2xl">⏳</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-orange-800">
+                {pendingSummary.count} Pending Transactions
+              </p>
+              <p className="text-xs text-orange-600 mt-0.5">
+                {formatRupiah(pendingSummary.total)} · Upload the statement PDF to confirm
+              </p>
+            </div>
+            <span className="text-orange-400 text-lg">›</span>
+          </button>
+        )}
+
         {/* Bill summary card */}
         <div className="bg-white rounded-2xl shadow-sm p-4">
           <p className="text-xs text-gray-400 mb-1">Total Bill</p>
