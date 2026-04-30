@@ -52,6 +52,23 @@ class CCBillDB extends Dexie {
 
 export const db = new CCBillDB()
 
+// The single shared pool for all unbilled (screenshot) transactions
+export const UNBILLED_PERIOD_ID = 'unbilled-pool'
+
+export async function ensureUnbilledPeriod(): Promise<void> {
+  const existing = await db.periods.get(UNBILLED_PERIOD_ID)
+  if (!existing) {
+    await db.periods.put({
+      id: UNBILLED_PERIOD_ID,
+      label: 'Unbilled',
+      month: 0,
+      year: 0,
+      importedAt: new Date().toISOString(),
+      type: 'unbilled',
+    })
+  }
+}
+
 export function generateId(): string {
   return crypto.randomUUID()
 }
