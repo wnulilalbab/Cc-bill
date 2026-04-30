@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, generateId } from '../db'
 import { formatRupiah, formatDateShort, OWNER_COLOR_CLASSES } from '../lib/format'
-import type { Payment, Transaction, Expense } from '../types'
+import type { Payment, Transaction, Expense, Owner, PaymentAllocation } from '../types'
 
 export default function Payments() {
   const periods = useLiveQuery(() => db.periods.orderBy('year').reverse().toArray(), []) ?? []
@@ -11,7 +11,6 @@ export default function Payments() {
 
   const owners = useLiveQuery(() => db.owners.toArray(), []) ?? []
 
-  // Payment transactions (from imported bills)
   const paymentTxs = useLiveQuery(async () => {
     if (!activePeriodId) return []
     return db.transactions
@@ -20,20 +19,17 @@ export default function Payments() {
       .toArray()
   }, [activePeriodId]) ?? []
 
-  // Manual payment pool entries
   const manualPayments = useLiveQuery(async () => {
     if (!activePeriodId) return []
     return db.payments.where('periodId').equals(activePeriodId).toArray()
   }, [activePeriodId]) ?? []
 
-  // All expenses in this period
   const expenses = useLiveQuery(async () => {
     if (!activePeriodId) return []
     const txIds = (await db.transactions.where('periodId').equals(activePeriodId).toArray()).map((t) => t.id)
     return db.expenses.where('transactionId').anyOf(txIds).toArray()
   }, [activePeriodId]) ?? []
 
-  // Chargeable transactions (not payments, not hidden)
   const chargeTxs = useLiveQuery(async () => {
     if (!activePeriodId) return []
     return db.transactions
@@ -44,55 +40,23 @@ export default function Payments() {
 
   const allAllocations = useLiveQuery(() => db.paymentAllocations.toArray(), []) ?? []
 
-  const expenseByTx = new Map(expenses.map((e) => [e.transactionId, e]))
-
   const totalPayments = paymentTxs.reduce((s, t) => s + Math.abs(t.amount), 0) +
     manualPayments.reduce((s, p) => s + p.amount, 0)
 
   const totalCharges = chargeTxs.reduce((s, t) => s + t.amount, 0)
 
-  // Allocated amount per expense
-  function getAllocatedForExpense(expenseId: string) {
-    return allAllocations.filter((a) => a.expenseId === expenseId).reduce((s, a) => s + a.amount, 0)
-  }
-
-  // State for allocation sheet
-  const [allocatingPaymentTxId, setAllocatingPaymentTxId] = useState<string | null>(null)
-  const [allocatingManualId, setAllocatingManualId] = useState<string | null>(null)
+  const [allocatingId, setAllocatingId] = useState<string | null>(null)
   const [showAddPayment, setShowAddPayment] = useState(false)
 
-  const allocatingPayment = allocatingPaymentTxId
-    ? paymentTxs.find((t) => t.id === allocatingPaymentTxId)
+  const allocatingPayment = allocatingId
+    ? (paymentTxs.find((t) => t.id === allocatingId) ?? null)
     : null
-  const allocatingManual = allocatingManualId
-    ? manualPayments.find((p) => p.id === allocatingManualId)
+  const allocatingManual = allocatingId
+    ? (manualPayments.find((p) => p.id === allocatingId) ?? null)
     : null
-
   const allocatingAmount = allocatingPayment
     ? Math.abs(allocatingPayment.amount)
     : allocatingManual?.amount ?? 0
-
-  const allocatedForCurrent = allocatingPaymentTxId
-    ? allAllocations.filter((a) => {
-        const expense = expenses.find((e) => e.id === a.expenseId)
-        return a.paymentId === allocatingPaymentTxId && expense
-      }).reduce((s, a) => s + a.amount, 0)
-    : allocatingManualId
-    ? allAllocations.filter((a) => a.paymentId === allocatingManualId).reduce((s, a) => s + a.amount, 0)
-    : 0
-
-  async function toggleAllocation(paymentId: string, expenseId: string, expenseAmount: number) {
-    const existing = allAllocations.find(
-      (a) => a.paymentId === paymentId && a.expenseId === expenseId
-    )
-    if (existing) {
-      await db.paymentAllocations.delete(existing.id)
-      await db.expenses.update(expenseId, { status: 'unpaid' })
-    } else {
-      await db.paymentAllocations.put({ id: generateId(), paymentId, expenseId, amount: expenseAmount })
-      await db.expenses.update(expenseId, { status: 'paid' })
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -122,7 +86,6 @@ export default function Payments() {
       </div>
 
       <div className="px-4 py-4 space-y-4">
-        {/* Payment transactions from bill */}
         {paymentTxs.length > 0 && (
           <section>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
@@ -134,7 +97,6 @@ export default function Payments() {
                   .filter((a) => a.paymentId === tx.id)
                   .reduce((s, a) => s + a.amount, 0)
                 const unallocated = Math.abs(tx.amount) - allocated
-
                 return (
                   <div key={tx.id} className="bg-white rounded-xl shadow-sm p-3">
                     <div className="flex items-center justify-between mb-1">
@@ -143,14 +105,14 @@ export default function Payments() {
                         <p className="text-sm font-medium text-green-700">{formatRupiah(tx.amount)}</p>
                       </div>
                       <button
-                        onClick={() => setAllocatingPaymentTxId(tx.id)}
+                        onClick={() => setAllocatingId(tx.id)}
                         className="text-xs text-blue-600 border border-blue-200 rounded-lg px-2 py-1"
                       >
                         Allocate
                       </button>
                     </div>
                     {unallocated > 0 ? (
-                      <p className="text-xs text-amber-600">Rp {unallocated.toLocaleString('id-ID')} unallocated</p>
+                      <p className="text-xs text-amber-600">{formatRupiah(unallocated)} unallocated</p>
                     ) : (
                       <p className="text-xs text-green-600">Fully allocated ✓</p>
                     )}
@@ -161,7 +123,6 @@ export default function Payments() {
           </section>
         )}
 
-        {/* Manual payments */}
         <section>
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -183,7 +144,6 @@ export default function Payments() {
                 .filter((a) => a.paymentId === payment.id)
                 .reduce((s, a) => s + a.amount, 0)
               const unallocated = payment.amount - allocated
-
               return (
                 <div key={payment.id} className="bg-white rounded-xl shadow-sm p-3">
                   <div className="flex items-center justify-between mb-1">
@@ -194,7 +154,7 @@ export default function Payments() {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setAllocatingManualId(payment.id)}
+                        onClick={() => setAllocatingId(payment.id)}
                         className="text-xs text-blue-600 border border-blue-200 rounded-lg px-2 py-1"
                       >
                         Allocate
@@ -208,7 +168,7 @@ export default function Payments() {
                     </div>
                   </div>
                   {unallocated > 0 ? (
-                    <p className="text-xs text-amber-600">Rp {unallocated.toLocaleString('id-ID')} unallocated</p>
+                    <p className="text-xs text-amber-600">{formatRupiah(unallocated)} unallocated</p>
                   ) : (
                     <p className="text-xs text-green-600">Fully allocated ✓</p>
                   )}
@@ -218,7 +178,6 @@ export default function Payments() {
           </div>
         </section>
 
-        {/* Per-owner summary */}
         {owners.length > 0 && (
           <section className="bg-white rounded-xl shadow-sm p-4">
             <p className="text-sm font-semibold text-gray-900 mb-3">Status by Owner</p>
@@ -251,22 +210,18 @@ export default function Payments() {
         )}
       </div>
 
-      {/* Allocation Sheet */}
-      {(allocatingPaymentTxId || allocatingManualId) && (
+      {allocatingId && (
         <AllocationSheet
-          paymentId={allocatingPaymentTxId ?? allocatingManualId ?? ''}
+          paymentId={allocatingId}
           paymentAmount={allocatingAmount}
-          alreadyAllocated={allocatedForCurrent}
           expenses={expenses}
           transactions={chargeTxs}
           owners={owners}
           allAllocations={allAllocations}
-          onToggle={toggleAllocation}
-          onClose={() => { setAllocatingPaymentTxId(null); setAllocatingManualId(null) }}
+          onClose={() => setAllocatingId(null)}
         />
       )}
 
-      {/* Add Manual Payment Sheet */}
       {showAddPayment && (
         <AddPaymentSheet
           periodId={activePeriodId}
@@ -280,76 +235,191 @@ export default function Payments() {
 function AllocationSheet({
   paymentId,
   paymentAmount,
-  alreadyAllocated,
   expenses,
   transactions,
   owners,
   allAllocations,
-  onToggle,
   onClose,
 }: {
   paymentId: string
   paymentAmount: number
-  alreadyAllocated: number
   expenses: Expense[]
   transactions: Transaction[]
-  owners: ReturnType<typeof useLiveQuery>
-  allAllocations: ReturnType<typeof useLiveQuery>
-  onToggle: (paymentId: string, expenseId: string, amount: number) => void
+  owners: Owner[]
+  allAllocations: PaymentAllocation[]
   onClose: () => void
 }) {
-  const ownersList = owners as Array<{ id: string; name: string; color: string }>
   const txsWithExpense = transactions.filter((t) => expenses.find((e) => e.transactionId === t.id))
+
+  // Initialize amounts from existing allocations for this payment
+  const [amounts, setAmounts] = useState<Record<string, string>>(() => {
+    const m: Record<string, string> = {}
+    allAllocations
+      .filter((a) => a.paymentId === paymentId)
+      .forEach((a) => { m[a.expenseId] = String(a.amount) })
+    return m
+  })
+  const [saving, setSaving] = useState(false)
+
+  const totalEntered = Object.values(amounts).reduce((s, v) => s + (Number(v) || 0), 0)
+  const remaining = paymentAmount - totalEntered
+
+  function allocatedByOthers(expenseId: string) {
+    return allAllocations
+      .filter((a) => a.expenseId === expenseId && a.paymentId !== paymentId)
+      .reduce((s, a) => s + a.amount, 0)
+  }
+
+  function handleFill(expenseId: string, txAmount: number) {
+    const byOthers = allocatedByOthers(expenseId)
+    const maxForExpense = Math.max(0, txAmount - byOthers)
+    const currentEntry = Number(amounts[expenseId]) || 0
+    const availablePayment = remaining + currentEntry
+    const fill = Math.min(maxForExpense, Math.max(0, availablePayment))
+    setAmounts((prev) => ({ ...prev, [expenseId]: fill > 0 ? String(fill) : '' }))
+  }
+
+  async function save() {
+    setSaving(true)
+    for (const tx of txsWithExpense) {
+      const expense = expenses.find((e) => e.transactionId === tx.id)!
+      const enteredAmt = Number(amounts[expense.id]) || 0
+      const existing = allAllocations.find((a) => a.paymentId === paymentId && a.expenseId === expense.id)
+
+      if (enteredAmt > 0) {
+        await db.paymentAllocations.put({
+          id: existing?.id ?? generateId(),
+          paymentId,
+          expenseId: expense.id,
+          amount: enteredAmt,
+        })
+      } else if (existing) {
+        await db.paymentAllocations.delete(existing.id)
+      }
+
+      // Recalculate expense status from all allocations
+      const byOthers = allocatedByOthers(expense.id)
+      const totalAlloc = byOthers + enteredAmt
+      const status: 'paid' | 'partial' | 'unpaid' =
+        totalAlloc >= tx.amount ? 'paid' : totalAlloc > 0 ? 'partial' : 'unpaid'
+      await db.expenses.update(expense.id, { status })
+    }
+    setSaving(false)
+    onClose()
+  }
 
   return (
     <div className="fixed inset-0 z-50" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50" />
       <div
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto"
+        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 border-b border-gray-100">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-gray-900">Allocate Payment</h3>
-            <button onClick={onClose} className="text-gray-400 text-xl">×</button>
+            <button onClick={onClose} className="text-gray-400 text-xl leading-none">×</button>
           </div>
           <p className="text-sm text-green-600 font-medium mt-1">{formatRupiah(paymentAmount)}</p>
-          <p className="text-xs text-gray-400">
-            Allocated: {formatRupiah(alreadyAllocated)} · Remaining: {formatRupiah(Math.max(0, paymentAmount - alreadyAllocated))}
-          </p>
+          <div className="flex gap-4 text-xs mt-0.5">
+            <span className="text-gray-400">
+              Allocated: <span className={totalEntered > paymentAmount ? 'text-red-500 font-medium' : 'text-gray-700'}>{formatRupiah(totalEntered)}</span>
+            </span>
+            <span className="text-gray-400">
+              Remaining:{' '}
+              <span className={remaining < 0 ? 'text-red-500 font-medium' : 'text-green-600 font-medium'}>
+                {remaining < 0 ? '-' : ''}{formatRupiah(Math.abs(remaining))}
+                {remaining < 0 ? ' (over)' : ''}
+              </span>
+            </span>
+          </div>
         </div>
 
-        <div className="divide-y divide-gray-50">
+        {/* Expense list */}
+        <div className="overflow-y-auto flex-1 divide-y divide-gray-50">
+          {txsWithExpense.length === 0 && (
+            <p className="text-sm text-gray-400 px-4 py-6 text-center">
+              No labeled expenses in this period yet.<br />Label transactions first.
+            </p>
+          )}
           {txsWithExpense.map((tx) => {
             const expense = expenses.find((e) => e.transactionId === tx.id)!
-            const owner = ownersList.find((o) => o.id === expense.ownerId)
+            const owner = owners.find((o) => o.id === expense.ownerId)
             const c = owner ? (OWNER_COLOR_CLASSES[owner.color] ?? OWNER_COLOR_CLASSES.blue) : OWNER_COLOR_CLASSES.blue
-            const isAllocated = (allAllocations as ReturnType<typeof useLiveQuery> as Array<{ paymentId: string; expenseId: string }>).some(
-              (a) => a.paymentId === paymentId && a.expenseId === expense.id
-            )
+            const byOthers = allocatedByOthers(expense.id)
+            const maxForExpense = Math.max(0, tx.amount - byOthers)
+            const fullyPaidByOthers = byOthers >= tx.amount
+            const currentEntry = Number(amounts[expense.id]) || 0
+            const availableForFill = Math.max(0, remaining + currentEntry)
+            const fillPreview = Math.min(maxForExpense, availableForFill)
 
             return (
-              <button
-                key={tx.id}
-                onClick={() => onToggle(paymentId, expense.id, tx.amount)}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-left ${isAllocated ? 'bg-green-50' : ''}`}
-              >
-                <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center ${isAllocated ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
-                  {isAllocated && <span className="text-white text-xs">✓</span>}
+              <div key={tx.id} className={`px-4 py-3 ${fullyPaidByOthers ? 'opacity-50' : ''}`}>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-800 truncate">{expense.label || tx.description}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-gray-400">{formatDateShort(tx.date)}</span>
+                      {owner && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${c.bg} ${c.text}`}>{owner.name}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-semibold text-gray-900">{formatRupiah(tx.amount)}</p>
+                    {byOthers > 0 && (
+                      <p className="text-xs text-gray-400">{formatRupiah(byOthers)} other pmts</p>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-800 truncate">{expense.label || tx.description}</p>
-                  <p className="text-xs text-gray-400">{formatDateShort(tx.date)}</p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-semibold text-gray-900">{formatRupiah(tx.amount)}</p>
-                  {owner && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${c.bg} ${c.text}`}>{owner.name}</span>
-                  )}
-                </div>
-              </button>
+
+                {fullyPaidByOthers ? (
+                  <p className="text-xs text-green-600 font-medium">Fully covered by other payments</p>
+                ) : (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      value={amounts[expense.id] ?? ''}
+                      onChange={(e) => setAmounts((prev) => ({ ...prev, [expense.id]: e.target.value }))}
+                      placeholder="0"
+                      min={0}
+                      max={maxForExpense}
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={() => handleFill(expense.id, tx.amount)}
+                      disabled={fillPreview <= 0}
+                      className="text-xs text-blue-600 border border-blue-200 rounded-lg px-2 py-1.5 flex-shrink-0 disabled:opacity-40"
+                    >
+                      Fill {formatRupiah(fillPreview)}
+                    </button>
+                  </div>
+                )}
+              </div>
             )
           })}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-100 p-4 flex-shrink-0">
+          {remaining < 0 && (
+            <p className="text-xs text-red-500 mb-2 text-center">
+              Total exceeds payment amount by {formatRupiah(Math.abs(remaining))}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <button onClick={onClose} className="flex-1 border border-gray-300 rounded-lg py-3 text-sm">
+              Cancel
+            </button>
+            <button
+              onClick={save}
+              disabled={saving || remaining < 0}
+              className="flex-1 bg-blue-600 text-white rounded-lg py-3 text-sm font-medium disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : 'Save Allocations'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -376,7 +446,6 @@ function AddPaymentSheet({ periodId, onClose }: { periodId: string; onClose: () 
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="font-semibold text-gray-900 mb-4">Add Manual Payment</h3>
-
         <div className="space-y-3">
           <div>
             <label className="text-sm text-gray-600">Amount (IDR)</label>
@@ -409,7 +478,6 @@ function AddPaymentSheet({ periodId, onClose }: { periodId: string; onClose: () 
             />
           </div>
         </div>
-
         <div className="flex gap-2 mt-4">
           <button onClick={onClose} className="flex-1 border border-gray-300 rounded-lg py-3 text-sm">Cancel</button>
           <button onClick={save} className="flex-1 bg-blue-600 text-white rounded-lg py-3 text-sm font-medium">Save</button>

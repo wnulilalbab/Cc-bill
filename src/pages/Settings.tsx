@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, getSetting, setSetting, generateId } from '../db'
+import { db, getSetting, setSetting, generateId, seedDefaultOwners } from '../db'
 import { OWNER_COLOR_CLASSES } from '../lib/format'
+import { CLAUDE_MODELS, DEFAULT_MODEL } from '../lib/claude'
 import type { Owner, OwnerColor } from '../types'
+
+const APP_VERSION = '1.2.0'
 
 const COLORS: OwnerColor[] = ['blue', 'pink', 'purple', 'green', 'orange', 'teal', 'red', 'yellow']
 
@@ -20,11 +23,13 @@ export default function Settings() {
   const [showKey, setShowKey] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL)
   const [editOwner, setEditOwner] = useState<Partial<Owner> | null>(null)
   const [showOwnerForm, setShowOwnerForm] = useState(false)
 
   useEffect(() => {
     getSetting('anthropic_api_key').then((k) => { if (k) setApiKey(k) })
+    getSetting('claude_model').then((m) => { if (m) setSelectedModel(m as typeof DEFAULT_MODEL) })
   }, [])
 
   async function saveApiKey() {
@@ -57,6 +62,23 @@ export default function Settings() {
   function openEditOwner(owner: Owner) {
     setEditOwner({ ...owner })
     setShowOwnerForm(true)
+  }
+
+  async function resetAllData() {
+    if (!confirm('⚠️ Reset ALL data?\n\nThis will permanently delete all transactions, periods, expenses, payments, owners, and settings. This cannot be undone.')) return
+    if (!confirm('Are you absolutely sure? Type OK to confirm.\n\nAll data will be gone forever.')) return
+    await db.transaction('rw', [
+      db.owners, db.periods, db.transactions, db.expenses,
+      db.installmentPlans, db.payments, db.paymentAllocations,
+    ], async () => {
+      await Promise.all([
+        db.owners.clear(), db.periods.clear(), db.transactions.clear(),
+        db.expenses.clear(), db.installmentPlans.clear(),
+        db.payments.clear(), db.paymentAllocations.clear(),
+      ])
+    })
+    await seedDefaultOwners()
+    alert('All data has been reset.')
   }
 
   return (
@@ -93,6 +115,45 @@ export default function Settings() {
           >
             {saved ? '✓ Saved' : 'Save API Key'}
           </button>
+        </section>
+
+        {/* AI Model */}
+        <section className="bg-white rounded-xl shadow-sm p-4">
+          <h2 className="font-semibold text-gray-900 mb-1">AI Model</h2>
+          <p className="text-xs text-gray-500 mb-3">Used when parsing PDFs and screenshots.</p>
+          <div className="space-y-2">
+            {CLAUDE_MODELS.map((m) => {
+              const active = selectedModel === m.id
+              return (
+                <button
+                  key={m.id}
+                  onClick={async () => {
+                    setSelectedModel(m.id as typeof DEFAULT_MODEL)
+                    await setSetting('claude_model', m.id)
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-3 rounded-xl border text-left transition-colors ${
+                    active
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <div>
+                    <p className={`text-sm font-semibold ${active ? 'text-blue-700' : 'text-gray-800'}`}>
+                      {m.label}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">{m.desc}</p>
+                  </div>
+                  {active && (
+                    <span className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </section>
 
         {/* Owners */}
@@ -148,6 +209,27 @@ export default function Settings() {
             </label>
           </div>
         </section>
+
+        {/* Danger Zone */}
+        <section className="bg-white rounded-xl shadow-sm p-4 border border-red-100">
+          <h2 className="font-semibold text-red-600 mb-1">Danger Zone</h2>
+          <p className="text-xs text-gray-500 mb-3">
+            Permanently deletes all data — transactions, periods, expenses, payments, and owners.
+            This cannot be undone.
+          </p>
+          <button
+            onClick={resetAllData}
+            className="w-full border border-red-300 text-red-600 rounded-lg py-2.5 text-sm font-medium"
+          >
+            Reset All Data
+          </button>
+        </section>
+
+        {/* Version */}
+        <div className="text-center py-2 pb-4">
+          <p className="text-xs text-gray-400">CC Bill · v{APP_VERSION}</p>
+          <p className="text-xs text-gray-300 mt-0.5">Data stored locally on this device</p>
+        </div>
       </div>
 
       {/* Owner Form Sheet */}

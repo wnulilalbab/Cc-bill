@@ -2,6 +2,19 @@ import Anthropic from '@anthropic-ai/sdk'
 import { getSetting } from '../db'
 import type { ParsedTransaction } from '../types'
 
+export const CLAUDE_MODELS = [
+  { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5', desc: 'Fastest · lowest cost · good for clear bills' },
+  { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', desc: 'Balanced · handles complex layouts well' },
+  { id: 'claude-opus-4-7', label: 'Claude Opus 4.7', desc: 'Most capable · highest cost' },
+] as const
+
+export type ClaudeModelId = typeof CLAUDE_MODELS[number]['id']
+export const DEFAULT_MODEL: ClaudeModelId = 'claude-sonnet-4-6'
+
+async function getModel(): Promise<string> {
+  return (await getSetting('claude_model')) ?? DEFAULT_MODEL
+}
+
 const PDF_PROMPT = `You are parsing a BCA (Bank Central Asia) Indonesia credit card statement.
 The text contains transaction rows in this format:
   DD-MON DD-MON DESCRIPTION AMOUNT [CR]
@@ -65,7 +78,7 @@ export async function parsePDFText(text: string): Promise<ParsedTransaction[]> {
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
 
   const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: await getModel(),
     max_tokens: 4096,
     messages: [
       {
@@ -88,7 +101,7 @@ export async function parseImageFile(
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
 
   const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: await getModel(),
     max_tokens: 4096,
     messages: [
       {
