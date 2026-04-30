@@ -2,6 +2,20 @@ import Anthropic from '@anthropic-ai/sdk'
 import { getSetting } from '../db'
 import type { ParsedTransaction } from '../types'
 
+export const CLAUDE_MODELS = [
+  { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5',  desc: 'Fast · cheapest' },
+  { id: 'claude-sonnet-4-6',         label: 'Sonnet 4.6', desc: 'Balanced · recommended' },
+  { id: 'claude-opus-4-7',           label: 'Opus 4.7',   desc: 'Most capable · slowest' },
+] as const
+
+export type ClaudeModelId = typeof CLAUDE_MODELS[number]['id']
+export const DEFAULT_MODEL: ClaudeModelId = 'claude-sonnet-4-6'
+
+async function getModel(): Promise<string> {
+  const m = await getSetting('claude_model')
+  return m ?? DEFAULT_MODEL
+}
+
 const PDF_PROMPT = `You are parsing a BCA (Bank Central Asia) Indonesia credit card statement.
 The text contains transaction rows in this format:
   DD-MON DD-MON DESCRIPTION AMOUNT [CR]
@@ -57,20 +71,6 @@ Type rules:
 - Otherwise → "purchase"
 
 Return ONLY the JSON array.`
-
-export const CLAUDE_MODELS = [
-  { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', desc: 'Fast · cheapest' },
-  { id: 'claude-sonnet-4-6',         label: 'Sonnet 4.6', desc: 'Balanced · recommended' },
-  { id: 'claude-opus-4-7',           label: 'Opus 4.7',   desc: 'Most capable · slowest' },
-] as const
-
-export type ClaudeModelId = typeof CLAUDE_MODELS[number]['id']
-export const DEFAULT_MODEL: ClaudeModelId = 'claude-sonnet-4-6'
-
-async function getModel(): Promise<string> {
-  const m = await getSetting('claude_model')
-  return m ?? DEFAULT_MODEL
-}
 
 export async function parsePDFText(text: string): Promise<ParsedTransaction[]> {
   const apiKey = await getSetting('anthropic_api_key')
@@ -154,7 +154,6 @@ export function detectReversalPairs(
     if (result[i].type !== 'reversal' || result[i]._hide) continue
     const reversalAmt = Math.abs(result[i].amount)
 
-    // Find the original purchase charge that was reversed (same abs amount, type purchase)
     const matchIdx = result.findIndex(
       (t, idx) =>
         idx !== i &&

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, getSetting, setSetting, generateId } from '../db'
+import { db, getSetting, setSetting, generateId, seedDefaultOwners } from '../db'
 import { OWNER_COLOR_CLASSES } from '../lib/format'
 import { CLAUDE_MODELS, DEFAULT_MODEL } from '../lib/claude'
 import type { Owner, OwnerColor } from '../types'
 
-const APP_VERSION = '1.1.0'
+const APP_VERSION = '1.2.0'
 
 const COLORS: OwnerColor[] = ['blue', 'pink', 'purple', 'green', 'orange', 'teal', 'red', 'yellow']
 
@@ -62,6 +62,23 @@ export default function Settings() {
   function openEditOwner(owner: Owner) {
     setEditOwner({ ...owner })
     setShowOwnerForm(true)
+  }
+
+  async function resetAllData() {
+    if (!confirm('⚠️ Reset ALL data?\n\nThis will permanently delete all transactions, periods, expenses, payments, owners, and settings. This cannot be undone.')) return
+    if (!confirm('Are you absolutely sure? Type OK to confirm.\n\nAll data will be gone forever.')) return
+    await db.transaction('rw', [
+      db.owners, db.periods, db.transactions, db.expenses,
+      db.installmentPlans, db.payments, db.paymentAllocations,
+    ], async () => {
+      await Promise.all([
+        db.owners.clear(), db.periods.clear(), db.transactions.clear(),
+        db.expenses.clear(), db.installmentPlans.clear(),
+        db.payments.clear(), db.paymentAllocations.clear(),
+      ])
+    })
+    await seedDefaultOwners()
+    alert('All data has been reset.')
   }
 
   return (
@@ -191,6 +208,21 @@ export default function Settings() {
               <input type="file" accept=".json" className="hidden" onChange={importData} />
             </label>
           </div>
+        </section>
+
+        {/* Danger Zone */}
+        <section className="bg-white rounded-xl shadow-sm p-4 border border-red-100">
+          <h2 className="font-semibold text-red-600 mb-1">Danger Zone</h2>
+          <p className="text-xs text-gray-500 mb-3">
+            Permanently deletes all data — transactions, periods, expenses, payments, and owners.
+            This cannot be undone.
+          </p>
+          <button
+            onClick={resetAllData}
+            className="w-full border border-red-300 text-red-600 rounded-lg py-2.5 text-sm font-medium"
+          >
+            Reset All Data
+          </button>
         </section>
 
         {/* Version */}
