@@ -15,11 +15,13 @@ export default function Payments() {
   const owners = useLiveQuery(() => db.owners.toArray(), []) ?? []
 
   // Payment sources scoped to the active period (for the summary cards)
+  // Include all non-hidden negative-amount (credit) transactions — covers both
+  // correctly-typed 'payment' rows and payments that Claude classified as 'other'
   const paymentTxs = useLiveQuery(async () => {
     if (!activePeriodId) return []
     return db.transactions
       .where('periodId').equals(activePeriodId)
-      .filter((t) => t.type === 'payment')
+      .filter((t) => !t.hidden && t.amount < 0)
       .toArray()
   }, [activePeriodId]) ?? []
 
@@ -95,11 +97,11 @@ export default function Payments() {
       </div>
 
       <div className="px-4 py-4 space-y-4">
-        {/* Payment transactions from the PDF bill */}
+        {/* Credit / payment transactions from the selected period */}
         {paymentTxs.length > 0 && (
           <section>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              From Bill
+              Credits &amp; Payments
             </p>
             <div className="space-y-2">
               {paymentTxs.map((tx) => {
@@ -113,10 +115,13 @@ export default function Payments() {
                       <div>
                         <p className="text-xs text-gray-400">{formatDateShort(tx.date)}</p>
                         <p className="text-sm font-medium text-green-700">{formatRupiah(Math.abs(tx.amount))}</p>
+                        {tx.description && (
+                          <p className="text-xs text-gray-500 mt-0.5 truncate max-w-[200px]">{tx.description}</p>
+                        )}
                       </div>
                       <button
                         onClick={() => setAllocatingId(tx.id)}
-                        className="text-xs text-blue-600 border border-blue-200 rounded-lg px-2 py-1"
+                        className="text-xs text-blue-600 border border-blue-200 rounded-lg px-2 py-1 flex-shrink-0"
                       >
                         Allocate
                       </button>
