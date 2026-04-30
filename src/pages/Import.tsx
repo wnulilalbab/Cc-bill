@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, generateId } from '../db'
+import { db, generateId, UNBILLED_PERIOD_ID, ensureUnbilledPeriod } from '../db'
 import { extractTextFromPDF, fileToBase64 } from '../lib/pdf'
 import { parsePDFText, parseImageFile, detectReversalPairs } from '../lib/claude'
 import { buildMergePlan, deduplicateUnbilled } from '../lib/merge'
@@ -29,7 +29,11 @@ function fileIcon(file: File) {
 
 export default function Import() {
   const navigate = useNavigate()
-  const periods = useLiveQuery(() => db.periods.orderBy('year').reverse().toArray(), []) ?? []
+  // Only billed periods for the period picker
+  const periods = useLiveQuery(
+    () => db.periods.orderBy('year').reverse().filter((p) => p.type !== 'unbilled').toArray(),
+    []
+  ) ?? []
 
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const imgInputRef = useRef<HTMLInputElement>(null)
@@ -51,7 +55,7 @@ export default function Import() {
   const [hiddenParsed, setHiddenParsed] = useState<ParsedTransaction[]>([])
   const [brokenMatches, setBrokenMatches] = useState<Set<string>>(new Set())
 
-  // Period state
+  // Period state — only used for statement (PDF) imports
   const [useNewPeriod, setUseNewPeriod] = useState(true)
   const [periodId, setPeriodId] = useState('')
   const [newPeriodMonth, setNewPeriodMonth] = useState(defaultPeriod().month)
@@ -87,8 +91,10 @@ export default function Import() {
 
   // ── Start import ────────────────────────────────────────────────
   async function startImport() {
-    if (useNewPeriod && !newPeriodMonth) { setError('Please select the report period first.'); return }
-    if (!useNewPeriod && !periodId) { setError('Please select an existing period first.'); return }
+    if (isStatementImport) {
+      if (useNewPeriod && !newPeriodMonth) { setError('Please select the report period first.'); return }
+      if (!useNewPeriod && !periodId) { setError('Please select an existing period first.'); return }
+    }
     if (queue.length === 0) { setError('Please add at least one file.'); return }
 
     setError('')
@@ -126,41 +132,32 @@ export default function Import() {
   }
 
   async function handleScreenshotParsed(allRaw: ParsedTransaction[]) {
-    // Load all existing unbilled transactions for dedup
-    const unbilledPeriods = await db.periods.filter((p) => p.type === 'unbilled').toArray()
-    const existingUnbilled: Transaction[] =
-      unbilledPeriods.length > 0
-        ? await db.transactions.where('periodId').anyOf(unbilledPeriods.map((p) => p.id)).toArray()
-        : []
+    // Dedup against the shared unbilled pool
+    const existingUnbilled: Transaction[] = await db.transactions
+      .where('periodId').equals(UNBILLED_PERIOD_ID)
+      .toArray()
 
     const { kept, skipped } = deduplicateUnbilled(allRaw, existingUnbilled)
     setSkippedCount(skipped.length)
 
     const withFlags = detectReversalPairs(kept) as (ParsedTransaction & { _hidden?: boolean })[]
-    const hidden = withFlags.filter((t) => (t as any)._hidden).length
-    setHiddenCount(hidden)
+    setHiddenCount(withFlags.filter((t) => (t as any)._hidden).length)
     setParsed(withFlags)
     setStep('review')
   }
 
   async function handleStatementParsed(allRaw: ParsedTransaction[]) {
-    // Split into visible vs reversal-hidden
     const withFlags = detectReversalPairs(allRaw) as (ParsedTransaction & { _hidden?: boolean })[]
     const visible = withFlags.filter((t) => !(t as any)._hidden)
     const hidden = withFlags.filter((t) => (t as any)._hidden)
 
     setHiddenParsed(hidden)
 
-    // Load unbilled pool
-    const unbilledPeriods = await db.periods.filter((p) => p.type === 'unbilled').toArray()
-    const pool: Transaction[] =
-      unbilledPeriods.length > 0
-        ? await db.transactions
-            .where('periodId')
-            .anyOf(unbilledPeriods.map((p) => p.id))
-            .filter((t) => !t.hidden)
-            .toArray()
-        : []
+    // Load the shared unbilled pool
+    const pool: Transaction[] = await db.transactions
+      .where('periodId').equals(UNBILLED_PERIOD_ID)
+      .filter((t) => !t.hidden)
+      .toArray()
 
     const plan = buildMergePlan(visible, pool)
     setMergePlan(plan)
@@ -176,49 +173,33 @@ export default function Import() {
     setBrokenMatches((prev) => { const s = new Set(prev); s.delete(unbilledId); return s })
   }
 
-  // Effective merge state after user edits
   const effectiveMatched = mergePlan.matched.filter((p) => !brokenMatches.has(p.unbilled.id))
   const effectiveNew = [
     ...mergePlan.newOnes,
-    ...mergePlan.matched
-      .filter((p) => brokenMatches.has(p.unbilled.id))
-      .map((p) => p.parsed),
+    ...mergePlan.matched.filter((p) => brokenMatches.has(p.unbilled.id)).map((p) => p.parsed),
   ]
 
   function removeTransaction(idx: number) {
     setParsed((prev) => prev.filter((_, i) => i !== idx))
   }
 
-  // ── Save: screenshot flow ───────────────────────────────────────
+  // ── Save: screenshot → shared unbilled pool ─────────────────────
   async function saveScreenshot() {
     setStep('saving')
     try {
-      let pid = periodId
-      if (useNewPeriod || !pid) {
-        pid = generateId()
-        const period: BillPeriod = {
-          id: pid,
-          label: selectedPeriodLabel(),
-          month: newPeriodMonth,
-          year: newPeriodYear,
-          dueDate: newPeriodDue || undefined,
-          importedAt: new Date().toISOString(),
-          type: 'unbilled',
-        }
-        await db.periods.put(period)
-      }
+      await ensureUnbilledPeriod()
 
       const visible = parsed.filter((t) => !(t as any)._hidden)
       const hidden = parsed.filter((t) => (t as any)._hidden)
 
       await db.transactions.bulkPut([
         ...visible.map((t) => ({
-          id: generateId(), periodId: pid,
+          id: generateId(), periodId: UNBILLED_PERIOD_ID,
           date: t.date, description: t.description, amount: t.amount,
           type: t.type, hidden: false, source: 'screenshot' as const, raw: t.description,
         })),
         ...hidden.map((t) => ({
-          id: generateId(), periodId: pid,
+          id: generateId(), periodId: UNBILLED_PERIOD_ID,
           date: t.date, description: t.description, amount: t.amount,
           type: t.type, hidden: true, source: 'screenshot' as const, raw: t.description,
         })),
@@ -238,7 +219,7 @@ export default function Import() {
       let pid = periodId
       if (useNewPeriod || !pid) {
         pid = generateId()
-        const period: BillPeriod = {
+        await db.periods.put({
           id: pid,
           label: selectedPeriodLabel(),
           month: newPeriodMonth,
@@ -246,19 +227,13 @@ export default function Import() {
           dueDate: newPeriodDue || undefined,
           importedAt: new Date().toISOString(),
           type: 'billed',
-        }
-        await db.periods.put(period)
+        } as BillPeriod)
       }
 
-      // Promote matched unbilled transactions into this billing period
       for (const pair of effectiveMatched) {
-        await db.transactions.update(pair.unbilled.id, {
-          periodId: pid,
-          source: 'statement',
-        })
+        await db.transactions.update(pair.unbilled.id, { periodId: pid, source: 'statement' })
       }
 
-      // Create new transactions (unmatched + broken matches + reversal-hidden)
       await db.transactions.bulkPut([
         ...effectiveNew.map((t) => ({
           id: generateId(), periodId: pid,
@@ -303,7 +278,7 @@ export default function Import() {
     )
   }
 
-  // ── Merge screen (PDF statement) ────────────────────────────────
+  // ── Merge screen ────────────────────────────────────────────────
   if (step === 'merge') {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -323,31 +298,25 @@ export default function Import() {
             </div>
           )}
 
-          {/* Matched section */}
           {mergePlan.matched.length > 0 && (
             <section>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                 Matched from Unbilled — labels &amp; payments preserved
               </p>
               <div className="space-y-2">
-                {mergePlan.matched.map((pair) => {
-                  const broken = brokenMatches.has(pair.unbilled.id)
-                  const hasLabel = !!(pair.unbilled as any).label
-                  return (
-                    <MatchCard
-                      key={pair.unbilled.id}
-                      pair={pair}
-                      broken={broken}
-                      onBreak={() => breakMatch(pair.unbilled.id)}
-                      onRestore={() => restoreMatch(pair.unbilled.id)}
-                    />
-                  )
-                })}
+                {mergePlan.matched.map((pair) => (
+                  <MatchCard
+                    key={pair.unbilled.id}
+                    pair={pair}
+                    broken={brokenMatches.has(pair.unbilled.id)}
+                    onBreak={() => breakMatch(pair.unbilled.id)}
+                    onRestore={() => restoreMatch(pair.unbilled.id)}
+                  />
+                ))}
               </div>
             </section>
           )}
 
-          {/* New section */}
           {effectiveNew.length > 0 && (
             <section>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
@@ -383,16 +352,10 @@ export default function Import() {
 
         <div className="fixed bottom-16 left-0 right-0 px-4 pb-2">
           <div className="bg-white rounded-xl shadow-lg p-3 flex items-center gap-3">
-            <button
-              onClick={() => setStep('select')}
-              className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm"
-            >
-              Back
-            </button>
-            <button
-              onClick={saveStatement}
-              className="flex-1 bg-blue-600 text-white rounded-lg py-2.5 text-sm font-medium"
-            >
+            <button onClick={() => setStep('select')}
+              className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm">Back</button>
+            <button onClick={saveStatement}
+              className="flex-1 bg-blue-600 text-white rounded-lg py-2.5 text-sm font-medium">
               Confirm Import
               {effectiveMatched.length > 0 && ` · ${effectiveMatched.length} merged`}
               {effectiveNew.length > 0 && ` · ${effectiveNew.length} new`}
@@ -403,30 +366,24 @@ export default function Import() {
     )
   }
 
-  // ── Review screen (screenshot flow) ────────────────────────────
+  // ── Review screen (screenshot) ──────────────────────────────────
   if (step === 'review') {
     const visibleParsed = parsed.filter((t) => showHidden || !(t as any)._hidden)
-
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-blue-700 text-white px-4 py-4">
-          <h1 className="text-lg font-bold">Review Transactions</h1>
-          <p className="text-sm text-blue-200 mt-0.5">
+        <div className="bg-orange-500 text-white px-4 py-4">
+          <h1 className="text-lg font-bold">Review — Unbilled Pool</h1>
+          <p className="text-sm text-orange-100 mt-0.5">
             {parsed.filter((t) => !(t as any)._hidden).length} to save
-            {skippedCount > 0 && (
-              <span className="text-blue-300"> · {skippedCount} duplicates skipped</span>
-            )}
+            {skippedCount > 0 && <span className="text-orange-200"> · {skippedCount} duplicates skipped</span>}
             {hiddenCount > 0 && ` · ${hiddenCount} reversal pairs hidden`}
-            {' · '}<span className="text-blue-100 font-medium">{selectedPeriodLabel()}</span>
           </p>
         </div>
 
         {hiddenCount > 0 && (
           <div className="mx-4 mt-3">
-            <button
-              onClick={() => setShowHidden(!showHidden)}
-              className="text-xs text-gray-400 underline"
-            >
+            <button onClick={() => setShowHidden(!showHidden)}
+              className="text-xs text-gray-400 underline">
               {showHidden ? 'Hide' : 'Show'} {hiddenCount} auto-hidden reversal entries
             </button>
           </div>
@@ -436,19 +393,15 @@ export default function Import() {
           {visibleParsed.map((t, idx) => {
             const hidden = (t as any)._hidden
             return (
-              <div
-                key={idx}
-                className={`bg-white rounded-xl shadow-sm p-3 flex items-start gap-3 ${hidden ? 'opacity-40' : ''}`}
-              >
+              <div key={idx}
+                className={`bg-white rounded-xl shadow-sm p-3 flex items-start gap-3 ${hidden ? 'opacity-40' : ''}`}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="text-xs text-gray-400">{formatDateShort(t.date)}</span>
                     <span className={`text-xs px-1.5 py-0.5 rounded ${TX_TYPE_COLOR[t.type]}`}>
                       {TX_TYPE_LABEL[t.type]}
                     </span>
-                    <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
-                      Pending
-                    </span>
+                    <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">Pending</span>
                     {hidden && <span className="text-xs text-gray-400">(hidden)</span>}
                   </div>
                   <p className="text-sm text-gray-800 truncate">{t.description}</p>
@@ -457,12 +410,8 @@ export default function Import() {
                   </p>
                 </div>
                 {!hidden && (
-                  <button
-                    onClick={() => removeTransaction(parsed.indexOf(t))}
-                    className="text-red-400 text-lg leading-none px-1 flex-shrink-0"
-                  >
-                    ×
-                  </button>
+                  <button onClick={() => removeTransaction(parsed.indexOf(t))}
+                    className="text-red-400 text-lg leading-none px-1 flex-shrink-0">×</button>
                 )}
               </div>
             )
@@ -472,17 +421,11 @@ export default function Import() {
         <div className="fixed bottom-16 left-0 right-0 px-4 pb-2">
           <div className="bg-white rounded-xl shadow-lg p-3 flex items-center gap-3">
             {error && <p className="text-xs text-red-500 flex-1">{error}</p>}
-            <button
-              onClick={() => setStep('select')}
-              className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm"
-            >
-              Back
-            </button>
-            <button
-              onClick={saveScreenshot}
-              className="flex-1 bg-orange-500 text-white rounded-lg py-2.5 text-sm font-medium"
-            >
-              Save {parsed.filter((t) => !(t as any)._hidden).length} Pending
+            <button onClick={() => setStep('select')}
+              className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm">Back</button>
+            <button onClick={saveScreenshot}
+              className="flex-1 bg-orange-500 text-white rounded-lg py-2.5 text-sm font-medium">
+              Save {parsed.filter((t) => !(t as any)._hidden).length} to Unbilled
             </button>
           </div>
         </div>
@@ -491,8 +434,8 @@ export default function Import() {
   }
 
   // ── Select step ─────────────────────────────────────────────────
-  const canImport =
-    queue.length > 0 && (useNewPeriod ? !!newPeriodMonth : !!periodId)
+  const periodValid = useNewPeriod ? !!newPeriodMonth : !!periodId
+  const canImport = queue.length > 0 && (!isStatementImport || periodValid)
 
   return (
     <div className="min-h-screen bg-gray-50 pb-8">
@@ -500,8 +443,8 @@ export default function Import() {
         <h1 className="text-lg font-bold">Import</h1>
         <p className="text-sm text-blue-200 mt-0.5">
           {isStatementImport
-            ? 'Statement PDF detected — will merge with unbilled'
-            : 'Screenshots — transactions saved as Pending'}
+            ? 'Statement PDF — will merge with Unbilled pool'
+            : 'Screenshots — saved to shared Unbilled pool'}
         </p>
       </div>
 
@@ -512,112 +455,90 @@ export default function Import() {
           </div>
         )}
 
-        {/* Import mode banner */}
-        <div className={`rounded-xl p-3 flex items-center gap-3 ${isStatementImport ? 'bg-blue-50 border border-blue-200' : 'bg-orange-50 border border-orange-200'}`}>
-          <span className="text-2xl">{isStatementImport ? '📄' : '📱'}</span>
-          <div>
-            <p className={`text-sm font-semibold ${isStatementImport ? 'text-blue-800' : 'text-orange-800'}`}>
-              {isStatementImport ? 'Statement Import' : 'Screenshot Import'}
-            </p>
-            <p className={`text-xs ${isStatementImport ? 'text-blue-600' : 'text-orange-600'}`}>
-              {isStatementImport
-                ? 'Matched transactions will carry over your existing labels and payments.'
-                : 'Duplicates across screenshots are auto-removed. Label any time.'}
-            </p>
-          </div>
-        </div>
+        {/* Step 1 — Period (statement only) or Unbilled info */}
+        {isStatementImport ? (
+          <section className="bg-white rounded-xl shadow-sm p-4">
+            <h2 className="font-semibold text-gray-900 mb-1">1. Bill Period</h2>
+            <p className="text-xs text-gray-400 mb-3">Which month's official bill is this?</p>
 
-        {/* 1. Period */}
-        <section className="bg-white rounded-xl shadow-sm p-4">
-          <h2 className="font-semibold text-gray-900 mb-1">1. Report Period</h2>
-          <p className="text-xs text-gray-400 mb-3">When was this bill / screenshot generated?</p>
-
-          <div className="flex gap-2 mb-3">
-            <button
-              onClick={() => setUseNewPeriod(true)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium border ${useNewPeriod ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600'}`}
-            >
-              New Period
-            </button>
-            <button
-              onClick={() => setUseNewPeriod(false)}
-              disabled={periods.length === 0}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium border ${!useNewPeriod ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600'} disabled:opacity-40`}
-            >
-              Existing
-            </button>
-          </div>
-
-          {useNewPeriod ? (
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <label className="text-xs text-gray-500">Month</label>
-                  <select
-                    value={newPeriodMonth}
-                    onChange={(e) => setNewPeriodMonth(Number(e.target.value))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-0.5"
-                  >
-                    {Array.from({ length: 12 }, (_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        {new Date(2000, i).toLocaleDateString('id-ID', { month: 'long' })}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="text-xs text-gray-500">Year</label>
-                  <input
-                    type="number"
-                    value={newPeriodYear}
-                    onChange={(e) => setNewPeriodYear(Number(e.target.value))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-0.5"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">Due Date (optional)</label>
-                <input
-                  type="date"
-                  value={newPeriodDue}
-                  onChange={(e) => setNewPeriodDue(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-0.5"
-                />
-              </div>
+            <div className="flex gap-2 mb-3">
+              <button onClick={() => setUseNewPeriod(true)}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium border ${useNewPeriod ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600'}`}>
+                New Period
+              </button>
+              <button onClick={() => setUseNewPeriod(false)} disabled={periods.length === 0}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium border ${!useNewPeriod ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600'} disabled:opacity-40`}>
+                Existing
+              </button>
             </div>
-          ) : (
-            <select
-              value={periodId}
-              onChange={(e) => setPeriodId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            >
-              <option value="">Select period…</option>
-              {periods.map((p) => (
-                <option key={p.id} value={p.id}>{p.label}</option>
-              ))}
-            </select>
-          )}
-        </section>
 
-        {/* 2. Files */}
+            {useNewPeriod ? (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500">Month</label>
+                    <select value={newPeriodMonth}
+                      onChange={(e) => setNewPeriodMonth(Number(e.target.value))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-0.5">
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          {new Date(2000, i).toLocaleDateString('id-ID', { month: 'long' })}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500">Year</label>
+                    <input type="number" value={newPeriodYear}
+                      onChange={(e) => setNewPeriodYear(Number(e.target.value))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-0.5" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Due Date (optional)</label>
+                  <input type="date" value={newPeriodDue}
+                    onChange={(e) => setNewPeriodDue(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-0.5" />
+                </div>
+              </div>
+            ) : (
+              <select value={periodId} onChange={(e) => setPeriodId(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option value="">Select period…</option>
+                {periods.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+              </select>
+            )}
+          </section>
+        ) : (
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-center gap-3">
+            <span className="text-2xl shrink-0">⏳</span>
+            <div>
+              <p className="text-sm font-semibold text-orange-800">Saved to Unbilled Pool</p>
+              <p className="text-xs text-orange-600 mt-0.5">
+                All screenshots share one pool — no month needed.
+                When the statement PDF arrives, transactions will be matched and merged automatically.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Files */}
         <section className="bg-white rounded-xl shadow-sm p-4">
-          <h2 className="font-semibold text-gray-900 mb-1">2. Add Files</h2>
+          <h2 className="font-semibold text-gray-900 mb-1">
+            {isStatementImport ? '2.' : '1.'} Add Files
+          </h2>
           <p className="text-xs text-gray-400 mb-3">
-            PDF = statement import · Images = screenshot import
+            PDF = statement import · Images = screenshot (unbilled)
           </p>
 
           <div className="flex gap-2 mb-3">
-            <button
-              onClick={() => pdfInputRef.current?.click()}
-              className="flex-1 flex flex-col items-center gap-1.5 py-3 border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-xl text-blue-600 transition-colors"
-            >
+            <button onClick={() => pdfInputRef.current?.click()}
+              className="flex-1 flex flex-col items-center gap-1.5 py-3 border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-xl text-blue-600 transition-colors">
               <span className="text-2xl">📄</span>
               <span className="text-xs font-medium">PDF Statement</span>
             </button>
-            <button
-              onClick={() => imgInputRef.current?.click()}
-              className="flex-1 flex flex-col items-center gap-1.5 py-3 border-2 border-dashed border-orange-200 hover:border-orange-400 rounded-xl text-orange-600 transition-colors"
-            >
+            <button onClick={() => imgInputRef.current?.click()}
+              className="flex-1 flex flex-col items-center gap-1.5 py-3 border-2 border-dashed border-orange-200 hover:border-orange-400 rounded-xl text-orange-600 transition-colors">
               <span className="text-2xl">📱</span>
               <span className="text-xs font-medium">Screenshot</span>
             </button>
@@ -647,25 +568,20 @@ export default function Import() {
           )}
         </section>
 
-        {/* 3. Context */}
+        {/* Context */}
         <section className="bg-white rounded-xl shadow-sm p-4">
-          <h2 className="font-semibold text-gray-900 mb-1">3. Context (optional)</h2>
+          <h2 className="font-semibold text-gray-900 mb-1">
+            {isStatementImport ? '3.' : '2.'} Context (optional)
+          </h2>
           <p className="text-xs text-gray-400 mb-2">Extra hints for AI — card name, year, notes</p>
-          <textarea
-            value={context}
-            onChange={(e) => setContext(e.target.value)}
+          <textarea value={context} onChange={(e) => setContext(e.target.value)}
             placeholder="e.g. BCA Platinum card, transactions from March 2026"
             rows={2}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
-          />
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none" />
         </section>
 
-        {/* Import button */}
-        <button
-          onClick={startImport}
-          disabled={!canImport}
-          className={`w-full disabled:bg-gray-300 text-white rounded-xl py-3.5 text-base font-semibold shadow-sm transition-colors ${isStatementImport ? 'bg-blue-600' : 'bg-orange-500'}`}
-        >
+        <button onClick={startImport} disabled={!canImport}
+          className={`w-full disabled:bg-gray-300 text-white rounded-xl py-3.5 text-base font-semibold shadow-sm transition-colors ${isStatementImport ? 'bg-blue-600' : 'bg-orange-500'}`}>
           {queue.length === 0
             ? 'Add Files to Import'
             : `Import ${queue.length} File${queue.length > 1 ? 's' : ''}`}
@@ -674,7 +590,7 @@ export default function Import() {
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
           <p className="text-sm text-amber-800 font-medium mb-1">First time?</p>
           <p className="text-xs text-amber-700">
-            Make sure you have set your Anthropic API key in Settings before importing.
+            Set your Anthropic API key in Settings before importing.
           </p>
         </div>
       </div>
@@ -682,20 +598,11 @@ export default function Import() {
   )
 }
 
-// ── Match card component ────────────────────────────────────────
-function MatchCard({
-  pair,
-  broken,
-  onBreak,
-  onRestore,
-}: {
-  pair: MatchPair
-  broken: boolean
-  onBreak: () => void
-  onRestore: () => void
+// ── Match card ──────────────────────────────────────────────────
+function MatchCard({ pair, broken, onBreak, onRestore }: {
+  pair: MatchPair; broken: boolean; onBreak: () => void; onRestore: () => void
 }) {
   const { parsed, unbilled } = pair
-
   return (
     <div className={`bg-white rounded-xl shadow-sm p-3 border ${broken ? 'border-red-200 opacity-60' : 'border-green-200'}`}>
       <div className="flex items-start gap-2">
@@ -705,41 +612,25 @@ function MatchCard({
             <span className={`text-xs px-1.5 py-0.5 rounded ${TX_TYPE_COLOR[parsed.type]}`}>
               {TX_TYPE_LABEL[parsed.type]}
             </span>
-            {!broken && (
-              <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
-                matched ✓
-              </span>
-            )}
-            {broken && (
-              <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">
-                unlinked
-              </span>
-            )}
+            {broken
+              ? <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">unlinked</span>
+              : <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">matched ✓</span>
+            }
           </div>
           <p className="text-sm text-gray-800 truncate">{parsed.description}</p>
           <p className="text-sm font-semibold text-gray-900 mt-0.5">
             {formatRupiah(Math.abs(parsed.amount))}
           </p>
-
-          {/* Existing label from unbilled */}
-          {!broken && (unbilled as any).label && (
-            <p className="text-xs text-green-600 mt-1">
-              Label: {(unbilled as any).label}
+          {!broken && (
+            <p className="text-xs text-gray-400 mt-1 italic">
+              {(unbilled as any).label
+                ? `Label: ${(unbilled as any).label}`
+                : 'No label yet — will carry over when labeled'}
             </p>
           )}
-          {!broken && !(unbilled as any).label && (
-            <p className="text-xs text-gray-400 mt-1 italic">No label yet — will carry over when you label it</p>
-          )}
         </div>
-
-        <button
-          onClick={broken ? onRestore : onBreak}
-          className={`text-xs px-2 py-1 rounded-lg border shrink-0 ${
-            broken
-              ? 'border-green-300 text-green-600'
-              : 'border-red-200 text-red-400'
-          }`}
-        >
+        <button onClick={broken ? onRestore : onBreak}
+          className={`text-xs px-2 py-1 rounded-lg border shrink-0 ${broken ? 'border-green-300 text-green-600' : 'border-red-200 text-red-400'}`}>
           {broken ? 'Re-link' : 'Unlink'}
         </button>
       </div>
