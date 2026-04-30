@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, generateId, UNBILLED_PERIOD_ID } from '../db'
+import { db, generateId, UNBILLED_PERIOD_ID, ensureUnbilledPeriod } from '../db'
 import { formatRupiah, formatDateShort, OWNER_COLOR_CLASSES } from '../lib/format'
 import type { BillPeriod, Payment, Transaction, Expense, Owner, PaymentAllocation } from '../types'
 
@@ -76,6 +76,7 @@ export default function Payments() {
             onChange={(e) => setSelectedPeriodId(e.target.value)}
             className="bg-blue-800 text-white text-sm rounded-lg px-2 py-1.5 border border-blue-600"
           >
+            <option value={UNBILLED_PERIOD_ID}>⏳ Unbilled Pool</option>
             {periods.map((p) => (
               <option key={p.id} value={p.id}>{p.label}</option>
             ))}
@@ -83,7 +84,7 @@ export default function Payments() {
         </div>
         <div className="flex gap-4 text-sm">
           <div>
-            <span className="text-blue-200">Total bill: </span>
+            <span className="text-blue-200">{activePeriodId === UNBILLED_PERIOD_ID ? 'Pending: ' : 'Total bill: '}</span>
             <span className="font-semibold">{formatRupiah(totalCharges)}</span>
           </div>
           <div>
@@ -567,6 +568,7 @@ function AddPaymentSheet({
   async function save() {
     const amt = Number(amount.replace(/[^0-9]/g, ''))
     if (!amt || !periodId) return
+    if (periodId === UNBILLED_PERIOD_ID) await ensureUnbilledPeriod()
     await db.payments.add({ id: generateId(), periodId, date, amount: amt, note })
     onClose()
   }
@@ -607,11 +609,12 @@ function AddPaymentSheet({
               onChange={(e) => setPeriodId(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm mt-1"
             >
+              <option value={UNBILLED_PERIOD_ID}>⏳ Unbilled Pool</option>
               {periods.map((p) => (
                 <option key={p.id} value={p.id}>{p.label}</option>
               ))}
             </select>
-            <p className="text-xs text-gray-400 mt-1">Which month's bill does this payment cover?</p>
+            <p className="text-xs text-gray-400 mt-1">Which bill does this payment cover?</p>
           </div>
           <div>
             <label className="text-sm text-gray-600">Note (optional)</label>
