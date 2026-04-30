@@ -17,16 +17,27 @@ export default function Transactions() {
   const [filterOwner, setFilterOwner] = useState<string>('all')
   const [filterUnlabeled, setFilterUnlabeled] = useState(false)
 
+  const unbilledPeriodIds = useLiveQuery(async () => {
+    const ps = await db.periods.filter((p) => p.type === 'unbilled').toArray()
+    return ps.map((p) => p.id)
+  }, []) ?? []
+
   const transactions = useLiveQuery(async () => {
-    let query = db.transactions.where('hidden').equals(0 as any)
+    if (selectedPeriodId === 'unbilled') {
+      if (unbilledPeriodIds.length === 0) return []
+      return db.transactions
+        .where('periodId').anyOf(unbilledPeriodIds)
+        .filter((t) => !t.hidden)
+        .sortBy('date')
+    }
     if (selectedPeriodId !== 'all') {
       return db.transactions
         .where('periodId').equals(selectedPeriodId)
         .filter((t) => !t.hidden)
         .sortBy('date')
     }
-    return query.sortBy('date')
-  }, [selectedPeriodId]) ?? []
+    return db.transactions.where('hidden').equals(0 as any).sortBy('date')
+  }, [selectedPeriodId, unbilledPeriodIds]) ?? []
 
   const expenses = useLiveQuery(() => db.expenses.toArray(), []) ?? []
 
@@ -70,7 +81,10 @@ export default function Transactions() {
             className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm flex-shrink-0"
           >
             <option value="all">All Periods</option>
-            {periods.map((p) => (
+            {unbilledPeriodIds.length > 0 && (
+              <option value="unbilled">⏳ Unbilled (Pending)</option>
+            )}
+            {periods.filter((p) => p.type !== 'unbilled').map((p) => (
               <option key={p.id} value={p.id}>{p.label}</option>
             ))}
           </select>
@@ -121,6 +135,11 @@ export default function Transactions() {
                   <span className={`text-xs px-1.5 py-0.5 rounded ${TX_TYPE_COLOR[tx.type]}`}>
                     {TX_TYPE_LABEL[tx.type]}
                   </span>
+                  {tx.source === 'screenshot' && (
+                    <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
+                      Pending
+                    </span>
+                  )}
                   {owner && (
                     <span className={`text-xs px-1.5 py-0.5 rounded-full ${OWNER_COLOR_CLASSES[owner.color]?.bg} ${OWNER_COLOR_CLASSES[owner.color]?.text}`}>
                       {owner.name}

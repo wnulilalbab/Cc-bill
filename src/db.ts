@@ -36,6 +36,17 @@ class CCBillDB extends Dexie {
       paymentAllocations: '&id, paymentId, expenseId',
       settings: '&key',
     })
+    // v2: adds source index on transactions, type index on periods
+    this.version(2).stores({
+      owners: '&id, name',
+      periods: '&id, year, month, type',
+      transactions: '&id, periodId, type, date, hidden, source',
+      expenses: '&id, transactionId, ownerId, status, installmentPlanId',
+      installmentPlans: '&id, ownerId, startPeriod',
+      payments: '&id, periodId, date',
+      paymentAllocations: '&id, paymentId, expenseId',
+      settings: '&key',
+    })
   }
 }
 

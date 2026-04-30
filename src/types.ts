@@ -32,6 +32,7 @@ export interface BillPeriod {
   year: number
   dueDate?: string   // "2026-02-28"
   importedAt: string
+  type?: 'unbilled' | 'billed'
 }
 
 export interface Transaction {
@@ -43,6 +44,7 @@ export interface Transaction {
   type: TransactionType
   hidden: boolean
   raw?: string
+  source?: 'screenshot' | 'statement'
 }
 
 export interface Expense {
