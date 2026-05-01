@@ -294,13 +294,20 @@ function AllocationSheet({
   })
   const [saving, setSaving] = useState(false)
 
-  // Transactions that have a labeled expense, across all periods
+  // Transactions that have an expense record (labeled or not)
   const txsWithExpense = allChargeTxs.filter((t) =>
     allExpenses.find((e) => e.transactionId === t.id)
   )
 
   // All unbilled transactions with expenses (covers old UUID periods + shared pool)
   const unbilledTxs = txsWithExpense.filter((t) => unbilledPeriodIds.includes(t.periodId))
+
+  // Unlabeled unbilled charge transactions (exist but no expense record yet)
+  const unlabeledUnbilledCount = allChargeTxs.filter(
+    (t) =>
+      unbilledPeriodIds.includes(t.periodId) &&
+      !allExpenses.find((e) => e.transactionId === t.id)
+  ).length
 
   // Group by period
   const groups: { period: BillPeriod; txs: Transaction[] }[] = periods
@@ -393,9 +400,29 @@ function AllocationSheet({
         {/* Grouped expense list */}
         <div className="overflow-y-auto flex-1">
           {groups.length === 0 && unbilledTxs.length === 0 && (
-            <p className="text-sm text-gray-400 px-4 py-6 text-center">
-              No labeled expenses found in any period.<br />Label transactions first.
-            </p>
+            <div className="px-4 py-8 text-center">
+              {unlabeledUnbilledCount > 0 ? (
+                <>
+                  <p className="text-sm text-gray-700 font-medium mb-1">
+                    {unlabeledUnbilledCount} pending transaction{unlabeledUnbilledCount > 1 ? 's' : ''} need labeling
+                  </p>
+                  <p className="text-xs text-gray-400 mb-3">
+                    Go to the Transactions tab, open each pending transaction, and set a label + owner before allocating.
+                  </p>
+                  <a
+                    href="#/transactions?period=unbilled"
+                    onClick={onClose}
+                    className="inline-block text-xs text-blue-600 border border-blue-200 rounded-lg px-3 py-1.5"
+                  >
+                    Go to Transactions →
+                  </a>
+                </>
+              ) : (
+                <p className="text-sm text-gray-400">
+                  No labeled expenses found in any period.<br />Label transactions first.
+                </p>
+              )}
+            </div>
           )}
 
           {/* Unbilled pool section */}
