@@ -95,7 +95,7 @@ export default function Installments() {
           <div>
             <h1 className="text-lg font-bold">Installment Plans</h1>
             <p className="text-sm text-blue-200 mt-0.5">
-              {visiblePlans.length} active{completedCount > 0 ? ` · ${completedCount} completed` : ''}
+              {plans.length - completedCount} active{completedCount > 0 ? ` · ${completedCount} completed` : ''}
             </p>
           </div>
           <button

@@ -243,39 +243,52 @@ export default function Dashboard() {
         )}
 
         {/* Active installments */}
-        {installmentPlans.length > 0 && (
+        {installmentPlans.some((plan) => {
+          const now = new Date()
+          const start = new Date(plan.startPeriod + '-01')
+          const passed = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
+          return Math.min(passed + 1, plan.totalMonths) < plan.totalMonths
+        }) && (
           <div className="bg-white rounded-2xl shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold text-gray-900">Active Installments</p>
               <button onClick={() => navigate('/installments')} className="text-xs text-blue-600">See all</button>
             </div>
             <div className="space-y-2">
-              {installmentPlans.slice(0, 5).map((plan) => {
-                const owner = owners.find((o) => o.id === plan.ownerId)
-                const c = owner ? (OWNER_COLOR_CLASSES[owner.color] ?? OWNER_COLOR_CLASSES.blue) : OWNER_COLOR_CLASSES.blue
-                const now = new Date()
-                const start = new Date(plan.startPeriod + '-01')
-                const monthsPassed = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
-                const current = Math.min(monthsPassed + 1, plan.totalMonths)
-                const remaining = plan.totalMonths - current
+              {installmentPlans
+                .filter((plan) => {
+                  const now = new Date()
+                  const start = new Date(plan.startPeriod + '-01')
+                  const passed = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
+                  return Math.min(passed + 1, plan.totalMonths) < plan.totalMonths
+                })
+                .slice(0, 5)
+                .map((plan) => {
+                  const owner = owners.find((o) => o.id === plan.ownerId)
+                  const c = owner ? (OWNER_COLOR_CLASSES[owner.color] ?? OWNER_COLOR_CLASSES.blue) : OWNER_COLOR_CLASSES.blue
+                  const now = new Date()
+                  const start = new Date(plan.startPeriod + '-01')
+                  const monthsPassed = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
+                  const current = Math.min(monthsPassed + 1, plan.totalMonths)
+                  const remaining = plan.totalMonths - current
 
-                return (
-                  <div key={plan.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">{plan.name}</p>
-                      <p className="text-xs text-gray-400">
-                        {current}/{plan.totalMonths} mo · {formatRupiahCompact(plan.monthlyAmount)}/mo
-                        {remaining > 0 ? ` · ${remaining} left` : ' · done'}
-                      </p>
+                  return (
+                    <div key={plan.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">{plan.name}</p>
+                        <p className="text-xs text-gray-400">
+                          {current}/{plan.totalMonths} mo · {formatRupiahCompact(plan.monthlyAmount)}/mo
+                          {remaining > 0 ? ` · ${remaining} left` : ' · done'}
+                        </p>
+                      </div>
+                      {owner && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full ml-2 ${c.bg} ${c.text}`}>
+                          {owner.name}
+                        </span>
+                      )}
                     </div>
-                    {owner && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full ml-2 ${c.bg} ${c.text}`}>
-                        {owner.name}
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
+                  )
+                })}
             </div>
           </div>
         )}
