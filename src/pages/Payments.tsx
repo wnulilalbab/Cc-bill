@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, generateId, UNBILLED_PERIOD_ID, ensureUnbilledPeriod } from '../db'
+
+const EMPTY: string[] = [] // stable fallback — prevents reactive re-render loops
 import { formatRupiah, formatDateShort, OWNER_COLOR_CLASSES } from '../lib/format'
 import type { BillPeriod, Payment, Transaction, Expense, Owner, PaymentAllocation } from '../types'
 
@@ -17,7 +19,7 @@ export default function Payments() {
   const unbilledPeriodIds = useLiveQuery(async () => {
     const ps = await db.periods.filter((p) => p.type === 'unbilled').toArray()
     return ps.map((p) => p.id)
-  }, []) ?? []
+  }, []) ?? EMPTY
 
   const isUnbilledSelected = activePeriodId === UNBILLED_PERIOD_ID
 

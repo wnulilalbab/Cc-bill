@@ -12,6 +12,8 @@ const LS_PERIOD = 'tx_filter_period'
 const LS_OWNER  = 'tx_filter_owner'
 const LS_UNLABELED = 'tx_filter_unlabeled'
 
+const EMPTY: string[] = [] // stable ref — prevents useMemo from recreating on every render
+
 export default function Transactions() {
   const periods = useLiveQuery(() => db.periods.orderBy('year').reverse().toArray(), []) ?? []
   const owners = useLiveQuery(() => db.owners.toArray(), []) ?? []
@@ -49,7 +51,7 @@ export default function Transactions() {
   const unbilledPeriodIds = useLiveQuery(async () => {
     const ps = await db.periods.filter((p) => p.type === 'unbilled').toArray()
     return ps.map((p) => p.id)
-  }, []) ?? []
+  }, []) ?? EMPTY
 
   const transactions = useLiveQuery(async () => {
     if (selectedPeriodId === 'unbilled') {
