@@ -74,14 +74,10 @@ export default function Installments() {
 
   const planExpenseIds = new Set(planExpenses.map((e) => e.id))
   const totalOriginal = plans.reduce((s, plan) => s + plan.originalAmount, 0)
-  const totalImported = plans.reduce((s, plan) => {
-    const imported = importedByPlan.get(plan.id) ?? 0
-    return s + plan.monthlyAmount * imported
-  }, 0)
   const totalPaid = allAllocations
     .filter((a) => planExpenseIds.has(a.expenseId))
     .reduce((s, a) => s + a.amount, 0)
-  const totalPending = Math.max(0, totalImported - totalPaid)
+  const totalRemaining = Math.max(0, totalOriginal - totalPaid)
 
   const completedCount = plans.filter((p) => calcProgress(p) >= p.totalMonths).length
   const visiblePlans = showCompleted
@@ -122,8 +118,8 @@ export default function Installments() {
                 <p className="text-sm font-semibold text-green-600">{formatRupiah(totalPaid)}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-400">Pending</p>
-                <p className="text-sm font-semibold text-orange-600">{formatRupiah(totalPending)}</p>
+                <p className="text-xs text-gray-400">Remaining</p>
+                <p className="text-sm font-semibold text-orange-600">{formatRupiah(totalRemaining)}</p>
               </div>
             </div>
           </div>
