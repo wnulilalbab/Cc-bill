@@ -47,8 +47,14 @@ export default function Dashboard() {
   const charges = transactions.filter((t) => t.amount > 0 && t.type !== 'fee' && t.type !== 'interest')
   const totalBill = charges.reduce((s, t) => s + t.amount, 0)
 
-  const payments = transactions.filter((t) => t.type === 'payment')
-  const totalPaid = payments.reduce((s, t) => s + Math.abs(t.amount), 0)
+  const totalPaid = charges.reduce((s, t) => {
+    const exp = expenseByTx.get(t.id)
+    if (!exp) return s
+    const allocated = allAllocations
+      .filter((a) => a.expenseId === exp.id)
+      .reduce((sum, a) => sum + a.amount, 0)
+    return s + Math.min(allocated, t.amount)
+  }, 0)
   const remaining = Math.max(0, totalBill - totalPaid)
 
   // By owner
