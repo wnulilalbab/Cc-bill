@@ -243,6 +243,7 @@ export default function Payments() {
           paymentId={allocatingId}
           paymentAmount={allocatingAmount}
           periods={periods}
+          unbilledPeriodIds={unbilledPeriodIds}
           allExpenses={allExpenses}
           allChargeTxs={allChargeTxs}
           owners={owners}
@@ -267,6 +268,7 @@ function AllocationSheet({
   paymentId,
   paymentAmount,
   periods,
+  unbilledPeriodIds,
   allExpenses,
   allChargeTxs,
   owners,
@@ -276,6 +278,7 @@ function AllocationSheet({
   paymentId: string
   paymentAmount: number
   periods: BillPeriod[]
+  unbilledPeriodIds: string[]
   allExpenses: Expense[]
   allChargeTxs: Transaction[]
   owners: Owner[]
@@ -296,8 +299,8 @@ function AllocationSheet({
     allExpenses.find((e) => e.transactionId === t.id)
   )
 
-  // Unbilled pool transactions with expenses
-  const unbilledTxs = txsWithExpense.filter((t) => t.periodId === UNBILLED_PERIOD_ID)
+  // All unbilled transactions with expenses (covers old UUID periods + shared pool)
+  const unbilledTxs = txsWithExpense.filter((t) => unbilledPeriodIds.includes(t.periodId))
 
   // Group by period
   const groups: { period: BillPeriod; txs: Transaction[] }[] = periods
@@ -327,7 +330,8 @@ function AllocationSheet({
   async function save() {
     setSaving(true)
     for (const tx of txsWithExpense) {
-      const expense = allExpenses.find((e) => e.transactionId === tx.id)!
+      const expense = allExpenses.find((e) => e.transactionId === tx.id)
+      if (!expense) continue
       const enteredAmt = Number(amounts[expense.id]) || 0
       const existing = allAllocations.find(
         (a) => a.paymentId === paymentId && a.expenseId === expense.id
