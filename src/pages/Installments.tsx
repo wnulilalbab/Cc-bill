@@ -73,14 +73,11 @@ export default function Installments() {
   }
 
   const planExpenseIds = new Set(planExpenses.map((e) => e.id))
-  const totalImported = plans.reduce((s, plan) => {
-    const imported = importedByPlan.get(plan.id) ?? 0
-    return s + plan.monthlyAmount * imported
-  }, 0)
+  const totalOriginal = plans.reduce((s, plan) => s + plan.originalAmount, 0)
   const totalPaid = allAllocations
     .filter((a) => planExpenseIds.has(a.expenseId))
     .reduce((s, a) => s + a.amount, 0)
-  const totalPending = Math.max(0, totalImported - totalPaid)
+  const totalPending = Math.max(0, totalOriginal - totalPaid)
 
   const completedCount = plans.filter((p) => calcProgress(p) >= p.totalMonths).length
   const visiblePlans = showCompleted
@@ -113,8 +110,8 @@ export default function Installments() {
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Overall Summary</p>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div>
-                <p className="text-xs text-gray-400">In System</p>
-                <p className="text-sm font-semibold text-gray-900">{formatRupiah(totalImported)}</p>
+                <p className="text-xs text-gray-400">Total</p>
+                <p className="text-sm font-semibold text-gray-900">{formatRupiah(totalOriginal)}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-400">Paid</p>
