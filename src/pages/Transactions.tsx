@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, generateId, getExpenseForTransaction } from '../db'
+import { db, generateId } from '../db'
 import {
   formatRupiah, formatRupiahCompact, formatDateShort, TX_TYPE_LABEL, TX_TYPE_COLOR,
   OWNER_COLOR_CLASSES, parseInstallmentDescription, periodLabelFromKey,
@@ -13,9 +14,37 @@ export default function Transactions() {
   const owners = useLiveQuery(() => db.owners.toArray(), []) ?? []
   const installmentPlans = useLiveQuery(() => db.installmentPlans.toArray(), []) ?? []
 
-  const [selectedPeriodId, setSelectedPeriodId] = useState<string>('all')
-  const [filterOwner, setFilterOwner] = useState<string>('all')
-  const [filterUnlabeled, setFilterUnlabeled] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedPeriodId = searchParams.get('period') ?? 'unbilled'
+  const filterOwner = searchParams.get('owner') ?? 'all'
+  const filterUnlabeled = searchParams.get('unlabeled') === '1'
+
+  function setPeriodFilter(id: string) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (id === 'unbilled') next.delete('period')
+      else next.set('period', id)
+      return next
+    }, { replace: true })
+  }
+
+  function setOwnerFilter(id: string) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (id === 'all') next.delete('owner')
+      else next.set('owner', id)
+      return next
+    }, { replace: true })
+  }
+
+  function toggleUnlabeledFilter() {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (filterUnlabeled) next.delete('unlabeled')
+      else next.set('unlabeled', '1')
+      return next
+    }, { replace: true })
+  }
 
   const unbilledPeriodIds = useLiveQuery(async () => {
     const ps = await db.periods.filter((p) => p.type === 'unbilled').toArray()
@@ -77,13 +106,11 @@ export default function Transactions() {
         <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           <select
             value={selectedPeriodId}
-            onChange={(e) => setSelectedPeriodId(e.target.value)}
+            onChange={(e) => setPeriodFilter(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm flex-shrink-0"
           >
             <option value="all">All Periods</option>
-            {unbilledPeriodIds.length > 0 && (
-              <option value="unbilled">⏳ Unbilled (Pending)</option>
-            )}
+            <option value="unbilled">⏳ Unbilled (Pending)</option>
             {periods.filter((p) => p.type !== 'unbilled').map((p) => (
               <option key={p.id} value={p.id}>{p.label}</option>
             ))}
@@ -91,7 +118,7 @@ export default function Transactions() {
 
           <select
             value={filterOwner}
-            onChange={(e) => setFilterOwner(e.target.value)}
+            onChange={(e) => setOwnerFilter(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm flex-shrink-0"
           >
             <option value="all">All Owners</option>
@@ -101,7 +128,7 @@ export default function Transactions() {
           </select>
 
           <button
-            onClick={() => setFilterUnlabeled(!filterUnlabeled)}
+            onClick={toggleUnlabeledFilter}
             className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm border ${filterUnlabeled ? 'bg-amber-100 text-amber-700 border-amber-300' : 'border-gray-300 text-gray-600'}`}
           >
             Needs Label
