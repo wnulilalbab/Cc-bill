@@ -12,39 +12,52 @@ export default function Payments() {
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('')
   const activePeriodId = selectedPeriodId || periods[0]?.id || ''
 
+  // All unbilled period IDs — covers the shared 'unbilled-pool' AND any
+  // older random-UUID unbilled periods created before the shared pool existed
+  const unbilledPeriodIds = useLiveQuery(async () => {
+    const ps = await db.periods.filter((p) => p.type === 'unbilled').toArray()
+    return ps.map((p) => p.id)
+  }, []) ?? []
+
+  const isUnbilledSelected = activePeriodId === UNBILLED_PERIOD_ID
+
   const owners = useLiveQuery(() => db.owners.toArray(), []) ?? []
 
-  // Payment sources scoped to the active period.
-  // Matches type='payment' (regardless of sign) OR negative-amount transactions
-  // (regardless of type) to handle cases where Claude misclassifies the type
-  // or uses an unexpected amount sign for a credit card payment.
+  // When unbilled is selected, use anyOf(all unbilled period IDs) so we catch
+  // both the shared pool and any older per-screenshot periods.
   const paymentTxs = useLiveQuery(async () => {
     if (!activePeriodId) return []
-    return db.transactions
-      .where('periodId').equals(activePeriodId)
-      .filter((t) => !t.hidden && (t.type === 'payment' || t.amount < 0))
-      .toArray()
-  }, [activePeriodId]) ?? []
+    const base = isUnbilledSelected && unbilledPeriodIds.length > 0
+      ? db.transactions.where('periodId').anyOf(unbilledPeriodIds)
+      : db.transactions.where('periodId').equals(activePeriodId)
+    return base.filter((t) => !t.hidden && (t.type === 'payment' || t.amount < 0)).toArray()
+  }, [activePeriodId, unbilledPeriodIds]) ?? []
 
   const manualPayments = useLiveQuery(async () => {
     if (!activePeriodId) return []
+    if (isUnbilledSelected && unbilledPeriodIds.length > 0) {
+      return db.payments.where('periodId').anyOf(unbilledPeriodIds).toArray()
+    }
     return db.payments.where('periodId').equals(activePeriodId).toArray()
-  }, [activePeriodId]) ?? []
+  }, [activePeriodId, unbilledPeriodIds]) ?? []
 
   // Period-scoped charges + expenses (for summary / status-by-owner)
   const chargeTxs = useLiveQuery(async () => {
     if (!activePeriodId) return []
-    return db.transactions
-      .where('periodId').equals(activePeriodId)
-      .filter((t) => !t.hidden && t.amount > 0 && t.type !== 'payment')
-      .toArray()
-  }, [activePeriodId]) ?? []
+    const base = isUnbilledSelected && unbilledPeriodIds.length > 0
+      ? db.transactions.where('periodId').anyOf(unbilledPeriodIds)
+      : db.transactions.where('periodId').equals(activePeriodId)
+    return base.filter((t) => !t.hidden && t.amount > 0 && t.type !== 'payment').toArray()
+  }, [activePeriodId, unbilledPeriodIds]) ?? []
 
   const expenses = useLiveQuery(async () => {
     if (!activePeriodId) return []
-    const txIds = (await db.transactions.where('periodId').equals(activePeriodId).toArray()).map((t) => t.id)
-    return db.expenses.where('transactionId').anyOf(txIds).toArray()
-  }, [activePeriodId]) ?? []
+    const txs = isUnbilledSelected && unbilledPeriodIds.length > 0
+      ? await db.transactions.where('periodId').anyOf(unbilledPeriodIds).toArray()
+      : await db.transactions.where('periodId').equals(activePeriodId).toArray()
+    if (txs.length === 0) return []
+    return db.expenses.where('transactionId').anyOf(txs.map((t) => t.id)).toArray()
+  }, [activePeriodId, unbilledPeriodIds]) ?? []
 
   // ALL charges + expenses across every period (for the AllocationSheet)
   const allChargeTxs = useLiveQuery(async () => {
