@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, generateId } from '../db'
 import {
@@ -9,41 +8,42 @@ import {
 } from '../lib/format'
 import type { Transaction, Expense, Owner, InstallmentPlan } from '../types'
 
+const LS_PERIOD = 'tx_filter_period'
+const LS_OWNER  = 'tx_filter_owner'
+const LS_UNLABELED = 'tx_filter_unlabeled'
+
 export default function Transactions() {
   const periods = useLiveQuery(() => db.periods.orderBy('year').reverse().toArray(), []) ?? []
   const owners = useLiveQuery(() => db.owners.toArray(), []) ?? []
   const installmentPlans = useLiveQuery(() => db.installmentPlans.toArray(), []) ?? []
 
-  const [searchParams, setSearchParams] = useSearchParams()
-  const selectedPeriodId = searchParams.get('period') ?? 'unbilled'
-  const filterOwner = searchParams.get('owner') ?? 'all'
-  const filterUnlabeled = searchParams.get('unlabeled') === '1'
+  const [selectedPeriodId, setSelectedPeriodId] = useState<string>(
+    () => localStorage.getItem(LS_PERIOD) ?? 'unbilled'
+  )
+  const [filterOwner, setFilterOwner] = useState<string>(
+    () => localStorage.getItem(LS_OWNER) ?? 'all'
+  )
+  const [filterUnlabeled, setFilterUnlabeled] = useState<boolean>(
+    () => localStorage.getItem(LS_UNLABELED) === '1'
+  )
 
   function setPeriodFilter(id: string) {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      if (id === 'unbilled') next.delete('period')
-      else next.set('period', id)
-      return next
-    }, { replace: true })
+    if (id === 'unbilled') localStorage.removeItem(LS_PERIOD)
+    else localStorage.setItem(LS_PERIOD, id)
+    setSelectedPeriodId(id)
   }
 
   function setOwnerFilter(id: string) {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      if (id === 'all') next.delete('owner')
-      else next.set('owner', id)
-      return next
-    }, { replace: true })
+    if (id === 'all') localStorage.removeItem(LS_OWNER)
+    else localStorage.setItem(LS_OWNER, id)
+    setFilterOwner(id)
   }
 
   function toggleUnlabeledFilter() {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      if (filterUnlabeled) next.delete('unlabeled')
-      else next.set('unlabeled', '1')
-      return next
-    }, { replace: true })
+    const next = !filterUnlabeled
+    if (next) localStorage.setItem(LS_UNLABELED, '1')
+    else localStorage.removeItem(LS_UNLABELED)
+    setFilterUnlabeled(next)
   }
 
   const unbilledPeriodIds = useLiveQuery(async () => {
@@ -115,6 +115,7 @@ export default function Transactions() {
               <option key={p.id} value={p.id}>{p.label}</option>
             ))}
           </select>
+
 
           <select
             value={filterOwner}

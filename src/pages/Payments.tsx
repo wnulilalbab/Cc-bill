@@ -410,7 +410,7 @@ function AllocationSheet({
                     Go to the Transactions tab, open each pending transaction, and set a label + owner before allocating.
                   </p>
                   <a
-                    href="#/transactions?period=unbilled"
+                    href="#/transactions"
                     onClick={onClose}
                     className="inline-block text-xs text-blue-600 border border-blue-200 rounded-lg px-3 py-1.5"
                   >
