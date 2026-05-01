@@ -404,7 +404,8 @@ function AllocationSheet({
               </div>
               <div className="divide-y divide-gray-50">
                 {unbilledTxs.map((tx) => {
-                  const expense = allExpenses.find((e) => e.transactionId === tx.id)!
+                  const expense = allExpenses.find((e) => e.transactionId === tx.id)
+                  if (!expense) return null
                   const owner = owners.find((o) => o.id === expense.ownerId)
                   const c = owner
                     ? (OWNER_COLOR_CLASSES[owner.color] ?? OWNER_COLOR_CLASSES.blue)
@@ -479,7 +480,8 @@ function AllocationSheet({
 
               <div className="divide-y divide-gray-50">
                 {txs.map((tx) => {
-                  const expense = allExpenses.find((e) => e.transactionId === tx.id)!
+                  const expense = allExpenses.find((e) => e.transactionId === tx.id)
+                  if (!expense) return null
                   const owner = owners.find((o) => o.id === expense.ownerId)
                   const c = owner
                     ? (OWNER_COLOR_CLASSES[owner.color] ?? OWNER_COLOR_CLASSES.blue)
