@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, generateId, UNBILLED_PERIOD_ID, ensureUnbilledPeriod } from '../db'
-
-const EMPTY: string[] = [] // stable fallback — prevents reactive re-render loops
 import { formatRupiah, formatDateShort, OWNER_COLOR_CLASSES } from '../lib/format'
 import type { BillPeriod, Payment, Transaction, Expense, Owner, PaymentAllocation } from '../types'
+
+const EMPTY: string[] = [] // stable fallback — prevents reactive re-render loops
 
 export default function Payments() {
   const periods = useLiveQuery(
