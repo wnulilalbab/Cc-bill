@@ -11,8 +11,10 @@ export default function Installments() {
     () => db.expenses.filter((e) => !!e.installmentPlanId).toArray(),
     []
   ) ?? []
+  const allAllocations = useLiveQuery(() => db.paymentAllocations.toArray(), []) ?? []
   const [editing, setEditing] = useState<Partial<InstallmentPlan> | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [showCompleted, setShowCompleted] = useState(false)
 
   const importedByPlan = new Map<string, number>()
   for (const exp of planExpenses) {
@@ -70,13 +72,30 @@ export default function Installments() {
     return Math.min(passed + 1, plan.totalMonths)
   }
 
+  const planExpenseIds = new Set(planExpenses.map((e) => e.id))
+  const totalImported = plans.reduce((s, plan) => {
+    const imported = importedByPlan.get(plan.id) ?? 0
+    return s + plan.monthlyAmount * imported
+  }, 0)
+  const totalPaid = allAllocations
+    .filter((a) => planExpenseIds.has(a.expenseId))
+    .reduce((s, a) => s + a.amount, 0)
+  const totalPending = Math.max(0, totalImported - totalPaid)
+
+  const completedCount = plans.filter((p) => calcProgress(p) >= p.totalMonths).length
+  const visiblePlans = showCompleted
+    ? plans
+    : plans.filter((p) => calcProgress(p) < p.totalMonths)
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-blue-700 text-white px-4 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold">Installment Plans</h1>
-            <p className="text-sm text-blue-200 mt-0.5">{plans.length} plans</p>
+            <p className="text-sm text-blue-200 mt-0.5">
+              {visiblePlans.length} active{completedCount > 0 ? ` · ${completedCount} completed` : ''}
+            </p>
           </div>
           <button
             onClick={openNew}
@@ -86,6 +105,29 @@ export default function Installments() {
           </button>
         </div>
       </div>
+
+      {/* Summary card */}
+      {plans.length > 0 && (
+        <div className="px-4 pt-4">
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Overall Summary</p>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <p className="text-xs text-gray-400">In System</p>
+                <p className="text-sm font-semibold text-gray-900">{formatRupiah(totalImported)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">Paid</p>
+                <p className="text-sm font-semibold text-green-600">{formatRupiah(totalPaid)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">Pending</p>
+                <p className="text-sm font-semibold text-orange-600">{formatRupiah(totalPending)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="px-4 py-4 space-y-3">
         {plans.length === 0 && (
@@ -99,7 +141,16 @@ export default function Installments() {
           </div>
         )}
 
-        {plans.map((plan) => {
+        {completedCount > 0 && (
+          <button
+            onClick={() => setShowCompleted((v) => !v)}
+            className="w-full text-sm text-gray-400 py-1 text-center"
+          >
+            {showCompleted ? `Hide ${completedCount} completed plan${completedCount > 1 ? 's' : ''}` : `Show ${completedCount} completed plan${completedCount > 1 ? 's' : ''}`}
+          </button>
+        )}
+
+        {visiblePlans.map((plan) => {
           const owner = owners.find((o) => o.id === plan.ownerId)
           const c = owner ? (OWNER_COLOR_CLASSES[owner.color] ?? OWNER_COLOR_CLASSES.blue) : OWNER_COLOR_CLASSES.blue
           const current = calcProgress(plan)
