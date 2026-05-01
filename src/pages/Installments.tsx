@@ -11,7 +11,6 @@ export default function Installments() {
     () => db.expenses.filter((e) => !!e.installmentPlanId).toArray(),
     []
   ) ?? []
-  const allAllocations = useLiveQuery(() => db.paymentAllocations.toArray(), []) ?? []
   const [editing, setEditing] = useState<Partial<InstallmentPlan> | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [showCompleted, setShowCompleted] = useState(false)
@@ -72,11 +71,8 @@ export default function Installments() {
     return Math.min(passed + 1, plan.totalMonths)
   }
 
-  const planExpenseIds = new Set(planExpenses.map((e) => e.id))
   const totalOriginal = plans.reduce((s, plan) => s + plan.originalAmount, 0)
-  const totalPaid = allAllocations
-    .filter((a) => planExpenseIds.has(a.expenseId))
-    .reduce((s, a) => s + a.amount, 0)
+  const totalPaid = plans.reduce((s, plan) => s + calcProgress(plan) * plan.monthlyAmount, 0)
   const totalRemaining = Math.max(0, totalOriginal - totalPaid)
 
   const completedCount = plans.filter((p) => calcProgress(p) >= p.totalMonths).length
