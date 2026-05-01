@@ -10,7 +10,7 @@ export default function Payments() {
     []
   ) ?? []
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('')
-  const activePeriodId = selectedPeriodId || periods[0]?.id || ''
+  const activePeriodId = selectedPeriodId || periods[0]?.id || UNBILLED_PERIOD_ID
 
   // All unbilled period IDs — covers the shared 'unbilled-pool' AND any
   // older random-UUID unbilled periods created before the shared pool existed
