@@ -14,14 +14,15 @@ export default function Payments() {
 
   const owners = useLiveQuery(() => db.owners.toArray(), []) ?? []
 
-  // Payment sources scoped to the active period (for the summary cards)
-  // Include all non-hidden negative-amount (credit) transactions — covers both
-  // correctly-typed 'payment' rows and payments that Claude classified as 'other'
+  // Payment sources scoped to the active period.
+  // Matches type='payment' (regardless of sign) OR negative-amount transactions
+  // (regardless of type) to handle cases where Claude misclassifies the type
+  // or uses an unexpected amount sign for a credit card payment.
   const paymentTxs = useLiveQuery(async () => {
     if (!activePeriodId) return []
     return db.transactions
       .where('periodId').equals(activePeriodId)
-      .filter((t) => !t.hidden && t.amount < 0)
+      .filter((t) => !t.hidden && (t.type === 'payment' || t.amount < 0))
       .toArray()
   }, [activePeriodId]) ?? []
 
@@ -35,7 +36,7 @@ export default function Payments() {
     if (!activePeriodId) return []
     return db.transactions
       .where('periodId').equals(activePeriodId)
-      .filter((t) => !t.hidden && t.amount > 0)
+      .filter((t) => !t.hidden && t.amount > 0 && t.type !== 'payment')
       .toArray()
   }, [activePeriodId]) ?? []
 
