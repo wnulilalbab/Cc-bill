@@ -4,8 +4,7 @@ import { db, getSetting, setSetting, generateId, seedDefaultOwners } from '../db
 import { OWNER_COLOR_CLASSES } from '../lib/format'
 import { CLAUDE_MODELS, DEFAULT_MODEL } from '../lib/claude'
 import type { Owner, OwnerColor } from '../types'
-
-const APP_VERSION = '1.5.1'
+import { version as APP_VERSION } from '../../package.json'
 
 const COLORS: OwnerColor[] = ['blue', 'pink', 'purple', 'green', 'orange', 'teal', 'red', 'yellow']
 
