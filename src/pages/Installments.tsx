@@ -7,8 +7,19 @@ import type { InstallmentPlan, Owner } from '../types'
 export default function Installments() {
   const plans = useLiveQuery(() => db.installmentPlans.toArray(), []) ?? []
   const owners = useLiveQuery(() => db.owners.toArray(), []) ?? []
+  const planExpenses = useLiveQuery(
+    () => db.expenses.filter((e) => !!e.installmentPlanId).toArray(),
+    []
+  ) ?? []
   const [editing, setEditing] = useState<Partial<InstallmentPlan> | null>(null)
   const [showForm, setShowForm] = useState(false)
+
+  const importedByPlan = new Map<string, number>()
+  for (const exp of planExpenses) {
+    if (exp.installmentPlanId) {
+      importedByPlan.set(exp.installmentPlanId, (importedByPlan.get(exp.installmentPlanId) ?? 0) + 1)
+    }
+  }
 
   function openNew() {
     const now = new Date()
@@ -95,6 +106,8 @@ export default function Installments() {
           const pct = (current / plan.totalMonths) * 100
           const monthsLeft = plan.totalMonths - current
           const totalRemaining = monthsLeft * plan.monthlyAmount
+          const importedCount = importedByPlan.get(plan.id) ?? 0
+          const unbilledLeft = Math.max(0, plan.totalMonths - importedCount)
 
           return (
             <div key={plan.id} className="bg-white rounded-xl shadow-sm p-4">
@@ -121,6 +134,18 @@ export default function Installments() {
                     className={`h-full rounded-full ${monthsLeft === 0 ? 'bg-green-500' : c.dot}`}
                     style={{ width: `${pct}%` }}
                   />
+                </div>
+                <div className="flex justify-between text-xs mt-1">
+                  <span className="text-gray-400">
+                    {importedCount}/{plan.totalMonths} months in system
+                  </span>
+                  {unbilledLeft > 0 ? (
+                    <span className="text-amber-600 font-medium">
+                      {unbilledLeft} unbilled
+                    </span>
+                  ) : (
+                    <span className="text-green-600">all billed ✓</span>
+                  )}
                 </div>
               </div>
 
