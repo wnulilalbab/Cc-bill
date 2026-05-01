@@ -57,10 +57,21 @@ export default function Dashboard() {
       const exp = expenseByTx.get(t.id)
       return exp?.ownerId === owner.id && t.amount > 0
     })
+    const total = ownerTxs.reduce((s, t) => s + t.amount, 0)
+    const paid = ownerTxs.reduce((s, t) => {
+      const exp = expenseByTx.get(t.id)
+      if (!exp) return s
+      const allocated = allAllocations
+        .filter((a) => a.expenseId === exp.id)
+        .reduce((sum, a) => sum + a.amount, 0)
+      return s + Math.min(allocated, t.amount)
+    }, 0)
     return {
       owner,
-      total: ownerTxs.reduce((s, t) => s + t.amount, 0),
+      total,
       count: ownerTxs.length,
+      paid,
+      remaining: total - paid,
     }
   }).filter((o) => o.total > 0)
 
@@ -174,7 +185,7 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl shadow-sm p-4">
             <p className="text-sm font-semibold text-gray-900 mb-3">By Owner</p>
             <div className="space-y-3">
-              {ownerTotals.map(({ owner, total, count }) => {
+              {ownerTotals.map(({ owner, total, count, paid, remaining }) => {
                 const c = OWNER_COLOR_CLASSES[owner.color] ?? OWNER_COLOR_CLASSES.blue
                 const pct = totalBill > 0 ? (total / totalBill) * 100 : 0
                 return (
@@ -190,6 +201,27 @@ export default function Dashboard() {
                     </div>
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <div className={`h-full ${c.dot} rounded-full`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <p className="text-xs text-gray-400">
+                        Paid <span className="text-green-600 font-medium">{formatRupiah(paid)}</span>
+                        {remaining > 0 && (
+                          <> · Remaining <span className="text-orange-600 font-medium">{formatRupiah(remaining)}</span></>
+                        )}
+                      </p>
+                      {remaining > 0 && (
+                        <button
+                          onClick={() => {
+                            localStorage.setItem('tx_filter_owner', owner.id)
+                            localStorage.setItem('tx_filter_status', 'pending')
+                            localStorage.setItem('tx_filter_period', 'all')
+                            navigate('/transactions')
+                          }}
+                          className="text-xs text-blue-600"
+                        >
+                          View unpaid →
+                        </button>
+                      )}
                     </div>
                   </div>
                 )

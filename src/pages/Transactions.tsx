@@ -11,6 +11,7 @@ import type { Transaction, Expense, Owner, InstallmentPlan } from '../types'
 const LS_PERIOD = 'tx_filter_period'
 const LS_OWNER  = 'tx_filter_owner'
 const LS_UNLABELED = 'tx_filter_unlabeled'
+const LS_STATUS = 'tx_filter_status'
 
 const EMPTY: string[] = [] // stable ref — prevents useMemo from recreating on every render
 
@@ -27,6 +28,9 @@ export default function Transactions() {
   )
   const [filterUnlabeled, setFilterUnlabeled] = useState<boolean>(
     () => localStorage.getItem(LS_UNLABELED) === '1'
+  )
+  const [filterStatus, setFilterStatus] = useState<string>(
+    () => localStorage.getItem(LS_STATUS) ?? 'all'
   )
 
   function setPeriodFilter(id: string) {
@@ -46,6 +50,12 @@ export default function Transactions() {
     if (next) localStorage.setItem(LS_UNLABELED, '1')
     else localStorage.removeItem(LS_UNLABELED)
     setFilterUnlabeled(next)
+  }
+
+  function setStatusFilter(s: string) {
+    if (s === 'all') localStorage.removeItem(LS_STATUS)
+    else localStorage.setItem(LS_STATUS, s)
+    setFilterStatus(s)
   }
 
   const unbilledPeriodIds = useLiveQuery(async () => {
@@ -71,6 +81,7 @@ export default function Transactions() {
   }, [selectedPeriodId, unbilledPeriodIds]) ?? []
 
   const expenses = useLiveQuery(() => db.expenses.toArray(), []) ?? []
+  const allAllocations = useLiveQuery(() => db.paymentAllocations.toArray(), []) ?? []
 
   const expenseByTx = new Map(expenses.map((e) => [e.transactionId, e]))
 
@@ -86,6 +97,15 @@ export default function Transactions() {
         const exp = expenseByTx.get(t.id)
         if (exp?.label) return false
       }
+      if (filterStatus !== 'all') {
+        const exp = expenseByTx.get(t.id)
+        const status = exp?.status ?? 'unpaid'
+        if (filterStatus === 'pending') {
+          if (status === 'paid') return false
+        } else {
+          if (status !== filterStatus) return false
+        }
+      }
       return true
     })
     .reverse()
@@ -93,6 +113,18 @@ export default function Transactions() {
   const unlabeledCount = transactions.filter(
     (t) => !expenseByTx.get(t.id)?.label && t.type !== 'payment' && t.type !== 'reversal'
   ).length
+
+  const summaryTxs = filtered.filter((t) => t.amount > 0 && t.type !== 'payment' && t.type !== 'reversal')
+  const summaryTotal = summaryTxs.reduce((s, t) => s + t.amount, 0)
+  const summaryPaid = summaryTxs.reduce((s, t) => {
+    const exp = expenseByTx.get(t.id)
+    if (!exp) return s
+    const allocated = allAllocations
+      .filter((a) => a.expenseId === exp.id)
+      .reduce((sum, a) => sum + a.amount, 0)
+    return s + Math.min(allocated, t.amount)
+  }, 0)
+  const summaryRemaining = summaryTotal - summaryPaid
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -136,8 +168,40 @@ export default function Transactions() {
           >
             Needs Label
           </button>
+
+          <select
+            value={filterStatus}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm flex-shrink-0"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">⏳ Unpaid / Partial</option>
+            <option value="paid">✅ Paid</option>
+            <option value="unpaid">Unpaid only</option>
+            <option value="partial">Partial only</option>
+          </select>
         </div>
       </div>
+
+      {/* Summary */}
+      {summaryTxs.length > 0 && (
+        <div className="bg-white border-b border-gray-100 px-4 py-3">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p className="text-xs text-gray-400">Total</p>
+              <p className="text-sm font-semibold text-gray-900">{formatRupiah(summaryTotal)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Paid</p>
+              <p className="text-sm font-semibold text-green-600">{formatRupiah(summaryPaid)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Remaining</p>
+              <p className="text-sm font-semibold text-orange-600">{formatRupiah(summaryRemaining)}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* List */}
       <div className="divide-y divide-gray-100">
