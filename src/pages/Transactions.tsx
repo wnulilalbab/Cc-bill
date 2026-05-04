@@ -85,7 +85,19 @@ export default function Transactions() {
 
   const expenseByTx = new Map(expenses.map((e) => [e.transactionId, e]))
 
+  const testingMode = localStorage.getItem('testing_mode') === '1'
   const [editingTx, setEditingTx] = useState<Transaction | null>(null)
+
+  async function deleteTx(id: string) {
+    if (!confirm('Delete this transaction?')) return
+    const exp = expenseByTx.get(id)
+    if (exp) {
+      const allocs = allAllocations.filter((a) => a.expenseId === exp.id)
+      for (const alloc of allocs) await db.paymentAllocations.delete(alloc.id)
+      await db.expenses.delete(exp.id)
+    }
+    await db.transactions.delete(id)
+  }
 
   const filtered = transactions
     .filter((t) => {
@@ -218,10 +230,10 @@ export default function Transactions() {
           const needsLabel = !exp?.label && tx.type !== 'payment' && tx.type !== 'reversal'
 
           return (
-            <button
+            <div
               key={tx.id}
               onClick={() => setEditingTx(tx)}
-              className="w-full text-left bg-white px-4 py-3 flex items-start gap-3 active:bg-gray-50"
+              className="w-full text-left bg-white px-4 py-3 flex items-start gap-3 active:bg-gray-50 cursor-pointer"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
@@ -262,7 +274,15 @@ export default function Transactions() {
                   </span>
                 )}
               </div>
-            </button>
+              {testingMode && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteTx(tx.id) }}
+                  className="text-xs text-red-400 px-1.5 py-1 flex-shrink-0 self-center border border-red-200 rounded"
+                >
+                  Del
+                </button>
+              )}
+            </div>
           )
         })}
       </div>
@@ -300,10 +320,12 @@ function EnrichSheet({
   // Load the bill period so we can compute installment dates
   const period = useLiveQuery(() => db.periods.get(tx.periodId), [tx.periodId])
 
-  // Auto-parse installment info from description
+  // Auto-parse installment info — fall back to tx.date when period is the unbilled pool (year=0)
+  const billYear = period && period.year > 0 ? period.year : Number(tx.date.slice(0, 4))
+  const billMonth = period && period.month > 0 ? period.month : Number(tx.date.slice(5, 7))
   const info: InstallmentInfo | null =
     tx.type === 'installment' && period
-      ? parseInstallmentDescription(tx.description, tx.amount, period.year, period.month)
+      ? parseInstallmentDescription(tx.description, tx.amount, billYear, billMonth)
       : null
 
   // Find an existing plan that matches (same total months, same start, ~same monthly amount)

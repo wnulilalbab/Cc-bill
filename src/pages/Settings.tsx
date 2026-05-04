@@ -21,6 +21,7 @@ export default function Settings() {
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [testingMode, setTestingMode] = useState(() => localStorage.getItem('testing_mode') === '1')
 
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL)
   const [editOwner, setEditOwner] = useState<Partial<Owner> | null>(null)
@@ -183,6 +184,27 @@ export default function Settings() {
                 </div>
               )
             })}
+          </div>
+        </section>
+
+        {/* Testing Mode */}
+        <section className="bg-white rounded-xl shadow-sm p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-gray-900">Testing Mode</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Shows a Delete button on each transaction row</p>
+            </div>
+            <button
+              onClick={() => {
+                const next = !testingMode
+                if (next) localStorage.setItem('testing_mode', '1')
+                else localStorage.removeItem('testing_mode')
+                setTestingMode(next)
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${testingMode ? 'bg-blue-600' : 'bg-gray-200'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${testingMode ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
           </div>
         </section>
 
