@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, getSetting, setSetting, generateId, seedDefaultOwners } from '../db'
 import { OWNER_COLOR_CLASSES } from '../lib/format'
 import { CLAUDE_MODELS, DEFAULT_MODEL } from '../lib/claude'
-import type { Owner, OwnerColor } from '../types'
+import type { Owner, OwnerColor, LabelRule } from '../types'
 import { version as APP_VERSION } from '../../package.json'
 
 const COLORS: OwnerColor[] = ['blue', 'pink', 'purple', 'green', 'orange', 'teal', 'red', 'yellow']
@@ -18,13 +18,18 @@ function PageHeader({ title }: { title: string }) {
 
 export default function Settings() {
   const owners = useLiveQuery(() => db.owners.toArray(), []) ?? []
+  const labelRules = useLiveQuery(() => db.labelRules.toArray(), []) ?? []
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [testingMode, setTestingMode] = useState(() => localStorage.getItem('testing_mode') === '1')
 
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL)
   const [editOwner, setEditOwner] = useState<Partial<Owner> | null>(null)
   const [showOwnerForm, setShowOwnerForm] = useState(false)
+
+  const [editRule, setEditRule] = useState<Partial<LabelRule> | null>(null)
+  const [showRuleForm, setShowRuleForm] = useState(false)
 
   useEffect(() => {
     getSetting('anthropic_api_key').then((k) => { if (k) setApiKey(k) })
@@ -63,17 +68,52 @@ export default function Settings() {
     setShowOwnerForm(true)
   }
 
+  function openNewRule() {
+    setEditRule({ pattern: '', label: '', ownerId: owners[0]?.id ?? '' })
+    setShowRuleForm(true)
+  }
+
+  function openEditRule(rule: LabelRule) {
+    setEditRule({ ...rule })
+    setShowRuleForm(true)
+  }
+
+  async function saveRule() {
+    if (!editRule?.pattern?.trim() || !editRule?.label?.trim() || !editRule?.ownerId) return
+    if (editRule.id) {
+      await db.labelRules.update(editRule.id, {
+        pattern: editRule.pattern.trim(),
+        label: editRule.label.trim(),
+        ownerId: editRule.ownerId,
+      })
+    } else {
+      await db.labelRules.add({
+        id: generateId(),
+        pattern: editRule.pattern.trim(),
+        label: editRule.label.trim(),
+        ownerId: editRule.ownerId,
+      })
+    }
+    setShowRuleForm(false)
+    setEditRule(null)
+  }
+
+  async function deleteRule(id: string) {
+    if (!confirm('Delete this label rule?')) return
+    await db.labelRules.delete(id)
+  }
+
   async function resetAllData() {
     if (!confirm('⚠️ Reset ALL data?\n\nThis will permanently delete all transactions, periods, expenses, payments, owners, and settings. This cannot be undone.')) return
     if (!confirm('Are you absolutely sure? Type OK to confirm.\n\nAll data will be gone forever.')) return
     await db.transaction('rw', [
       db.owners, db.periods, db.transactions, db.expenses,
-      db.installmentPlans, db.payments, db.paymentAllocations,
+      db.installmentPlans, db.payments, db.paymentAllocations, db.labelRules,
     ], async () => {
       await Promise.all([
         db.owners.clear(), db.periods.clear(), db.transactions.clear(),
         db.expenses.clear(), db.installmentPlans.clear(),
-        db.payments.clear(), db.paymentAllocations.clear(),
+        db.payments.clear(), db.paymentAllocations.clear(), db.labelRules.clear(),
       ])
     })
     await seedDefaultOwners()
@@ -186,6 +226,68 @@ export default function Settings() {
           </div>
         </section>
 
+        {/* Auto-Label Rules */}
+        <section className="bg-white rounded-xl shadow-sm p-4">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="font-semibold text-gray-900">Auto-Label Rules</h2>
+            <button onClick={openNewRule} className="text-blue-600 text-sm font-medium">
+              + Add
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">
+            When a description contains the pattern, label and owner are pre-filled automatically.
+          </p>
+          {labelRules.length === 0 && (
+            <p className="text-xs text-gray-400 py-1">No rules yet. Add one to auto-label recurring merchants.</p>
+          )}
+          <div className="space-y-2">
+            {labelRules.map((rule) => {
+              const owner = owners.find((o) => o.id === rule.ownerId)
+              const c = owner ? (OWNER_COLOR_CLASSES[owner.color] ?? OWNER_COLOR_CLASSES.blue) : OWNER_COLOR_CLASSES.blue
+              return (
+                <div key={rule.id} className="flex items-center justify-between py-1 gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">"{rule.pattern}"</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-xs text-gray-500">→ {rule.label}</span>
+                      {owner && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${c.bg} ${c.text}`}>
+                          {owner.name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-3 flex-shrink-0">
+                    <button onClick={() => openEditRule(rule)} className="text-sm text-blue-600">Edit</button>
+                    <button onClick={() => deleteRule(rule.id)} className="text-sm text-red-500">Delete</button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* Testing Mode */}
+        <section className="bg-white rounded-xl shadow-sm p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-gray-900">Testing Mode</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Shows a Delete button on each transaction row</p>
+            </div>
+            <button
+              onClick={() => {
+                const next = !testingMode
+                if (next) localStorage.setItem('testing_mode', '1')
+                else localStorage.removeItem('testing_mode')
+                setTestingMode(next)
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${testingMode ? 'bg-blue-600' : 'bg-gray-200'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${testingMode ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+        </section>
+
         {/* Installments shortcut */}
         <a href="#/installments" className="block bg-white rounded-xl shadow-sm p-4">
           <div className="flex items-center justify-between">
@@ -230,6 +332,71 @@ export default function Settings() {
           <p className="text-xs text-gray-300 mt-0.5">Data stored locally on this device</p>
         </div>
       </div>
+
+      {/* Label Rule Form Sheet */}
+      {showRuleForm && editRule && (
+        <div className="fixed inset-0 z-50" onClick={() => setShowRuleForm(false)}>
+          <div className="absolute inset-0 bg-black/50" />
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-semibold text-gray-900 mb-4">
+              {editRule.id ? 'Edit Rule' : 'New Auto-Label Rule'}
+            </h3>
+
+            <label className="block text-sm text-gray-600 mb-1">Pattern (matches description)</label>
+            <input
+              type="text"
+              value={editRule.pattern ?? ''}
+              onChange={(e) => setEditRule((p) => ({ ...p, pattern: e.target.value }))}
+              placeholder="e.g. GRAB, Tokopedia, NETFLIX"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoFocus
+            />
+
+            <label className="block text-sm text-gray-600 mb-1">Label</label>
+            <input
+              type="text"
+              value={editRule.label ?? ''}
+              onChange={(e) => setEditRule((p) => ({ ...p, label: e.target.value }))}
+              placeholder="e.g. Grab, Belanja online, Netflix"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+
+            <label className="block text-sm text-gray-600 mb-2">Owner</label>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {owners.map((o) => {
+                const c = OWNER_COLOR_CLASSES[o.color] ?? OWNER_COLOR_CLASSES.blue
+                return (
+                  <button
+                    key={o.id}
+                    onClick={() => setEditRule((p) => ({ ...p, ownerId: o.id }))}
+                    className={`px-3 py-1 rounded-full text-sm ${c.bg} ${c.text} ${editRule.ownerId === o.id ? 'ring-2 ring-offset-1 ring-blue-500' : 'opacity-60'}`}
+                  >
+                    {o.name}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowRuleForm(false)}
+                className="flex-1 border border-gray-300 rounded-lg py-2.5 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveRule}
+                className="flex-1 bg-blue-600 text-white rounded-lg py-2.5 text-sm font-medium"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Owner Form Sheet */}
       {showOwnerForm && editOwner && (
@@ -291,7 +458,7 @@ export default function Settings() {
 }
 
 async function exportData() {
-  const [owners, periods, transactions, expenses, installmentPlans, payments, paymentAllocations] =
+  const [owners, periods, transactions, expenses, installmentPlans, payments, paymentAllocations, labelRules] =
     await Promise.all([
       db.owners.toArray(),
       db.periods.toArray(),
@@ -300,9 +467,10 @@ async function exportData() {
       db.installmentPlans.toArray(),
       db.payments.toArray(),
       db.paymentAllocations.toArray(),
+      db.labelRules.toArray(),
     ])
 
-  const data = { owners, periods, transactions, expenses, installmentPlans, payments, paymentAllocations, exportedAt: new Date().toISOString() }
+  const data = { owners, periods, transactions, expenses, installmentPlans, payments, paymentAllocations, labelRules, exportedAt: new Date().toISOString() }
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -320,11 +488,11 @@ async function importData(e: React.ChangeEvent<HTMLInputElement>) {
   const text = await file.text()
   const data = JSON.parse(text)
 
-  await db.transaction('rw', [db.owners, db.periods, db.transactions, db.expenses, db.installmentPlans, db.payments, db.paymentAllocations], async () => {
+  await db.transaction('rw', [db.owners, db.periods, db.transactions, db.expenses, db.installmentPlans, db.payments, db.paymentAllocations, db.labelRules], async () => {
     await Promise.all([
       db.owners.clear(), db.periods.clear(), db.transactions.clear(),
       db.expenses.clear(), db.installmentPlans.clear(), db.payments.clear(),
-      db.paymentAllocations.clear(),
+      db.paymentAllocations.clear(), db.labelRules.clear(),
     ])
     await Promise.all([
       db.owners.bulkPut(data.owners ?? []),
@@ -334,6 +502,7 @@ async function importData(e: React.ChangeEvent<HTMLInputElement>) {
       db.installmentPlans.bulkPut(data.installmentPlans ?? []),
       db.payments.bulkPut(data.payments ?? []),
       db.paymentAllocations.bulkPut(data.paymentAllocations ?? []),
+      db.labelRules.bulkPut(data.labelRules ?? []),
     ])
   })
   alert('Data imported successfully.')

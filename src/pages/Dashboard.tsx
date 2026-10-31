@@ -29,6 +29,37 @@ export default function Dashboard() {
 
   const allAllocations = useLiveQuery(() => db.paymentAllocations.toArray(), []) ?? []
 
+  // Carried-over unpaid balance from older periods
+  const carriedOver = useLiveQuery(async () => {
+    const current = await db.periods.get(activePeriodId)
+    if (!current || current.type === 'unbilled' || !current.year) return null
+    const olderPeriods = await db.periods
+      .filter((p) => p.type !== 'unbilled' && p.id !== activePeriodId &&
+        (p.year < current.year || (p.year === current.year && p.month < current.month)))
+      .toArray()
+    if (olderPeriods.length === 0) return null
+    const olderTxs = await db.transactions
+      .where('periodId').anyOf(olderPeriods.map((p) => p.id))
+      .filter((t) => !t.hidden && t.amount > 0 && t.type !== 'payment' && t.type !== 'fee' && t.type !== 'interest')
+      .toArray()
+    if (olderTxs.length === 0) return null
+    const olderExpenses = await db.expenses.where('transactionId').anyOf(olderTxs.map((t) => t.id)).toArray()
+    const olderAllocs = olderExpenses.length > 0
+      ? await db.paymentAllocations.where('expenseId').anyOf(olderExpenses.map((e) => e.id)).toArray()
+      : []
+    const allocByExpense = new Map<string, number>()
+    for (const a of olderAllocs) {
+      allocByExpense.set(a.expenseId, (allocByExpense.get(a.expenseId) ?? 0) + a.amount)
+    }
+    let total = 0
+    for (const tx of olderTxs) {
+      const exp = olderExpenses.find((e) => e.transactionId === tx.id)
+      const allocated = exp ? (allocByExpense.get(exp.id) ?? 0) : 0
+      total += Math.max(0, tx.amount - allocated)
+    }
+    return total > 0 ? { total, count: olderPeriods.length } : null
+  }, [activePeriodId]) ?? null
+
   // Pending (unbilled) summary
   const pendingSummary = useLiveQuery(async () => {
     const unbilledPeriods = await db.periods.filter((p) => p.type === 'unbilled').toArray()
@@ -154,6 +185,22 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Carried-over balance from older periods */}
+        {carriedOver && (
+          <div className="bg-white rounded-2xl shadow-sm p-4 border-l-4 border-orange-400">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Carried Over</p>
+                <p className="text-2xl font-bold text-orange-600 mt-0.5">{formatRupiah(carriedOver.total)}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Unpaid from {carriedOver.count} previous period{carriedOver.count > 1 ? 's' : ''}
+                </p>
+              </div>
+              <span className="text-3xl">⏩</span>
+            </div>
+          </div>
+        )}
 
         {/* Unlabeled alert */}
         {unlabeled > 0 && (

@@ -7,6 +7,7 @@ import type {
   InstallmentPlan,
   Payment,
   PaymentAllocation,
+  LabelRule,
 } from './types'
 
 interface SettingsRecord {
@@ -23,6 +24,7 @@ class CCBillDB extends Dexie {
   payments!: Table<Payment>
   paymentAllocations!: Table<PaymentAllocation>
   settings!: Table<SettingsRecord>
+  labelRules!: Table<LabelRule>
 
   constructor() {
     super('CCBillDB')
@@ -46,6 +48,18 @@ class CCBillDB extends Dexie {
       payments: '&id, periodId, date',
       paymentAllocations: '&id, paymentId, expenseId',
       settings: '&key',
+    })
+    // v3: adds labelRules for auto-labeling transactions
+    this.version(3).stores({
+      owners: '&id, name',
+      periods: '&id, year, month, type',
+      transactions: '&id, periodId, type, date, hidden, source',
+      expenses: '&id, transactionId, ownerId, status, installmentPlanId',
+      installmentPlans: '&id, ownerId, startPeriod',
+      payments: '&id, periodId, date',
+      paymentAllocations: '&id, paymentId, expenseId',
+      settings: '&key',
+      labelRules: '&id',
     })
   }
 }

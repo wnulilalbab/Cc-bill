@@ -81,6 +81,7 @@ export default function Payments() {
   const allocatingAmount = allocatingPayment
     ? Math.abs(allocatingPayment.amount)
     : allocatingManual?.amount ?? 0
+  const allocatingDate = allocatingPayment?.date ?? allocatingManual?.date ?? new Date().toISOString().slice(0, 10)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -242,6 +243,7 @@ export default function Payments() {
         <AllocationSheet
           paymentId={allocatingId}
           paymentAmount={allocatingAmount}
+          paymentDate={allocatingDate}
           periods={periods}
           unbilledPeriodIds={unbilledPeriodIds}
           allExpenses={allExpenses}
@@ -267,6 +269,7 @@ export default function Payments() {
 function AllocationSheet({
   paymentId,
   paymentAmount,
+  paymentDate,
   periods,
   unbilledPeriodIds,
   allExpenses,
@@ -277,6 +280,7 @@ function AllocationSheet({
 }: {
   paymentId: string
   paymentAmount: number
+  paymentDate: string
   periods: BillPeriod[]
   unbilledPeriodIds: string[]
   allExpenses: Expense[]
@@ -294,9 +298,9 @@ function AllocationSheet({
   })
   const [saving, setSaving] = useState(false)
 
-  // Transactions that have an expense record (labeled or not)
+  // Transactions that have an expense record AND are dated on/before payment date
   const txsWithExpense = allChargeTxs.filter((t) =>
-    allExpenses.find((e) => e.transactionId === t.id)
+    allExpenses.find((e) => e.transactionId === t.id) && t.date <= paymentDate
   )
 
   // All unbilled transactions with expenses (covers old UUID periods + shared pool)
@@ -437,18 +441,18 @@ function AllocationSheet({
                 {unbilledTxs.map((tx) => {
                   const expense = allExpenses.find((e) => e.transactionId === tx.id)
                   if (!expense) return null
+                  const byOthers = allocatedByOthers(expense.id)
+                  if (byOthers >= tx.amount) return null
                   const owner = owners.find((o) => o.id === expense.ownerId)
                   const c = owner
                     ? (OWNER_COLOR_CLASSES[owner.color] ?? OWNER_COLOR_CLASSES.blue)
                     : OWNER_COLOR_CLASSES.blue
-                  const byOthers = allocatedByOthers(expense.id)
                   const maxForExpense = Math.max(0, tx.amount - byOthers)
-                  const fullyPaidByOthers = byOthers >= tx.amount
                   const currentEntry = Number(amounts[expense.id]) || 0
                   const fillPreview = Math.min(maxForExpense, Math.max(0, remaining + currentEntry))
 
                   return (
-                    <div key={tx.id} className={`px-4 py-3 ${fullyPaidByOthers ? 'opacity-50' : ''}`}>
+                    <div key={tx.id} className="px-4 py-3">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-gray-800 truncate">{expense.label || tx.description}</p>
@@ -469,30 +473,26 @@ function AllocationSheet({
                           )}
                         </div>
                       </div>
-                      {fullyPaidByOthers ? (
-                        <p className="text-xs text-green-600 font-medium">Fully covered by other payments</p>
-                      ) : (
-                        <div className="flex gap-2 items-center">
-                          <input
-                            type="number"
-                            value={amounts[expense.id] ?? ''}
-                            onChange={(e) =>
-                              setAmounts((prev) => ({ ...prev, [expense.id]: e.target.value }))
-                            }
-                            placeholder="0"
-                            min={0}
-                            max={maxForExpense}
-                            className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          <button
-                            onClick={() => handleFill(expense.id, tx.amount)}
-                            disabled={fillPreview <= 0}
-                            className="text-xs text-blue-600 border border-blue-200 rounded-lg px-2 py-1.5 flex-shrink-0 disabled:opacity-40"
-                          >
-                            Fill {formatRupiah(fillPreview)}
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="number"
+                          value={amounts[expense.id] ?? ''}
+                          onChange={(e) =>
+                            setAmounts((prev) => ({ ...prev, [expense.id]: e.target.value }))
+                          }
+                          placeholder="0"
+                          min={0}
+                          max={maxForExpense}
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={() => handleFill(expense.id, tx.amount)}
+                          disabled={fillPreview <= 0}
+                          className="text-xs text-blue-600 border border-blue-200 rounded-lg px-2 py-1.5 flex-shrink-0 disabled:opacity-40"
+                        >
+                          Fill {formatRupiah(fillPreview)}
+                        </button>
+                      </div>
                     </div>
                   )
                 })}
@@ -513,18 +513,18 @@ function AllocationSheet({
                 {txs.map((tx) => {
                   const expense = allExpenses.find((e) => e.transactionId === tx.id)
                   if (!expense) return null
+                  const byOthers = allocatedByOthers(expense.id)
+                  if (byOthers >= tx.amount) return null
                   const owner = owners.find((o) => o.id === expense.ownerId)
                   const c = owner
                     ? (OWNER_COLOR_CLASSES[owner.color] ?? OWNER_COLOR_CLASSES.blue)
                     : OWNER_COLOR_CLASSES.blue
-                  const byOthers = allocatedByOthers(expense.id)
                   const maxForExpense = Math.max(0, tx.amount - byOthers)
-                  const fullyPaidByOthers = byOthers >= tx.amount
                   const currentEntry = Number(amounts[expense.id]) || 0
                   const fillPreview = Math.min(maxForExpense, Math.max(0, remaining + currentEntry))
 
                   return (
-                    <div key={tx.id} className={`px-4 py-3 ${fullyPaidByOthers ? 'opacity-50' : ''}`}>
+                    <div key={tx.id} className="px-4 py-3">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-gray-800 truncate">{expense.label || tx.description}</p>
@@ -545,30 +545,26 @@ function AllocationSheet({
                         </div>
                       </div>
 
-                      {fullyPaidByOthers ? (
-                        <p className="text-xs text-green-600 font-medium">Fully covered by other payments</p>
-                      ) : (
-                        <div className="flex gap-2 items-center">
-                          <input
-                            type="number"
-                            value={amounts[expense.id] ?? ''}
-                            onChange={(e) =>
-                              setAmounts((prev) => ({ ...prev, [expense.id]: e.target.value }))
-                            }
-                            placeholder="0"
-                            min={0}
-                            max={maxForExpense}
-                            className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          <button
-                            onClick={() => handleFill(expense.id, tx.amount)}
-                            disabled={fillPreview <= 0}
-                            className="text-xs text-blue-600 border border-blue-200 rounded-lg px-2 py-1.5 flex-shrink-0 disabled:opacity-40"
-                          >
-                            Fill {formatRupiah(fillPreview)}
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="number"
+                          value={amounts[expense.id] ?? ''}
+                          onChange={(e) =>
+                            setAmounts((prev) => ({ ...prev, [expense.id]: e.target.value }))
+                          }
+                          placeholder="0"
+                          min={0}
+                          max={maxForExpense}
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={() => handleFill(expense.id, tx.amount)}
+                          disabled={fillPreview <= 0}
+                          className="text-xs text-blue-600 border border-blue-200 rounded-lg px-2 py-1.5 flex-shrink-0 disabled:opacity-40"
+                        >
+                          Fill {formatRupiah(fillPreview)}
+                        </button>
+                      </div>
                     </div>
                   )
                 })}

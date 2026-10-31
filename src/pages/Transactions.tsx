@@ -69,10 +69,34 @@ export default function Transactions() {
   }, [selectedPeriodId, unbilledPeriodIds]) ?? []
 
   const expenses = useLiveQuery(() => db.expenses.toArray(), []) ?? []
+  const allAllocations = useLiveQuery(() => db.paymentAllocations.toArray(), []) ?? []
 
   const expenseByTx = new Map(expenses.map((e) => [e.transactionId, e]))
 
+  const testingMode = localStorage.getItem('testing_mode') === '1'
   const [editingTx, setEditingTx] = useState<Transaction | null>(null)
+
+  const filterStatus = searchParams.get('status') ?? 'all'
+
+  function setStatusFilter(s: string) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (s === 'all') next.delete('status')
+      else next.set('status', s)
+      return next
+    }, { replace: true })
+  }
+
+  async function deleteTx(id: string) {
+    if (!confirm('Delete this transaction?')) return
+    const exp = expenseByTx.get(id)
+    if (exp) {
+      const allocs = allAllocations.filter((a) => a.expenseId === exp.id)
+      for (const alloc of allocs) await db.paymentAllocations.delete(alloc.id)
+      await db.expenses.delete(exp.id)
+    }
+    await db.transactions.delete(id)
+  }
 
   const filtered = transactions
     .filter((t) => {
@@ -84,6 +108,15 @@ export default function Transactions() {
         const exp = expenseByTx.get(t.id)
         if (exp?.label) return false
       }
+      if (filterStatus !== 'all') {
+        const exp = expenseByTx.get(t.id)
+        const status = exp?.status ?? 'unpaid'
+        if (filterStatus === 'pending') {
+          if (status === 'paid') return false
+        } else {
+          if (status !== filterStatus) return false
+        }
+      }
       return true
     })
     .reverse()
@@ -91,6 +124,18 @@ export default function Transactions() {
   const unlabeledCount = transactions.filter(
     (t) => !expenseByTx.get(t.id)?.label && t.type !== 'payment' && t.type !== 'reversal'
   ).length
+
+  const summaryTxs = filtered.filter((t) => t.amount > 0 && t.type !== 'payment' && t.type !== 'reversal')
+  const summaryTotal = summaryTxs.reduce((s, t) => s + t.amount, 0)
+  const summaryPaid = summaryTxs.reduce((s, t) => {
+    const exp = expenseByTx.get(t.id)
+    if (!exp) return s
+    const allocated = allAllocations
+      .filter((a) => a.expenseId === exp.id)
+      .reduce((sum, a) => sum + a.amount, 0)
+    return s + Math.min(allocated, t.amount)
+  }, 0)
+  const summaryRemaining = summaryTotal - summaryPaid
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -133,8 +178,40 @@ export default function Transactions() {
           >
             Needs Label
           </button>
+
+          <select
+            value={filterStatus}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm flex-shrink-0"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">⏳ Unpaid / Partial</option>
+            <option value="paid">✅ Paid</option>
+            <option value="unpaid">Unpaid only</option>
+            <option value="partial">Partial only</option>
+          </select>
         </div>
       </div>
+
+      {/* Summary */}
+      {summaryTxs.length > 0 && (
+        <div className="bg-white border-b border-gray-100 px-4 py-3">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p className="text-xs text-gray-400">Total</p>
+              <p className="text-sm font-semibold text-gray-900">{formatRupiah(summaryTotal)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Paid</p>
+              <p className="text-sm font-semibold text-green-600">{formatRupiah(summaryPaid)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Remaining</p>
+              <p className="text-sm font-semibold text-orange-600">{formatRupiah(summaryRemaining)}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* List */}
       <div className="divide-y divide-gray-100">
@@ -151,10 +228,10 @@ export default function Transactions() {
           const needsLabel = !exp?.label && tx.type !== 'payment' && tx.type !== 'reversal'
 
           return (
-            <button
+            <div
               key={tx.id}
               onClick={() => setEditingTx(tx)}
-              className="w-full text-left bg-white px-4 py-3 flex items-start gap-3 active:bg-gray-50"
+              className="w-full text-left bg-white px-4 py-3 flex items-start gap-3 active:bg-gray-50 cursor-pointer"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
@@ -195,7 +272,15 @@ export default function Transactions() {
                   </span>
                 )}
               </div>
-            </button>
+              {testingMode && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteTx(tx.id) }}
+                  className="text-xs text-red-400 px-1.5 py-1 flex-shrink-0 self-center border border-red-200 rounded"
+                >
+                  Del
+                </button>
+              )}
+            </div>
           )
         })}
       </div>
@@ -233,10 +318,12 @@ function EnrichSheet({
   // Load the bill period so we can compute installment dates
   const period = useLiveQuery(() => db.periods.get(tx.periodId), [tx.periodId])
 
-  // Auto-parse installment info from description
+  // Auto-parse installment info — fall back to tx.date when period is the unbilled pool (year=0)
+  const billYear = period && period.year > 0 ? period.year : Number(tx.date.slice(0, 4))
+  const billMonth = period && period.month > 0 ? period.month : Number(tx.date.slice(5, 7))
   const info: InstallmentInfo | null =
     tx.type === 'installment' && period
-      ? parseInstallmentDescription(tx.description, tx.amount, period.year, period.month)
+      ? parseInstallmentDescription(tx.description, tx.amount, billYear, billMonth)
       : null
 
   // Find an existing plan that matches (same total months, same start, ~same monthly amount)
@@ -252,6 +339,22 @@ function EnrichSheet({
       ) ?? null
     )
   }, [info?.startPeriod, info?.totalMonths, info?.monthlyAmount])
+
+  // Find first label rule whose pattern matches this transaction description
+  const matchingRule = useLiveQuery(async () => {
+    if (initialExpense?.label) return null
+    const rules = await db.labelRules.toArray()
+    const desc = tx.description.toLowerCase()
+    return rules.find((r) => r.pattern && desc.includes(r.pattern.toLowerCase())) ?? null
+  }, [tx.description, initialExpense?.label])
+
+  // Pre-fill from label rule (runs first; matchingPlan effect below may override for installments)
+  useEffect(() => {
+    if (matchingRule && !label && !initialExpense?.label) {
+      setLabel(matchingRule.label)
+      setOwnerId(matchingRule.ownerId)
+    }
+  }, [matchingRule])
 
   // Pre-fill label from matched plan if user hasn't typed anything
   useEffect(() => {

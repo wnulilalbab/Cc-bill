@@ -88,3 +88,10 @@ export interface ParsedTransaction {
   amount: number
   type: TransactionType
 }
+
+export interface LabelRule {
+  id: string
+  pattern: string   // case-insensitive substring matched against transaction description
+  label: string
+  ownerId: string
+}
