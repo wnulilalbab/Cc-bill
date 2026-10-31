@@ -30,7 +30,11 @@ Spending analysis (Insights tab ships as a preview only), due-date reminders and
 ## 2. Look and feel
 
 - Light theme only. White/grey base. **Palette comes from the selected card** (accent, background tint, soft tone, deep tone). 8 palettes: Blue, Gold, Lime, Green, Violet, Rose, Orange, Graphite.
-- Three looks in Settings: **Clean** (deep hero), **Soft** (soft hero, rounder), **Bold** (black hero). Palette always applies.
+- Three looks in Settings. The selected card tile uses the palette's **deep** tone, so the Bill "To pay" box must **never** repeat it:
+  - **Clean**: To-pay box in the palette's light soft tint, dark text.
+  - **Soft**: white To-pay box with a soft-tint outline, rounder corners.
+  - **Bold**: To-pay box in the vivid accent colour (card tile black).
+  Palette always applies.
 - Font: Plus Jakarta Sans. Bottom nav: Bill · Transactions · (+) Import · Payments · Insights (preview). Settings via gear.
 - **No native browser dropdowns.** Every picker is a custom bottom-sheet list.
 - App UI language: **English** everywhere. Only the WhatsApp share has a Bahasa/English switch (default Bahasa).

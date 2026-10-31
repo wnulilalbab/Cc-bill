@@ -172,6 +172,7 @@ Additional rules:
 | U-03 | Card bar on Transactions/Payments/Insights | Opens card picker |
 | U-04 | Language | No Indonesian strings in app UI outside share preview |
 | U-05 | Card carousel | Selected card centred (±2px); tap peeking card → row glides and new card centred; swipe >50px left/right → next/previous; drag <50px → snaps back, no switch, no click fired; dots follow; screen content does not animate; no horizontal page scroll |
+| U-08 | To-pay box vs card | In Clean, Soft and Bold the To-pay box background differs from the selected card tile background |
 | U-06 | Reduced motion | No slide animations; card still switches |
 | U-07 | Payment assignment | Opens as full-screen page (no overlay); header "Left to assign" updates live while typing; back closes without saving |
 

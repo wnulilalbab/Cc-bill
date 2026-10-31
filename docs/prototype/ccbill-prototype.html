@@ -11,9 +11,11 @@
   --f:"Plus Jakarta Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
 }
-.device{--bg:var(--pbg);--hero:var(--pdeep);--hero-ink:#ffffff;--hero-sub:rgba(255,255,255,.68);--r:18px;--r-sm:12px;--tile:var(--pdeep)}
-body[data-skin="soft"] .device{--hero:var(--acc-soft);--hero-ink:#111318;--hero-sub:#4b5563;--r:26px;--r-sm:16px}
-body[data-skin="bold"] .device{--bg:#f3f3f3;--hero:#0b0b0c;--tile:#0b0b0c;--r:14px;--r-sm:10px}
+.device{--bg:var(--pbg);--hero:var(--acc-soft);--hero-ink:#111318;--hero-sub:#4b5563;--hero-line:transparent;--r:18px;--r-sm:12px;--tile:var(--pdeep)}
+body[data-skin="soft"] .device{--hero:var(--surface);--hero-line:var(--acc-soft);--r:26px;--r-sm:16px}
+body[data-skin="bold"] .device{--bg:#f3f3f3;--hero:var(--acc);--hero-ink:var(--acc-ink);--hero-sub:var(--acc-ink);--tile:#0b0b0c;--r:14px;--r-sm:10px}
+body[data-skin="bold"] .hero .sub,body[data-skin="bold"] .hero .line span:first-child{opacity:.75}
+body[data-skin="bold"] .hero .accchip{background:#0b0b0c;color:#fff}
 *{box-sizing:border-box}
 body{background:var(--page);color:var(--ink);font-family:var(--f);font-size:14px;line-height:1.45;margin:0}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -96,7 +98,7 @@ button{cursor:pointer}
 .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .link{border:0;background:none;color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:3px;padding:0;font-size:12.5px}
 
-.hero{background:var(--hero);color:var(--hero-ink);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden}
+.hero{background:var(--hero);color:var(--hero-ink);border:2px solid var(--hero-line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden}
 .hero .big{font-size:30px;font-weight:800;letter-spacing:-.02em}
 .hero .sub{color:var(--hero-sub);font-size:12px;font-weight:600}
 .hero .line{display:flex;justify-content:space-between;font-size:12.5px;gap:8px}
@@ -647,7 +649,7 @@ function viewInsights(){
 function viewSettings(){
   var h='<div class="top"><button class="iconbtn" data-act="back" aria-label="Back">'+IC.back+'</button><h1>Settings</h1><span style="width:38px"></span></div>';
   h+='<div class="lbl">Cards</div>'+S.cards.map(function(c){var p=pal(c.pal);return '<button class="orow" data-act="editCard" data-id="'+c.id+'"><div class="row"><span class="b">'+esc(c.name)+'</span><span class="pill" style="background:'+p.soft+';color:#111318">'+p.name+'</span></div><div class="xs muted">'+esc(c.bank)+' •••• '+esc(c.last4)+' · default owner: '+esc((owner(c.defaultOwner)||{}).name||'none')+'</div><div class="chips">'+ownersOf(c.id).map(function(o){return ownerChip(o.id)}).join('')+'</div></button>'}).join('')+'<button class="btn ghost" data-act="newCard">+ Add card</button>';
-  h+='<div class="lbl">Look</div><div class="skin">'+[['clean','Clean','var(--pbg)','var(--pdeep)'],['soft','Soft','var(--pbg)','var(--acc-soft)'],['bold','Bold','#f3f3f3','#0b0b0c']].map(function(k){return '<button aria-pressed="'+(S.skin===k[0])+'" data-act="skin" data-id="'+k[0]+'"><span class="pv" style="background:'+k[2]+'"><span style="height:18px;border-radius:6px;background:'+k[3]+'"></span><span style="height:6px;width:60%;border-radius:3px;background:var(--acc)"></span></span>'+k[1]+'</button>'}).join('')+'</div><div class="note">Colours always come from the selected card\'s palette.</div>';
+  h+='<div class="lbl">Look</div><div class="skin">'+[['clean','Clean','var(--pbg)','var(--acc-soft)'],['soft','Soft','var(--pbg)','#ffffff'],['bold','Bold','#f3f3f3','var(--acc)']].map(function(k){return '<button aria-pressed="'+(S.skin===k[0])+'" data-act="skin" data-id="'+k[0]+'"><span class="pv" style="background:'+k[2]+'"><span style="height:18px;border-radius:6px;background:'+k[3]+'"></span><span style="height:6px;width:60%;border-radius:3px;background:var(--acc)"></span></span>'+k[1]+'</button>'}).join('')+'</div><div class="note">Colours always come from the selected card\'s palette.</div>';
   var rules=S.rules.filter(function(r){return r.card===S.cardId});
   h+='<div class="lbl">Tagging rules · '+esc(card().name)+'</div><div class="box tight">'+(rules.length?rules.map(function(r){return '<div class="row small"><span>'+(r.match==='startsWith'?'Starts with':'Contains')+' <b>'+esc(r.pattern)+'</b> → '+ownerChip(r.owner)+'</span><button class="link" data-act="delRule" data-id="'+r.id+'">Delete</button></div>'}).join(''):'<div class="small muted">No rules yet.</div>')+'</div><button class="btn ghost" data-act="analyze">Analyze my labels</button>';
   h+='<div class="lbl">Data</div><div class="box tight">'+(S.migrated?'<div class="small">Old data migrated ✓ and kept as a backup.</div><button class="btn danger sm" data-act="delOld">Delete old data (downloads a backup first)</button>':'<div class="small">Old data found: 316 transactions, 6 owners.</div><button class="btn sm" data-act="migrate">Migrate old data</button>')+'</div>';
