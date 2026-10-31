@@ -124,11 +124,11 @@ Spending analysis (Insights tab ships as a preview only), due-date reminders and
 
 - New IndexedDB database. **Migrate old data** button: preview of every adjustment (all statements → card "BCA Shared"; "Unknown" owner → card default + Check; statement payments keep assignments) → confirm → verification (counts and totals must match exactly). Old database is untouched until **Delete old data** (downloads JSON backup first).
 - Testing mode tools: reset new data, re-run migration, load demo data, clear AI cache, inspect record, per-row delete.
-- Real fixtures live in git-ignored `fixtures/` (backup JSON, BCA PDF, Mandiri screenshots); the Mandiri password comes from an environment variable, never committed.
+- **All test data is synthetic** (see [`dev-loop.md`](dev-loop.md#test-data)). No real statements, backups or names are used in tests, CI or agent sessions.
 
 ## Success criteria
 
-1. Real BCA Oct 2026 fixture: import → totals match (14.239.883 − 9.759.190 + 6.925.570 purchases + 170.895 fees/interest = 11.577.158).
-2. Migration of the real backup (316 transactions, 99 allocations) verifies with identical counts and totals; old DB untouched.
+1. Every synthetic statement in `test/fixtures/` imports with **totals matching** its printed figures; the corrupted copy reports the exact difference.
+2. Migration of the synthetic old-format backup verifies with identical counts and totals; old DB untouched. (The owner's real backup is only ever migrated by the owner, in the app, after release.)
 3. The five-minute loop (import → review → assign payments → bill → share) works end to end on a 390px viewport (Playwright).
 4. Every rule in this document maps to at least one automated test in `docs/test-plan.md`; coverage gates in CI block deploys.

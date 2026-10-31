@@ -16,7 +16,7 @@ Every requirement in [`docs/intent/phase-1.md`](intent/phase-1.md) maps to at le
 Additional rules:
 - Any PR that drops coverage below a gate fails CI. Gates are configured in `vitest.config.ts` (`coverage.thresholds`, per-glob).
 - A test is required for each case ID below; `scripts/check-test-ids.ts` fails CI if an ID in this file has no test.
-- Fixtures: `fixtures/` is git-ignored. CI uses a sanitised fixture set (`test/fixtures/`, committed) with fake names and amounts preserving the real structure. Real-fixture tests run locally when `fixtures/` exists and are skipped otherwise.
+- Fixtures: **all synthetic** (`test/fixtures/`, generated, committed), per [`intent/dev-loop.md`](intent/dev-loop.md#test-data). No real data anywhere. Names and amounts in the cases below are illustrative; tests use the fictional household and each fixture's expected-result file.
 
 ## Money and bill (M)
 
@@ -86,7 +86,7 @@ Additional rules:
 
 | ID | Case | Expected |
 |---|---|---|
-| I-01 | BCA Oct fixture | Totals match 11.577.158 |
+| I-01 | Every synthetic statement (BCA Jul–Nov, Mandiri Oct–Nov PDFs, Aug–Sep screenshots) | Totals match the printed figures in its expected-result file |
 | I-02 | One parsed amount off by 1 | Mismatch "Rp 1"; fixing row re-runs check to match |
 | I-03 | Mandiri locked PDF, wrong then right password | Clear error, then parse |
 | I-04 | Remember password | Stored encrypted; next import asks nothing; Forget clears |
@@ -156,7 +156,7 @@ Additional rules:
 
 | ID | Case | Expected |
 |---|---|---|
-| G-01 | Real backup migration | 316 tx, 99 allocations; totals identical; old DB unchanged |
+| G-01 | Synthetic old-format backup migration | Counts and totals identical to the expected-result file; old DB unchanged |
 | G-02 | Preview lists every adjustment; Cancel writes nothing | No new-DB writes |
 | G-03 | "Unknown" owner rows | Card default owner + Check |
 | G-04 | Delete old data | JSON backup produced first; old DB gone |
@@ -180,8 +180,8 @@ Additional rules:
 
 | ID | Flow |
 |---|---|
-| E-01 | Import BCA fixture → review Check rows → assign 10 Oct payment → Bill Final → share Dhila |
+| E-01 | Import synthetic BCA Oct → review Check rows → assign the unassigned payment → Bill Final → share one person |
 | E-02 | Unbilled screenshots with payment line → assign → next statement import moves both |
 | E-03 | Mandiri locked PDF → wrong/right password → refund lowers Ulil's bill |
-| E-04 | Migrate real backup → verify → delete old data |
+| E-04 | Migrate synthetic old backup → verify → delete old data |
 | E-05 | Hand-recorded payment missing from statement → keep waiting → resolved on next import |
