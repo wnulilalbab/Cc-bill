@@ -25,7 +25,8 @@ class CCBillDB extends Dexie {
   settings!: Table<SettingsRecord>
 
   constructor() {
-    super('CCBillDB')
+    // Staging and production share an origin on GitHub Pages, so they must not share a database.
+    super(__APP_ENV__ === 'staging' ? 'CCBillDB-staging' : 'CCBillDB')
     this.version(1).stores({
       owners: '&id, name',
       periods: '&id, year, month',

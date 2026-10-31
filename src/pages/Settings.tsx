@@ -4,7 +4,6 @@ import { db, getSetting, setSetting, generateId, seedDefaultOwners } from '../db
 import { OWNER_COLOR_CLASSES } from '../lib/format'
 import { CLAUDE_MODELS, DEFAULT_MODEL } from '../lib/claude'
 import type { Owner, OwnerColor } from '../types'
-import { version as APP_VERSION } from '../../package.json'
 
 const COLORS: OwnerColor[] = ['blue', 'pink', 'purple', 'green', 'orange', 'teal', 'red', 'yellow']
 
@@ -248,7 +247,7 @@ export default function Settings() {
 
         {/* Version */}
         <div className="text-center py-2 pb-4">
-          <p className="text-xs text-gray-400">CC Bill · v{APP_VERSION}</p>
+          <p className="text-xs text-gray-400">CC Bill · v{__APP_VERSION__}{__APP_ENV__ === 'staging' ? ' · staging' : ''}</p>
           <p className="text-xs text-gray-300 mt-0.5">Data stored locally on this device</p>
         </div>
       </div>

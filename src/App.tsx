@@ -44,6 +44,11 @@ export default function App() {
   return (
     <HashRouter>
       <div className="min-h-screen flex flex-col">
+        {__APP_ENV__ === 'staging' && (
+          <div className="sticky top-0 z-50 bg-amber-500 text-white text-center text-xs font-bold py-1 tracking-wide">
+            STAGING · test data only · v{__APP_VERSION__}
+          </div>
+        )}
         <main className="flex-1 pb-20">
           <Routes>
             <Route path="/" element={<Dashboard />} />
