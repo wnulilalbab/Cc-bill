@@ -165,6 +165,18 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--mute
 .alloc .inp{padding:7px 8px;font-size:12.5px;text-align:right;background:var(--surface)}
 .alloc .inp:disabled{opacity:.45}
 .alloc .full{grid-column:2;justify-self:end;margin-top:-4px}
+.sheet.full{top:0;max-height:none;border-radius:0;padding-top:0;box-shadow:none;animation:slidein .22s ease-out}
+.phead{position:sticky;top:0;z-index:2;background:var(--surface);display:flex;align-items:center;gap:10px;padding:12px 0 10px;border-bottom:1px solid var(--line)}
+.phead h2{font-size:17px;margin:0}
+@keyframes slidein{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+.ripple{position:absolute;inset:0;z-index:60;pointer-events:none;background:var(--rbg);clip-path:circle(0 at var(--rx) var(--ry));animation:ripple .42s cubic-bezier(.3,.7,.3,1) forwards}
+.ripple.out{animation:rfade .25s ease forwards}
+@keyframes ripple{to{clip-path:circle(150% at var(--rx) var(--ry))}}
+@keyframes rfade{from{opacity:1;clip-path:circle(150% at var(--rx) var(--ry))}to{opacity:0;clip-path:circle(150% at var(--rx) var(--ry))}}
+.ccard.pop{animation:pop .45s cubic-bezier(.3,1.4,.5,1)}
+@keyframes pop{0%{transform:translateY(6px) scale(.94)}60%{transform:translateY(-3px) scale(1.03)}100%{transform:none}}
+.cbar.pop .cdot{animation:pop .45s cubic-bezier(.3,1.4,.5,1)}
+@media (prefers-reduced-motion:reduce){.ripple,.ripple.out,.ccard.pop,.cbar.pop .cdot,.sheet.full{animation:none}.ripple{display:none}}
 .foot{position:sticky;bottom:-18px;background:var(--surface);padding:10px 0 2px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
 .toast{position:absolute;left:12px;right:12px;bottom:84px;z-index:50;background:#111318;color:#fff;border-radius:14px;padding:11px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12.5px;box-shadow:0 10px 24px rgba(0,0,0,.3)}
 .toast button{border:0;background:var(--acc);color:var(--acc-ink);border-radius:999px;padding:6px 11px;font-weight:800;font-size:12px;flex:none}
@@ -202,6 +214,8 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--mute
   .overlay{position:fixed}
   .sheet{position:fixed;max-height:90vh;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
   #picker .sheet{max-height:70vh}
+  .sheet.full{max-height:none;height:100%}
+  .ripple{position:fixed}
   .toast{position:fixed;bottom:calc(86px + env(safe-area-inset-bottom,0px))}
   .guide{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:110px}
 }
@@ -437,7 +451,7 @@ var IC={
  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>',
  pay:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>',
  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
- gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>',
+ gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10.3 2.6h3.4l.5 2.6 1.6.9 2.5-.9 1.7 2.9-2 1.7v1.9l2 1.7-1.7 2.9-2.5-.9-1.6.9-.5 2.6h-3.4l-.5-2.6-1.6-.9-2.5.9-1.7-2.9 2-1.7v-1.9l-2-1.7 1.7-2.9 2.5.9 1.6-.9z"/><circle cx="12" cy="12" r="3"/></svg>',
  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>',
  share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/></svg>'
 };
@@ -686,11 +700,13 @@ function payFootHtml(d){
   if(left<0)h+='<div class="small" style="color:var(--bad)">That\'s '+fmt(-left)+' more than the payment. Lower an amount.</div>';
   if(left>0){h+='<div class="small"><b>'+fmt(left)+' left over.</b> Keep it as a deposit for someone? It works like a top-up: their charges from '+(d.date?dd(d.date):'the payment date')+' on are paid from it automatically, oldest first.</div><div class="chips">'+activeOwners(d.card).map(function(o){return '<button class="chip mini" style="--oc:'+o.color+'" aria-pressed="'+(d.credit===o.id)+'" data-act="payCredit" data-id="'+o.id+'"><i></i>'+esc(o.name)+'</button>'}).join('')+'<button class="chip mini" aria-pressed="'+(!d.credit)+'" data-act="payCredit" data-id="">Decide later</button></div>'}
   h+='<div class="btns"><button class="btn ghost" data-act="closeSheet">Cancel</button><button class="btn acc" data-act="paySave"'+(left<0||!amt?' disabled':'')+'>Save</button></div>';
+  setTimeout(function(){var el=$('#payLeft');if(el){el.textContent=fmt(left);el.style.color=left<0?'var(--bad)':left>0?'var(--warn)':'var(--ok)'}},0);
   return h;
 }
 function sheetPay(){
   var d=S.sheet.draft,p=d.id?pay(d.id):null,fromBank=d.source==='statement';
-  var h='<div class="grab"></div><div class="row"><h2>'+(p?'Payment':'Record a payment by hand')+'</h2><span class="pill">'+(fromBank?esc(stmtName(d.stmt)):'By hand')+'</span></div>';
+  var al0=sumAllocs(d),left0=(+d.amount||0)-al0;
+  var h='<div class="phead"><button class="iconbtn" data-act="closeSheet" aria-label="Back">'+IC.back+'</button><div style="min-width:0;flex:1"><div class="xs muted">'+(fromBank?esc(stmtName(d.stmt)):'Recorded by hand')+'</div><h2>'+(p?'Assign payment':'Record a payment')+'</h2></div><div style="text-align:right"><div class="xs muted">Left to assign</div><b class="num" id="payLeft">'+fmt(left0)+'</b></div></div>';
   if(fromBank)h+='<div class="btns"><div class="field"><span class="fl">Amount</span><div class="ro amt num">'+fmt(d.amount)+'</div></div><div class="field"><span class="fl">Date</span><div class="ro">'+dd(d.date)+' 2026</div></div></div><div class="xs muted">From the bank: '+esc(d.line)+'. Amount and date can\'t be changed.</div>';
   else{
     if(!p)h+='<button class="btn ghost sm" data-act="payReceipt">Fill from a transfer receipt (demo)</button>';
@@ -766,7 +782,8 @@ function renderSheet(){
   var el=$('#sheet');if(!S.sheet){el.innerHTML='';return}
   var keep=el.querySelector('.sheet')?el.querySelector('.sheet').scrollTop:0;
   var f={tx:sheetTx,pay:sheetPay,share:sheetShare,card:sheetCard,analyze:sheetAnalyze,migrate:sheetMigrate}[S.sheet.type];
-  el.innerHTML='<div class="overlay" data-act="closeSheet"></div><div class="sheet" role="dialog" aria-modal="true">'+f()+'</div>';
+  var full=S.sheet.type==='pay';
+  el.innerHTML=(full?'':'<div class="overlay" data-act="closeSheet"></div>')+'<div class="sheet'+(full?' full':'')+'" role="dialog" aria-modal="true">'+f()+'</div>';
   if(S._keepSheet){el.querySelector('.sheet').scrollTop=keep;S._keepSheet=false}
 }
 
@@ -774,13 +791,23 @@ function renderSheet(){
 function applyPalette(){var p=pal(card().pal),dev=$('#device');dev.style.setProperty('--acc',p.acc);dev.style.setProperty('--acc-ink',inkOn(p.acc));dev.style.setProperty('--acc-soft',p.soft);dev.style.setProperty('--pbg',p.bg);dev.style.setProperty('--pdeep',p.deep)}
 var cardsTimer;
 function centerCards(){var cs=$('#cards');if(!cs)return;var el=cs.querySelector('[aria-pressed="true"]');if(el&&(el.offsetLeft+el.offsetWidth>cs.scrollLeft+cs.clientWidth||el.offsetLeft<cs.scrollLeft))cs.scrollLeft=el.offsetLeft-14}
-function selectCard(id){S.cardId=id;S.filters={owner:'all',status:'all'};S.ownerView=null;S._keepScroll=true;render()}
+function selectCard(id,fromEl){
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches,dev=$('#device');
+  function go(){S.cardId=id;S.filters={owner:'all',status:'all'};S.ownerView=null;S._keepScroll=true;S._pop=true;render()}
+  if(reduce||!fromEl){go();return}
+  var dr=dev.getBoundingClientRect(),r=fromEl.getBoundingClientRect(),fixed=getComputedStyle(dev).borderTopWidth==='0px';
+  var x=r.left+r.width/2-(fixed?0:dr.left),y=r.top+r.height/2-(fixed?0:dr.top),np=pal(card(id).pal);
+  var rp=document.createElement('div');rp.className='ripple';rp.style.setProperty('--rbg',np.bg);rp.style.setProperty('--rx',x+'px');rp.style.setProperty('--ry',y+'px');
+  dev.appendChild(rp);
+  setTimeout(function(){go();rp.classList.add('out');setTimeout(function(){rp.remove()},260)},380);
+}
 function render(){
   applyPalette();document.body.dataset.skin=S.skin;
   var keep=$('#screen').scrollTop;
   $('#screen').innerHTML=S.ownerView?viewOwner():VIEWS[S.tab]();
   $('#tabbar').innerHTML=tabbar();
   centerCards();renderSheet();renderPicker();
+  if(S._pop){S._pop=false;var sel=document.querySelector('.ccard[aria-pressed="true"]')||document.querySelector('.cbar');if(sel){sel.classList.add('pop');setTimeout(function(){sel.classList.remove('pop')},500)}var cs=$('#cards'),el=cs&&cs.querySelector('[aria-pressed="true"]');if(el&&cs.scrollTo)cs.scrollTo({left:el.offsetLeft-(cs.clientWidth-el.offsetWidth)/2,behavior:'smooth'})}
   if(S._keepScroll){$('#screen').scrollTop=keep;S._keepScroll=false}else{$('#screen').scrollTop=0;if(window.innerWidth<=440)window.scrollTo(0,0)}
 }
 var toastTimer;
@@ -806,12 +833,12 @@ var A={
   tab:function(e){S.tab=e.dataset.tab;S.ownerView=null;S.sheet=null;render()},
   settings:function(){S.tab='settings';S.ownerView=null;render()},
   back:function(){if(S.ownerView)S.ownerView=null;else S.tab='bill';render()},
-  card:function(e){if(e.dataset.id!==S.cardId)selectCard(e.dataset.id)},
+  card:function(e){if(e.dataset.id!==S.cardId)selectCard(e.dataset.id,e)},
   ownerView:function(e){S.ownerView=e.dataset.id;render()},
   goCheck:function(){S.tab='tx';S.filters.status='check';render()},
   pick:function(e){S.picker=e.dataset.key;renderPicker()},
   pickClose:function(){S.picker=null;renderPicker()},
-  pickChoose:function(e){PICK[S.picker].set(e.dataset.v);S.picker=null;soft()},
+  pickChoose:function(e){if(S.picker==='card'){var v=e.dataset.v,bar=document.querySelector('.cbar');S.picker=null;renderPicker();if(v!==S.cardId)selectCard(v,bar);return}PICK[S.picker].set(e.dataset.v);S.picker=null;soft()},
   openTx:function(e){var t=tx(e.dataset.id);if(!t)return;if(t.card!==S.cardId)S.cardId=t.card;S.sheet={type:'tx',id:t.id,draft:{owner:t.owner,label:t.label,cat:t.cat,amount:t.amount,date:t.date,desc:t.desc}};render()},
   newTx:function(){var c=card();S.sheet={type:'tx',id:null,draft:{owner:c.defaultOwner,label:'',cat:'',amount:'',date:TODAY,desc:''}};renderSheet()},
   txOwner:function(e){S.sheet.draft.owner=e.dataset.id;S._keepSheet=true;renderSheet()},

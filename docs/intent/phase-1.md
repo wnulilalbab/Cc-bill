@@ -35,6 +35,9 @@ Spending analysis (Insights tab ships as a preview only), due-date reminders and
 - **No native browser dropdowns.** Every picker is a custom bottom-sheet list.
 - App UI language: **English** everywhere. Only the WhatsApp share has a Bahasa/English switch (default Bahasa).
 - Card selection: **Bill** tab shows side-by-side card tiles (≈210px; selected tile filled with the palette's deep tone). Other tabs show a slim **card bar** that opens the card picker.
+- **Card switch animation**: the new palette spreads as a ripple from the tapped card (or card bar) across the screen (~400 ms), then the selected tile does a small lift/settle and scrolls into view. Disabled when the OS asks for reduced motion.
+- Settings icon is a gear (not a sun-like glyph).
+- Pop-ups (bottom sheets) are for quick one-tap jobs: owner picker, row edit, duplicates, share, pickers. **Payment assignment is a full-screen page** (§7).
 
 ## 3. Statements and Unbilled
 
@@ -78,6 +81,7 @@ Spending analysis (Insights tab ships as a preview only), due-date reminders and
 
 - **Payments come from the bank**: payment lines on statements and in Unbilled screenshots appear automatically under **To assign**. Recording by hand is a fallback.
 - A payment is linked to a **date**, never to "the statement it's printed on" (it usually appears on the *next* statement).
+- Assigning happens on a **full-screen page**: sticky header (back, source of the payment, live **Left to assign**), scrollable body, sticky footer (assigned total, deposit choice, Save). Back gesture/button leaves without saving.
 - Assigning: pick **who it's for** (single person by default; "It was for more than one person" enables several) → tap the **charges it paid**.
   - Charge groups are ordered by **statement date, oldest first**, Unbilled last; groups collapse/expand and show open count + open total.
   - Hidden, with a note saying how many: charges **dated after the payment date**, and charges **already fully paid** by other payments.
