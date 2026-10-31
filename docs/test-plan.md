@@ -171,7 +171,7 @@ Additional rules:
 | U-02 | 390px viewport, every tab and sheet | No horizontal scroll |
 | U-03 | Card bar on Transactions/Payments/Insights | Opens card picker |
 | U-04 | Language | No Indonesian strings in app UI outside share preview |
-| U-05 | Card switch | Next card → screen slides in from the right; previous card → from the left (tiles and card bar); selected tile scrolls into view; no horizontal page scroll during the slide |
+| U-05 | Card switch | Only the selected card tile (or card bar) slides: from the right for the next card, from the left for the previous; the screen content does not move; selected tile scrolls into view |
 | U-06 | Reduced motion | No slide animations; card still switches |
 | U-07 | Payment assignment | Opens as full-screen page (no overlay); header "Left to assign" updates live while typing; back closes without saving |
 

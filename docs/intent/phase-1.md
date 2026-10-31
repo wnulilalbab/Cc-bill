@@ -35,7 +35,7 @@ Spending analysis (Insights tab ships as a preview only), due-date reminders and
 - **No native browser dropdowns.** Every picker is a custom bottom-sheet list.
 - App UI language: **English** everywhere. Only the WhatsApp share has a Bahasa/English switch (default Bahasa).
 - Card selection: **Bill** tab shows side-by-side card tiles (≈210px; selected tile filled with the palette's deep tone). Other tabs show a slim **card bar** that opens the card picker.
-- **Card switch animation**: a direction-aware **slide** (~320 ms). Picking a card to the right slides the screen in from the right (right → left); picking one to the left slides it in from the left. Same from the card bar picker. The selected tile scrolls smoothly into view; the palette colours fade across. No ripple. No horizontal page scroll during the slide. Disabled when the OS asks for reduced motion.
+- **Card switch animation**: only the **card** moves, never the rest of the screen. The newly selected card tile slides in (~340 ms) from the right when picking a card to the right, from the left when picking one to the left; on other tabs the card bar slides the same way. The selected tile scrolls smoothly into view; palette colours fade across. No ripple. Disabled when the OS asks for reduced motion.
 - Settings icon is a gear (not a sun-like glyph).
 - Pop-ups (bottom sheets) are for quick one-tap jobs: owner picker, row edit, duplicates, share, pickers. **Payment assignment is a full-screen page** (§7).
 
