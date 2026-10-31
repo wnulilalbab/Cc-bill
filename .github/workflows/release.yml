@@ -1,0 +1,84 @@
+name: Release
+
+# Owner-triggered only. Publishes the current main to production after the release checks pass.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Work out the next version
+        id: ver
+        run: |
+          last=$(git tag --list 'v*' --sort=-v:refname | head -1)
+          if [ -z "$last" ]; then last="v$(node -p "require('./package.json').version")"; fi
+          IFS=. read -r major minor patch <<< "${last#v}"
+          next="$major.$minor.$((patch + 1))"
+          echo "last=$last" >> "$GITHUB_OUTPUT"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$next (previous $last)"
+
+      # Release checks (real Claude API test on synthetic fixtures, full Playwright suite on staging)
+      # are added in Slice 2. Until then this step only confirms the release secret is present.
+      - name: Release checks
+        env:
+          ANTHROPIC_API_KEY_CI: ${{ secrets.ANTHROPIC_API_KEY_CI }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY_CI" ]; then
+            echo "::warning::Secret ANTHROPIC_API_KEY_CI is not set. It becomes required once the real API test is added in Slice 2."
+          fi
+
+      - name: Build (production)
+        env:
+          VITE_APP_ENV: production
+          VITE_BASE: /Cc-bill/
+          VITE_APP_VERSION: ${{ steps.ver.outputs.next }}
+        run: |
+          npm run build
+          printf '{"env":"production","sha":"%s","version":"%s","builtAt":"%s"}\n' "$GITHUB_SHA" "${{ steps.ver.outputs.next }}" "$(date -u +%FT%TZ)" > dist/build.json
+
+      - name: Publish to gh-pages root (keeps /staging)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          keep_files: true
+          commit_message: "release: v${{ steps.ver.outputs.next }}"
+
+      - name: Tag and create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git tag "v${{ steps.ver.outputs.next }}"
+          git push origin "v${{ steps.ver.outputs.next }}"
+          gh release create "v${{ steps.ver.outputs.next }}" --generate-notes --title "v${{ steps.ver.outputs.next }}"
+
+      - name: Production smoke test
+        run: |
+          url="https://${{ github.repository_owner }}.github.io/Cc-bill/build.json"
+          for i in $(seq 1 30); do
+            body=$(curl -fsSL "$url?nocache=$i" || true)
+            if echo "$body" | grep -q "\"sha\":\"$GITHUB_SHA\""; then echo "Production serves $GITHUB_SHA"; exit 0; fi
+            sleep 10
+          done
+          echo "::error::Production did not serve the new build within 5 minutes"; exit 1
