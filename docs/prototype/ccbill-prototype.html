@@ -169,14 +169,13 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--mute
 .phead{position:sticky;top:0;z-index:2;background:var(--surface);display:flex;align-items:center;gap:10px;padding:12px 0 10px;border-bottom:1px solid var(--line)}
 .phead h2{font-size:17px;margin:0}
 @keyframes slidein{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
-.ripple{position:absolute;inset:0;z-index:60;pointer-events:none;background:var(--rbg);clip-path:circle(0 at var(--rx) var(--ry));animation:ripple .42s cubic-bezier(.3,.7,.3,1) forwards}
-.ripple.out{animation:rfade .25s ease forwards}
+.screen{position:relative;z-index:1}
+.ripple{position:absolute;inset:0;z-index:0;pointer-events:none;background:var(--rbg);clip-path:circle(0 at var(--rx) var(--ry));animation:ripple .5s cubic-bezier(.3,.7,.3,1) forwards}
 @keyframes ripple{to{clip-path:circle(150% at var(--rx) var(--ry))}}
-@keyframes rfade{from{opacity:1;clip-path:circle(150% at var(--rx) var(--ry))}to{opacity:0;clip-path:circle(150% at var(--rx) var(--ry))}}
 .ccard.pop{animation:pop .45s cubic-bezier(.3,1.4,.5,1)}
 @keyframes pop{0%{transform:translateY(6px) scale(.94)}60%{transform:translateY(-3px) scale(1.03)}100%{transform:none}}
 .cbar.pop .cdot{animation:pop .45s cubic-bezier(.3,1.4,.5,1)}
-@media (prefers-reduced-motion:reduce){.ripple,.ripple.out,.ccard.pop,.cbar.pop .cdot,.sheet.full{animation:none}.ripple{display:none}}
+@media (prefers-reduced-motion:reduce){.ripple,.ccard.pop,.cbar.pop .cdot,.sheet.full{animation:none}.ripple{display:none}}
 .foot{position:sticky;bottom:-18px;background:var(--surface);padding:10px 0 2px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
 .toast{position:absolute;left:12px;right:12px;bottom:84px;z-index:50;background:#111318;color:#fff;border-radius:14px;padding:11px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12.5px;box-shadow:0 10px 24px rgba(0,0,0,.3)}
 .toast button{border:0;background:var(--acc);color:var(--acc-ink);border-radius:999px;padding:6px 11px;font-weight:800;font-size:12px;flex:none}
@@ -797,9 +796,13 @@ function selectCard(id,fromEl){
   if(reduce||!fromEl){go();return}
   var dr=dev.getBoundingClientRect(),r=fromEl.getBoundingClientRect(),fixed=getComputedStyle(dev).borderTopWidth==='0px';
   var x=r.left+r.width/2-(fixed?0:dr.left),y=r.top+r.height/2-(fixed?0:dr.top),np=pal(card(id).pal);
-  var rp=document.createElement('div');rp.className='ripple';rp.style.setProperty('--rbg',np.bg);rp.style.setProperty('--rx',x+'px');rp.style.setProperty('--ry',y+'px');
-  dev.appendChild(rp);
-  setTimeout(function(){go();rp.classList.add('out');setTimeout(function(){rp.remove()},260)},380);
+  var newBg=S.skin==='bold'?'#f3f3f3':np.bg;
+  dev.querySelectorAll('.ripple').forEach(function(r){r.remove()});
+  dev.style.background=getComputedStyle(dev).backgroundColor;
+  go();
+  var rp=document.createElement('div');rp.className='ripple';rp.style.setProperty('--rbg',newBg);rp.style.setProperty('--rx',x+'px');rp.style.setProperty('--ry',y+'px');
+  dev.insertBefore(rp,dev.firstChild);
+  setTimeout(function(){dev.style.background='';rp.remove()},520);
 }
 function render(){
   applyPalette();document.body.dataset.skin=S.skin;

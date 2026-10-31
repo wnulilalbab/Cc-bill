@@ -171,7 +171,7 @@ Additional rules:
 | U-02 | 390px viewport, every tab and sheet | No horizontal scroll |
 | U-03 | Card bar on Transactions/Payments/Insights | Opens card picker |
 | U-04 | Language | No Indonesian strings in app UI outside share preview |
-| U-05 | Card switch | Ripple layer starts at the tapped card's centre, ends with the new palette, then is removed; selected tile gets the settle animation |
+| U-05 | Card switch | Content shows the new card immediately; ripple sits behind content (taps reach content during it), starts at the tapped card's centre, ends with the new background, then is removed; selected tile gets the settle animation |
 | U-06 | Reduced motion | No ripple, no pop, no slide; card still switches |
 | U-07 | Payment assignment | Opens as full-screen page (no overlay); header "Left to assign" updates live while typing; back closes without saving |
 
