@@ -6,8 +6,8 @@ Kept by the Lead. Any session resumes from here. Rules: [`../intent/dev-loop.md`
 
 | Slice | State | PR | Notes |
 |---|---|---|---|
-| 0 Gate the deploy | in review | — | main → staging only; Release workflow skeleton; docs brought in |
-| 1 Fixtures + harness + minimal CI | next | | |
+| 0 Gate the deploy | **done** | #16 | main → staging only (verified on gh-pages: `staging/` published, root untouched); Release workflow skeleton |
+| 1 Fixtures + harness + minimal CI | in progress | | |
 | 2 Pipeline | queued | | |
 | 3 Money core | queued | | |
 | 4 Database + migration | queued | | |
