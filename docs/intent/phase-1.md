@@ -34,7 +34,7 @@ Spending analysis (Insights tab ships as a preview only), due-date reminders and
 - Font: Plus Jakarta Sans. Bottom nav: Bill · Transactions · (+) Import · Payments · Insights (preview). Settings via gear.
 - **No native browser dropdowns.** Every picker is a custom bottom-sheet list.
 - App UI language: **English** everywhere. Only the WhatsApp share has a Bahasa/English switch (default Bahasa).
-- Card selection on **Bill** is a **carousel (banner slider)**: one row of cards (≈74% width), the selected card centred and filled with the palette's deep tone, neighbours peeking at the sides (scaled down, faded), page dots below, and a smaller "+ Add card" tile at the end.
+- Card selection on **Bill** is a **carousel (banner slider)**: one row of cards sized like a real credit card (aspect 1.586 : 1, ≈60% of screen width, max 240px — about 234×148 on a 390px phone), the selected card centred and filled with the palette's deep tone, neighbours peeking at the sides (scaled down, faded), page dots below, and a smaller "+ Add card" tile at the end.
   - **Swipe** left/right (touch or mouse drag, >50px) moves to the next/previous card; a small drag snaps back; tapping a peeking card selects it.
   - The **whole row glides** (~420 ms) so the new card ends centred. Only the card row moves; the rest of the screen does not animate. No ripple.
   - Other tabs show a slim **card bar** that opens the card picker (it slides slightly in the direction of the change).

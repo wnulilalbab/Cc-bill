@@ -42,10 +42,10 @@ button{cursor:pointer}
 /* card carousel */
 .cards{position:relative;overflow:hidden;margin:0 -14px;padding:4px 0 6px;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab}
 .cards.dragging{cursor:grabbing}
-.track{display:flex;gap:12px;will-change:transform}
+.track{display:flex;gap:12px;align-items:stretch;will-change:transform}
 .track.anim{transition:transform .42s cubic-bezier(.2,.8,.2,1)}
 .cards::-webkit-scrollbar{display:none}
-.ccard{flex:0 0 74%;transition:transform .42s cubic-bezier(.2,.8,.2,1),opacity .42s;border-radius:var(--r);padding:12px 14px;border:1px solid var(--line);background:var(--surface);text-align:left;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;min-height:112px}
+.ccard{flex:0 0 min(60%,240px);aspect-ratio:1.586/1;justify-content:space-between;transition:transform .42s cubic-bezier(.2,.8,.2,1),opacity .42s;border-radius:var(--r);padding:12px 14px;border:1px solid var(--line);background:var(--surface);text-align:left;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
 .ccard[aria-pressed="true"]{background:var(--tile);color:#fff;border-color:transparent}
 .ccard[aria-pressed="false"]{transform:scale(.92);opacity:.6}
 .ccard .nm{font-weight:800;font-size:15px}
@@ -55,7 +55,7 @@ button{cursor:pointer}
 .ccard[aria-pressed="true"] .orb{opacity:1}
 .ccard .orb2{display:none}
 .ccard .chipv{position:absolute;right:16px;bottom:14px;font-size:11px;font-weight:800;background:var(--c);color:var(--ci);padding:3px 9px;border-radius:999px}
-.ccard.add{flex:0 0 34%;transform:scale(.92);opacity:.8;align-items:center;justify-content:center;color:var(--muted);border-style:dashed;font-weight:700;font-size:12px;background:transparent}
+.ccard.add{flex:0 0 min(26%,104px);aspect-ratio:auto;transform:scale(.92);opacity:.8;align-items:center;justify-content:center;color:var(--muted);border-style:dashed;font-weight:700;font-size:12px;background:transparent}
 .ccard .chipv{display:none}
 .cbar{display:flex;align-items:center;gap:10px;width:100%;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 14px;text-align:left;font-size:13px}
 .cbar::after{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);flex:none}
