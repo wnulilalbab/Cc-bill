@@ -7,8 +7,10 @@ on:
 permissions:
   contents: write
 
+# Own group so a staging deploy can never cancel a pending Release. If both push gh-pages at once,
+# the later push fails loudly instead of being dropped silently.
 concurrency:
-  group: pages
+  group: release
   cancel-in-progress: false
 
 jobs:
@@ -30,6 +32,7 @@ jobs:
       - name: Work out the next version
         id: ver
         run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           last=$(git tag --list 'v*' --sort=-v:refname | head -1)
           if [ -z "$last" ]; then last="v$(node -p "require('./package.json').version")"; fi
           IFS=. read -r major minor patch <<< "${last#v}"
@@ -55,7 +58,7 @@ jobs:
           VITE_APP_VERSION: ${{ steps.ver.outputs.next }}
         run: |
           npm run build
-          printf '{"env":"production","sha":"%s","version":"%s","builtAt":"%s"}\n' "$GITHUB_SHA" "${{ steps.ver.outputs.next }}" "$(date -u +%FT%TZ)" > dist/build.json
+          printf '{"env":"production","sha":"%s","version":"%s","builtAt":"%s"}\n' "${{ steps.ver.outputs.sha }}" "${{ steps.ver.outputs.next }}" "$(date -u +%FT%TZ)" > dist/build.json
 
       - name: Publish to gh-pages root (keeps /staging)
         uses: peaceiris/actions-gh-pages@v4
@@ -78,7 +81,7 @@ jobs:
           url="https://${{ github.repository_owner }}.github.io/Cc-bill/build.json"
           for i in $(seq 1 30); do
             body=$(curl -fsSL "$url?nocache=$i" || true)
-            if echo "$body" | grep -q "\"sha\":\"$GITHUB_SHA\""; then echo "Production serves $GITHUB_SHA"; exit 0; fi
+            if echo "$body" | grep -q "\"sha\":\"${{ steps.ver.outputs.sha }}\""; then echo "Production serves ${{ steps.ver.outputs.sha }}"; exit 0; fi
             sleep 10
           done
           echo "::error::Production did not serve the new build within 5 minutes"; exit 1

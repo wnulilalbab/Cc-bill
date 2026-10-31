@@ -33,6 +33,14 @@ None.
 ## Waiting for the owner
 
 - One-time GitHub setup (branch protection, allow auto-merge, `ANTHROPIC_API_KEY_CI`, Pages). Checklist will be posted when Slice 2 lands.
+- Before opening staging on a phone that already has the app installed: run the **first Release** once. Until then the old production service worker (without the staging deny-list) can serve the production app at `/staging/`.
+
+## Follow-ups for later slices
+
+- Slice 2: Release checks must **fail** (not warn) when `ANTHROPIC_API_KEY_CI` is missing.
+- Slice 2: put `ANTHROPIC_API_KEY_CI` in a GitHub **Environment** restricted to `main` (so a Release dispatched from another branch can't use it); pin `peaceiris/actions-gh-pages` to a commit SHA.
+- Slice 2: create the tag/release only after the production smoke test passes.
+- Shared origin: `localStorage` keys (`testing_mode`, `tx_filter_*`, and any new ones) must be environment-prefixed on staging so they never leak into production.
 
 ## Handover
 
