@@ -34,8 +34,11 @@ Spending analysis (Insights tab ships as a preview only), due-date reminders and
 - Font: Plus Jakarta Sans. Bottom nav: Bill · Transactions · (+) Import · Payments · Insights (preview). Settings via gear.
 - **No native browser dropdowns.** Every picker is a custom bottom-sheet list.
 - App UI language: **English** everywhere. Only the WhatsApp share has a Bahasa/English switch (default Bahasa).
-- Card selection: **Bill** tab shows side-by-side card tiles (≈210px; selected tile filled with the palette's deep tone). Other tabs show a slim **card bar** that opens the card picker.
-- **Card switch animation**: only the **card** moves, never the rest of the screen. The newly selected card tile slides in (~340 ms) from the right when picking a card to the right, from the left when picking one to the left; on other tabs the card bar slides the same way. The selected tile scrolls smoothly into view; palette colours fade across. No ripple. Disabled when the OS asks for reduced motion.
+- Card selection on **Bill** is a **carousel (banner slider)**: one row of cards (≈74% width), the selected card centred and filled with the palette's deep tone, neighbours peeking at the sides (scaled down, faded), page dots below, and a smaller "+ Add card" tile at the end.
+  - **Swipe** left/right (touch or mouse drag, >50px) moves to the next/previous card; a small drag snaps back; tapping a peeking card selects it.
+  - The **whole row glides** (~420 ms) so the new card ends centred. Only the card row moves; the rest of the screen does not animate. No ripple.
+  - Other tabs show a slim **card bar** that opens the card picker (it slides slightly in the direction of the change).
+  - Disabled animations when the OS asks for reduced motion.
 - Settings icon is a gear (not a sun-like glyph).
 - Pop-ups (bottom sheets) are for quick one-tap jobs: owner picker, row edit, duplicates, share, pickers. **Payment assignment is a full-screen page** (§7).
 
