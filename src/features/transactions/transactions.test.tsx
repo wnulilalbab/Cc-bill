@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import 'fake-indexeddb/auto'
-import { cleanup, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { UserEvent } from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computeMoney, ownerDepositLeft, txStatus, unassignedOf } from '../../domain/amounts'
@@ -401,7 +401,7 @@ describe('row sheet', () => {
     await user.click(within(s2).getByRole('button', { name: 'Cancel' }))
     await user.click(row('Train 9.000'))
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }))
-    await screen.findByText('Saved')
+    await screen.findByText('Nothing changed')
   })
 
   it('X-03 add a missing transaction: to the selected statement, source You; refund stored negative', async () => {
@@ -511,9 +511,11 @@ describe('bulk select', () => {
     await user.click(screen.getByRole('button', { name: 'Select all shown' }))
     expect(within(screen.getByRole('toolbar')).getByText('9 rows selected')).toBeTruthy()
     await user.click(within(screen.getByRole('toolbar')).getByRole('button', { name: 'Mark reviewed' }))
-    await screen.findByText('6 rows marked reviewed')
+    await screen.findByText('5 rows marked reviewed')
     const rows = await db.transactions.where('statementId').equals(OCT.id).toArray()
-    expect(rows.every((t) => t.tagSource === 'manual' && !t.check)).toBe(true)
+    expect(rows.every((t) => !t.check)).toBe(true)
+    // Plan rows stay Plan; every other row is now source You.
+    expect(rows.filter((t) => t.tagSource !== 'manual').map((t) => [t.id, t.tagSource])).toEqual([['i1', 'plan']])
     expect(rows.find((t) => t.id === 't-ikea')?.ownerId).toBe('andi')
 
     await user.click(screen.getByRole('button', { name: 'Select' }))
@@ -535,6 +537,113 @@ describe('bulk select', () => {
     expect(screen.getByText("1 row already Sari's.")).toBeTruthy()
     expect((within(screen.getByRole('dialog')).getByRole('button', { name: 'Apply to 0 rows' }) as HTMLButtonElement).disabled).toBe(true)
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('toolbar')).toBeTruthy()
+  })
+})
+
+describe('review fixes', () => {
+  it('X-02 refunds: a label-only save keeps the amount; the amount can be fixed; a wrong sign has its own fix', async () => {
+    const db = await seedScreen()
+    await db.transactions.put(tx('w', OCT.id, '2026-10-09', 'REFUND SALAH', 5_000, 'andi', { kind: 'refund' }))
+    const { user } = renderScreen(<TransactionsPage />, { db })
+    await user.click(await screen.findByRole('button', { name: 'REFUND IKEA ALAM SUTERA −44.631' }))
+    await user.type(within(screen.getByRole('dialog')).getByLabelText('Label'), 'Return')
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }))
+    await screen.findByText('Saved')
+    expect(await db.transactions.get('r1')).toMatchObject({ amount: -44_631, label: 'Return' })
+
+    await user.click(await screen.findByRole('button', { name: 'Return −44.631' }))
+    let sheet = screen.getByRole('dialog')
+    await user.click(within(sheet).getByText('Fix amount, date or description'))
+    await user.clear(within(sheet).getByLabelText('Amount'))
+    await user.type(within(sheet).getByLabelText('Amount'), '40.000')
+    await user.click(within(sheet).getByRole('button', { name: 'Save' }))
+    await screen.findByText('Saved. Totals check re-run for the Oct 2026 statement.')
+    expect((await db.transactions.get('r1'))?.amount).toBe(-40_000)
+
+    // Label-only save on a wrong-sign row does not flip it; "Fix the sign" does.
+    await user.click(row('REFUND SALAH 5.000'))
+    sheet = screen.getByRole('dialog')
+    await user.type(within(sheet).getByLabelText('Label'), 'Oops')
+    await user.click(within(sheet).getByRole('button', { name: 'Save' }))
+    await screen.findByText('Saved')
+    expect((await db.transactions.get('w'))?.amount).toBe(5_000)
+    await user.click(await screen.findByRole('button', { name: 'Oops 5.000' }))
+    sheet = screen.getByRole('dialog')
+    await user.click(within(sheet).getByText('Fix amount, date or description'))
+    await user.click(within(sheet).getByRole('button', { name: 'Fix the sign: −5.000' }))
+    await screen.findByText('Sign fixed')
+    expect((await db.transactions.get('w'))?.amount).toBe(-5_000)
+  })
+
+  it('X-05 on a deposit-paid row: the question names the deposit; Keep assigns the deposit use to the row', async () => {
+    const { user, db } = await open()
+    await choose(user, 'Statement', 'Unbilled')
+    await user.click(row('GRAB* A-7XK2 150.000'))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Sari' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }))
+    const ask = await screen.findByRole('dialog', { name: 'This charge already has a payment' })
+    expect(within(ask).getByText("Rp 150.000 from Andi's deposit covers it. You're moving it to Sari.")).toBeTruthy()
+    expect(within(ask).getByText(/The Rp 150.000 from Andi's deposit is assigned to it, so it stays paid\./)).toBeTruthy()
+    expect(within(ask).getByText(/Andi's deposit stops paying it \(Rp 150.000 stays in the deposit\)\./)).toBeTruthy()
+    await user.click(within(ask).getByRole('button', { name: 'Keep payment' }))
+    await screen.findByText('Saved. The payment stays on it.')
+    const m = await money(db)
+    expect(m.ledger.payments.find((p) => p.id === 'p-andi')!.allocations).toContainEqual({ txId: 't-later', amount: 150_000 })
+    expect(m.status('t-later')).toBe('paid')
+    expect(m.deposit('andi')).toBe(50_000)
+  })
+
+  it('Unassign and Delete say when the statement goes back to Draft', async () => {
+    const db = await seedPaidRows(freshNewDb())
+    const { user } = renderScreen(<TransactionsPage />, { db })
+    expect(within(await screen.findByLabelText('Draft or Final')).getByText('Final ✓')).toBeTruthy()
+    const warning = 'The Oct 2026 statement goes back to Draft until the payment is assigned again.'
+    await user.click(row('GRAMEDIA MATRAMAN 120.000'))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Andi' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }))
+    expect(within(await screen.findByRole('dialog', { name: 'This charge already has a payment' })).getByText(warning)).toBeTruthy()
+    await user.keyboard('{Escape}')
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'GRAMEDIA MATRAMAN' })).getByRole('button', { name: 'Delete transaction' }))
+    expect(within(screen.getByRole('dialog', { name: 'Delete this transaction?' })).getByText(warning)).toBeTruthy()
+  })
+
+  it('a converted row cannot be deleted; installment amount is read-only; a date that changes the deposit warns', async () => {
+    const db = await seedScreen()
+    await db.transactions.bulkPut([
+      tx('o', 'bca-sep', '2026-09-03', 'BLIBLI *1', 100_000, 'sari', { cancelled: true }),
+      tx('v', OCT.id, '2026-09-20', 'REVERSAL CICILAN BLIBLI *1', -100_000, 'sari', { kind: 'reversal', reverses: 'o' }),
+    ])
+    const { user } = renderScreen(<TransactionsPage />, { db })
+    await user.click(await screen.findByRole('button', { name: 'REVERSAL CICILAN BLIBLI *1 −100.000' }))
+    let sheet = screen.getByRole('dialog')
+    expect(within(sheet).getByText(/Undo the installment conversion first\./)).toBeTruthy()
+    expect(within(sheet).queryByRole('button', { name: 'Delete transaction' })).toBeNull()
+    await user.click(within(sheet).getByRole('button', { name: 'Cancel' }))
+
+    await user.click(row('CICILAN BCA KE 02 DARI 06, BLIBLI.COM 200.000'))
+    sheet = screen.getByRole('dialog')
+    await user.click(within(sheet).getByText('Fix amount, date or description'))
+    expect((within(sheet).getByLabelText('Amount') as HTMLInputElement).readOnly).toBe(true)
+    expect(within(sheet).getByText(/Edit the plan instead\./)).toBeTruthy()
+    await user.click(within(sheet).getByRole('button', { name: 'Cancel' }))
+
+    await choose(user, 'Statement', 'Unbilled')
+    await user.click(row('GRAB* A-7XK2 150.000'))
+    sheet = screen.getByRole('dialog')
+    await user.click(within(sheet).getByText('Fix amount, date or description'))
+    fireEvent.change(within(sheet).getByLabelText('Date'), { target: { value: '2026-10-10' } })
+    expect(within(sheet).getByText("With this date, Andi's deposit pays Rp 0 of this row instead of Rp 150.000.")).toBeTruthy()
+  })
+
+  it('bulk Mark reviewed shows an error when it cannot save', async () => {
+    const { user, db } = await open()
+    await user.click(screen.getByRole('button', { name: 'Select' }))
+    await user.click(row('KCI COMMUTER 9.000'))
+    await db.transactions.update('k1', { statementId: '' }) // a record the check refuses to save
+    await user.click(within(screen.getByRole('toolbar')).getByRole('button', { name: 'Mark reviewed' }))
+    expect(await screen.findByText(/^Could not mark reviewed:/)).toBeTruthy()
     expect(screen.getByRole('toolbar')).toBeTruthy()
   })
 })

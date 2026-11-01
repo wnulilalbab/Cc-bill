@@ -61,6 +61,7 @@ export function TransactionsPage() {
   const [open, setOpen] = useState<Open>(null)
   const [selecting, setSelecting] = useState(false)
   const [picked, setPicked] = useState<Set<string>>(new Set())
+  const [reviewing, setReviewing] = useState(false)
 
   const owners: OwnerRecord[] = useMemo(() => selected?.owners ?? [], [selected])
   const ownerName = (id: string | null) => (id ? (owners.find((o) => o.id === id)?.name ?? 'Unknown') : '')
@@ -230,11 +231,19 @@ export function TransactionsPage() {
           <button
             type="button"
             className="btn acc"
-            disabled={!picked.size}
+            disabled={!picked.size || reviewing}
             onClick={async () => {
-              const n = await markReviewed(db, [...picked])
-              toast(n ? `${plural(n, 'row')} marked reviewed` : 'Already reviewed')
-              endSelect()
+              if (reviewing) return
+              setReviewing(true)
+              try {
+                const n = await markReviewed(db, [...picked])
+                toast(n ? `${plural(n, 'row')} marked reviewed` : 'Already reviewed')
+                endSelect()
+              } catch (e) {
+                toast(`Could not mark reviewed: ${e instanceof Error ? e.message : String(e)}`)
+              } finally {
+                setReviewing(false)
+              }
             }}
           >
             Mark reviewed

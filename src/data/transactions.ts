@@ -5,6 +5,7 @@ import { sum } from '../domain/money'
 import { deleteTransaction, keepWaitingRow } from '../domain/payments'
 import { withManualOwner } from '../domain/tagging/apply'
 import type { Transaction, TxKind } from '../domain/types'
+import { paidRowIds } from './coverage'
 import type { NewDb } from './db'
 import { loadLedger } from './repo'
 import { checkRecord } from './validate'
@@ -33,23 +34,32 @@ async function checkOwner(db: NewDb, cardId: string, ownerId: string | null): Pr
   if (o.archived) throw new RowError(`${o.name} is archived. Pick another owner.`)
 }
 
-/** Ids of the card's rows that a payment covers (a non-zero assignment). */
+/** Ids of the card's rows that something pays (an assignment or a deposit). */
 async function paidIds(db: NewDb, cardId: string): Promise<Set<string>> {
-  const payments = await db.payments.where('cardId').equals(cardId).toArray()
-  return new Set(payments.flatMap((p) => p.allocations.filter((a) => a.amount > 0).map((a) => a.txId)))
+  const [transactions, payments] = await Promise.all([db.transactions.where('cardId').equals(cardId).toArray(), db.payments.where('cardId').equals(cardId).toArray()])
+  return paidRowIds({ transactions, payments })
 }
 
-const isReviewed = (t: Transaction) => !t.check && t.tagSource === 'manual'
+/** Installment rows keep their source Plan: the plan decides their owner. */
+const keepsSource = (t: Transaction) => t.tagSource === 'plan'
+export const isReviewed = (t: Transaction) => !t.check && (t.tagSource === 'manual' || keepsSource(t))
+
+/** The row confirmed as it is: Check cleared; source You (Plan rows stay Plan). */
+function reviewed(t: Transaction): Transaction {
+  if (!keepsSource(t)) return withManualOwner(t, t.ownerId)
+  const { check: _check, ...rest } = t
+  return rest
+}
 
 /**
  * "Mark reviewed": the user confirms the owner the rows have. Check cleared and source You, so tagging history
- * (which learns only from rows the user confirmed) can learn from them. Owners and payments do not change.
- * Returns the number of rows changed.
+ * (which learns only from rows the user confirmed) can learn from them; rows from an installment plan stay Plan.
+ * Owners and payments do not change. Returns the number of rows changed.
  */
 export async function markReviewed(db: NewDb, txIds: readonly string[]): Promise<number> {
   return db.transaction('rw', db.transactions, async () => {
     const rows = (await db.transactions.bulkGet([...txIds])).filter((t): t is Transaction => !!t && !isReviewed(t))
-    const next = rows.map((t) => withManualOwner(t, t.ownerId))
+    const next = rows.map(reviewed)
     next.forEach((t) => checkRecord('transactions', t))
     await db.transactions.bulkPut(next)
     return next.length
@@ -119,19 +129,27 @@ export interface RowPatch {
   label?: string
 }
 
+export const INSTALLMENT_AMOUNT = 'This is an installment: its amount comes from the plan. Edit the plan instead.'
+export const UNDO_CONVERSION = 'Undo the installment conversion first.'
+
+/** A row that is part of an installment conversion (the cancelled original or its linked reversal). */
+export const isConverted = (t: Transaction) => !!t.cancelled || (t.kind === 'reversal' && !!t.reverses)
+
 /**
- * "Fix amount, date or description" and the label. The amount cannot drop below what payments already assign to
- * the row (that money would vanish): unassign first.
+ * "Fix amount, date or description" and the label; only the fields given change. A charge's amount cannot drop
+ * below what payments explicitly assign to it (that money would vanish): unassign first. An installment's amount
+ * comes from its plan and is not edited here.
  */
 export async function updateRow(db: NewDb, txId: string, patch: RowPatch): Promise<Transaction> {
   return db.transaction('rw', [db.transactions, db.payments], async () => {
     const t = await rowOrThrow(db, txId)
     const next: Transaction = { ...t }
-    if (patch.amount !== undefined) {
+    if (patch.amount !== undefined && patch.amount !== t.amount) {
       if (!Number.isSafeInteger(patch.amount) || patch.amount === 0) throw new RowError('Enter the amount in whole rupiah.')
+      if (t.kind === 'installment') throw new RowError(INSTALLMENT_AMOUNT)
       const payments = await db.payments.where('cardId').equals(t.cardId).toArray()
       const assigned = sum(payments.flatMap((p) => p.allocations.filter((a) => a.txId === t.id).map((a) => a.amount)))
-      if (patch.amount < assigned) throw new RowError(`Payments cover Rp ${assigned.toLocaleString('id-ID')} of this row. Unassign them first, or enter at least that.`)
+      if (assigned > 0 && patch.amount < assigned) throw new RowError(`Payments cover Rp ${assigned.toLocaleString('id-ID')} of this row. Unassign them first, or enter at least that.`)
       next.amount = patch.amount
     }
     if (patch.date !== undefined) {
@@ -198,6 +216,7 @@ export async function addRow(db: NewDb, row: NewRow): Promise<Transaction> {
 export async function deleteRow(db: NewDb, txId: string): Promise<number> {
   return db.transaction('rw', [db.transactions, db.payments], async () => {
     const t = await rowOrThrow(db, txId)
+    if (isConverted(t)) throw new RowError(UNDO_CONVERSION)
     const payments = await db.payments.where('cardId').equals(t.cardId).toArray()
     const after = deleteTransaction({ transactions: [t], payments }, t.id)
     const changed = after.payments.filter((p, i) => p !== payments[i])

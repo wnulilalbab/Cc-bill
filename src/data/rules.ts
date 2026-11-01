@@ -4,6 +4,7 @@ import { applyRule, previewRule, withManualOwner, type RulePreview } from '../do
 import { ruleProblem, sameRule, type RuleDraft } from '../domain/tagging/rules'
 import type { LabelledRow, TagRule } from '../domain/tagging/types'
 import type { Payment, Transaction } from '../domain/types'
+import { isCovered, paidRowIds, paymentsAfterOwnerChange, rowCover, type PaymentChoice, type RowCover } from './coverage'
 import type { NewDb } from './db'
 import { checkRecord } from './validate'
 
@@ -51,10 +52,9 @@ export async function deleteRule(db: NewDb, id: string): Promise<void> {
   await db.rules.delete(id)
 }
 
-/** Ids of the card's rows that a payment covers. */
+/** Ids of the card's rows that something pays (a payment's assignment or a deposit). */
 async function paidIds(db: NewDb, cardId: string): Promise<Set<string>> {
-  const payments = await db.payments.where('cardId').equals(cardId).toArray()
-  return new Set(payments.flatMap((p) => p.allocations.filter((a) => a.amount > 0).map((a) => a.txId)))
+  return paidRowIds(await cardMoney(db, cardId))
 }
 
 /** How many rows of the card the rule would change (`except`: the row the rule was made from). */
@@ -78,8 +78,7 @@ export async function applyRuleOnCard(db: NewDb, rule: TagRule, { includeOwned =
   })
 }
 
-/** What happens to the payments on a row whose owner changes (X-05 / X-06). */
-export type PaymentChoice = 'keep' | 'unassign'
+export type { PaymentChoice }
 
 /** A payment covers the row and the owner changes, but no Keep / Unassign choice was given. */
 export class PaymentChoiceNeeded extends RuleError {
@@ -89,18 +88,25 @@ export class PaymentChoiceNeeded extends RuleError {
   }
 }
 
-/** Payments with a non-zero assignment to the row (every payment, also a bank line merged into a hand-recorded one). */
-export async function paymentsCovering(db: NewDb, tx: Pick<Transaction, 'id' | 'cardId'>): Promise<Payment[]> {
-  const payments = await db.payments.where('cardId').equals(tx.cardId).toArray()
-  return payments.filter((p) => p.allocations.some((a) => a.txId === tx.id && a.amount > 0))
+/** The card's rows and payments, for what pays a row. */
+async function cardMoney(db: NewDb, cardId: string): Promise<{ transactions: Transaction[]; payments: Payment[] }> {
+  const [transactions, payments] = await Promise.all([db.transactions.where('cardId').equals(cardId).toArray(), db.payments.where('cardId').equals(cardId).toArray()])
+  return { transactions, payments }
+}
+
+/** What pays the row: explicit assignments and deposits (rowCover). */
+export async function coverOfRow(db: NewDb, tx: Pick<Transaction, 'id' | 'cardId'>): Promise<RowCover> {
+  return rowCover(await cardMoney(db, tx.cardId), tx.id)
 }
 
 /**
  * The user picks the owner of one row (source You, Check cleared). `null` = nobody yet.
- * When a payment covers the row and the owner changes, `payments` says what happens to it (docs/intent/phase-1.md §6):
- * - `keep` (X-05): the assignment stays. The payer's money keeps paying this charge, now owned by the new owner.
- * - `unassign` (X-06): every assignment to the row is removed, so the row is unpaid for the new owner and the amount
- *   goes back to each payment's leftover: "To assign", or that payment's deposit when its leftover is kept as one.
+ * When something pays the row (an assignment or a deposit) and the owner changes, `payments` says what happens to it
+ * (docs/intent/phase-1.md §6; see paymentsAfterOwnerChange):
+ * - `keep` (X-05): the row stays paid by the payer's money, now owned by the new owner; deposit use becomes an
+ *   explicit assignment.
+ * - `unassign` (X-06): assignments to the row are removed (back to To assign, or the payment's deposit) and no
+ *   deposit pays it any more, so the row is unpaid for the new owner.
  * Row and payments change in one transaction. Without a choice on a covered row it throws PaymentChoiceNeeded.
  */
 export async function setOwner(db: NewDb, txId: string, ownerId: string | null, { payments }: { payments?: PaymentChoice } = {}): Promise<Transaction> {
@@ -113,10 +119,10 @@ export async function setOwner(db: NewDb, txId: string, ownerId: string | null, 
       if (o.archived) throw new RuleError(`${o.name} is archived. Pick another owner.`)
     }
     if (ownerId !== t.ownerId) {
-      const covering = await paymentsCovering(db, t)
-      if (covering.length && !payments) throw new PaymentChoiceNeeded()
-      if (covering.length && payments === 'unassign') {
-        const changed = covering.map((p) => ({ ...p, allocations: p.allocations.filter((a) => a.txId !== t.id) }))
+      const money = await cardMoney(db, t.cardId)
+      if (isCovered(rowCover(money, t.id))) {
+        if (!payments) throw new PaymentChoiceNeeded()
+        const { changed } = paymentsAfterOwnerChange(money, t.id, payments)
         changed.forEach((p) => checkRecord('payments', p))
         await db.payments.bulkPut(changed)
       }

@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react'
 import { Sheet } from '../../components/Sheet'
 import { useToast } from '../../components/Toast'
+import { computeMoney, depositPaidOf } from '../../domain/amounts'
 import { coverageOf } from '../../domain/bill'
+import { deleteTransaction } from '../../domain/payments'
 import { parseInstallmentReversal, type ConversionError, type ConversionResult } from '../../domain/installments'
 import { sum } from '../../domain/money'
 import { isMarketplace } from '../../domain/tagging/merchant'
@@ -13,15 +15,22 @@ import {
   CONVERSION_ERRORS,
   convertRow,
   deleteRow,
+  INSTALLMENT_AMOUNT,
+  isConverted,
+  isReviewed,
   keepWaitingOn,
   markReviewed,
   previewConversion,
   RowError,
+  UNDO_CONVERSION,
   updateRow,
+  type RowPatch,
 } from '../../data/transactions'
 import { useData } from '../data/DataContext'
 import { rp } from '../settings/format'
-import { dayLabel, fmt, parseAmount, signedFor, statementName, TAG_SOURCE_LABEL, type RowView } from './view'
+import { dayLabel, draftWarning, fmt, parseAmount, signedFor, statementName, statementsTurningDraft, TAG_SOURCE_LABEL, type RowView } from './view'
+
+const ISO = /^\d{4}-\d{2}-\d{2}$/
 
 export interface RowSheetProps {
   row: RowView
@@ -82,19 +91,35 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
     }
   }
 
+  // Only what the user changed is sent: a label-only save never touches the amount (or its sign).
+  const amountChanged = amount !== Math.abs(t.amount).toLocaleString('id-ID')
   function saveDetails() {
-    const abs = parseAmount(amount)
-    if (abs === null) return setError('Enter the amount in whole rupiah.')
-    const nextAmount = signedFor(t.kind, abs)
-    const fixed = nextAmount !== t.amount || date !== t.date || description.trim() !== t.description
+    const patch: RowPatch = {}
+    if (amountChanged) {
+      const abs = parseAmount(amount)
+      if (abs === null) return setError('Enter the amount in whole rupiah.')
+      if (signedFor(t.kind, abs) !== t.amount) patch.amount = signedFor(t.kind, abs)
+    }
+    if (date !== t.date) patch.date = date
+    if (description.trim().replace(/\s+/g, ' ') !== t.description) patch.description = description
+    if (label.trim() !== (t.label ?? '')) patch.label = label
+    const fixed = patch.amount !== undefined || patch.date !== undefined || patch.description !== undefined
     void run(async () => {
-      await updateRow(db, t.id, { amount: nextAmount, date, description, label })
+      if (!Object.keys(patch).length) return 'Nothing changed'
+      await updateRow(db, t.id, patch)
       return fixed && statement?.kind === 'billed' ? `Saved. Totals check re-run for the ${statementName(statement)}.` : 'Saved'
     })
   }
 
+  // A new date can change what the owner's deposit pays on this row (deposits pay charges dated on/after them).
+  const depositAtDate =
+    date !== t.date && ISO.test(date) ? depositPaidOf(computeMoney({ ...ledger, transactions: ledger.transactions.map((x) => (x.id === t.id ? { ...x, date } : x)) }), t.id) : coverage.fromDeposit
+  const dateWarning =
+    depositAtDate !== coverage.fromDeposit ? `With this date, ${nameOf(t.ownerId)}'s deposit pays ${rp(depositAtDate)} of this row instead of ${rp(coverage.fromDeposit)}.` : null
+
   if (step === 'delete') {
     const deposits = [...new Set(covering.filter((p) => p.depositOwnerId).map((p) => nameOf(p.depositOwnerId)))]
+    const draft = draftWarning(statementsTurningDraft(ledger, { ...ledger, ...deleteTransaction(ledger, t.id) }))
     return (
       <Sheet title="Delete this transaction?" onClose={() => setStep('main')}>
         <div className="small">
@@ -106,6 +131,7 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
               {covering.length} payment{covering.length > 1 ? 's' : ''} cover{covering.length > 1 ? '' : 's'} this ({rp(coveredTotal)}). That money goes back to &quot;To assign&quot;
               {deposits.length ? `, or to ${deposits.join(' and ')}'s deposit for a payment kept as a deposit` : ''}.
             </div>
+            {draft && <div className="xs warn-text">{draft}</div>}
           </div>
         )}
         {error && <div className="small err">{error}</div>}
@@ -217,7 +243,7 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
               </button>
             ))}
         </div>
-        {(t.check || t.tagSource !== 'manual') && (
+        {!isReviewed(t) && (
           <button
             type="button"
             className="btn ghost sm"
@@ -239,13 +265,25 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
           <div className="btns">
             <div className="field">
               <label htmlFor="rowAmount">Amount</label>
-              <input className="inp num" id="rowAmount" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <input className="inp num" id="rowAmount" inputMode="numeric" value={amount} readOnly={t.kind === 'installment'} onChange={(e) => setAmount(e.target.value)} />
             </div>
             <div className="field">
               <label htmlFor="rowDate">Date</label>
               <input className="inp" id="rowDate" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
           </div>
+          {t.kind === 'installment' && <div className="xs muted">{INSTALLMENT_AMOUNT}</div>}
+          {dateWarning && <div className="xs warn-text">{dateWarning}</div>}
+          {signedFor(t.kind, Math.abs(t.amount)) !== t.amount && (
+            <button
+              type="button"
+              className="btn ghost sm"
+              disabled={busy}
+              onClick={() => run(async () => (await updateRow(db, t.id, { amount: signedFor(t.kind, Math.abs(t.amount)) }), 'Sign fixed'))}
+            >
+              Fix the sign: {fmt(signedFor(t.kind, Math.abs(t.amount)))}
+            </button>
+          )}
           <div className="field">
             <label htmlFor="rowDesc">Description</label>
             <input className="inp" id="rowDesc" value={description} onChange={(e) => setDescription(e.target.value)} />
@@ -292,9 +330,15 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
           Save
         </button>
       </div>
-      <button type="button" className="link" style={{ color: 'var(--bad)', alignSelf: 'center' }} onClick={() => setStep('delete')}>
-        Delete transaction
-      </button>
+      {isConverted(t) ? (
+        <div className="xs muted" style={{ alignSelf: 'center' }}>
+          Part of an installment conversion: can&apos;t be deleted. {UNDO_CONVERSION}
+        </div>
+      ) : (
+        <button type="button" className="link" style={{ color: 'var(--bad)', alignSelf: 'center' }} onClick={() => setStep('delete')}>
+          Delete transaction
+        </button>
+      )}
     </Sheet>
   )
 }

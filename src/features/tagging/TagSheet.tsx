@@ -8,10 +8,13 @@ import { useToast } from '../../components/Toast'
 import { sum } from '../../domain/money'
 import { isMarketplace, ruleKeyOf } from '../../domain/tagging/merchant'
 import type { TagRule } from '../../domain/tagging/types'
-import type { Owner, Payment, Transaction } from '../../domain/types'
-import { paymentsCovering, RuleError, saveRule, setOwner, type PaymentChoice } from '../../data/rules'
+import type { Ledger, Owner, Payment, Transaction } from '../../domain/types'
+import { isCovered, paymentsAfterOwnerChange, type RowCover } from '../../data/coverage'
+import { loadLedger } from '../../data/repo'
+import { coverOfRow, RuleError, saveRule, setOwner, type PaymentChoice } from '../../data/rules'
 import { useData } from '../data/DataContext'
 import { rp } from '../settings/format'
+import { draftWarning, statementsTurningDraft } from '../transactions/view'
 import { ApplyRuleStep } from './ApplyRuleStep'
 
 export interface TagSheetProps {
@@ -33,7 +36,7 @@ export function TagSheet({ tx, cardName, owners, initialOwnerId, onClose, onSave
   const [always, setAlways] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [rule, setRule] = useState<TagRule | null>(null)
-  const [ask, setAsk] = useState<Payment[] | null>(null)
+  const [ask, setAsk] = useState<{ cover: RowCover; ledger: Ledger } | null>(null)
   const [busy, setBusy] = useState(false)
   const marketplace = (tx.kind === 'purchase' || tx.kind === 'refund') && isMarketplace(tx.description)
   const key = ruleKeyOf(tx.description)
@@ -46,9 +49,9 @@ export function TagSheet({ tx, cardName, owners, initialOwnerId, onClose, onSave
     setBusy(true)
     try {
       if (changed && !choice) {
-        const covering = await paymentsCovering(db, tx)
-        if (covering.length) {
-          setAsk(covering)
+        const cover = await coverOfRow(db, tx)
+        if (isCovered(cover)) {
+          setAsk({ cover, ledger: await loadLedger(db, tx.cardId) })
           setBusy(false)
           return
         }
@@ -71,29 +74,43 @@ export function TagSheet({ tx, cardName, owners, initialOwnerId, onClose, onSave
   }
 
   if (ask) {
-    const covered = sum(ask.flatMap((p) => p.allocations.filter((a) => a.txId === tx.id).map((a) => a.amount)))
-    const payerIds = new Set(ask.flatMap((p) => [...(p.forOwnerIds ?? []), ...(p.depositOwnerId ? [p.depositOwnerId] : [])]))
+    const { cover, ledger } = ask
+    const explicit = sum(cover.explicit.flatMap((p) => p.allocations.filter((a) => a.txId === tx.id).map((a) => a.amount)))
+    const fromDeposit = sum(cover.deposit.map((d) => d.amount))
+    const depositPayments = cover.deposit.map((d) => ledger.payments.find((p) => p.id === d.paymentId)!)
+    const payerIds = new Set([...cover.explicit, ...depositPayments].flatMap((p) => [...(p.forOwnerIds ?? []), ...(p.depositOwnerId ? [p.depositOwnerId] : [])]))
     payerIds.delete(ownerId ?? '')
     const payer = [...payerIds].map(nameOf).join(', ') || (tx.ownerId && tx.ownerId !== ownerId ? nameOf(tx.ownerId) : 'another person')
     const to = ownerId === null ? 'nobody' : nameOf(ownerId)
-    const deposits = [...new Set(ask.filter((p) => p.depositOwnerId).map((p) => nameOf(p.depositOwnerId!)))]
-    const back = deposits.length ? `goes back to ${deposits.join(' and ')}'s deposit` : 'goes back to "To assign"'
+    const depositNames = (list: readonly Payment[]) => [...new Set(list.filter((p) => p.depositOwnerId).map((p) => nameOf(p.depositOwnerId!)))].join(' and ')
+    const backTo = depositNames(cover.explicit)
+    const usedFrom = depositNames(depositPayments)
+    const after: Ledger = {
+      ...ledger,
+      transactions: ledger.transactions.map((t) => (t.id === tx.id ? { ...t, ownerId } : t)),
+      payments: paymentsAfterOwnerChange(ledger, tx.id, 'unassign').payments,
+    }
+    const draft = draftWarning(statementsTurningDraft(ledger, after))
     return (
       <Sheet title="This charge already has a payment" onClose={() => setAsk(null)}>
         <div className="small">
-          {rp(covered)} from {payer}&apos;s payment covers it. You&apos;re moving it to {to}.
+          {rp(explicit + fromDeposit)} from {payer}&apos;s {fromDeposit && !explicit ? 'deposit' : 'payment'} covers it. You&apos;re moving it to {to}.
         </div>
         <div className="box tight small">
           <b>Keep the payment on it</b>
           <span className="muted xs">
             {payer}&apos;s money keeps paying this charge, now owned by {to}.
+            {fromDeposit > 0 && ` The ${rp(fromDeposit)} from ${usedFrom}'s deposit is assigned to it, so it stays paid.`}
           </span>
         </div>
         <div className="box tight small">
           <b>Unassign the payment</b>
           <span className="muted xs">
-            The charge becomes unpaid for {to}. The payment {back}.
+            The charge becomes unpaid for {to}.
+            {explicit > 0 && ` The payment goes back to ${backTo ? `${backTo}'s deposit` : '"To assign"'}.`}
+            {fromDeposit > 0 && ` ${usedFrom}'s deposit stops paying it (${rp(fromDeposit)} stays in the deposit).`}
           </span>
+          {draft && <span className="xs warn-text">{draft}</span>}
         </div>
         <div className="btns">
           <button type="button" className="btn ghost" disabled={busy} onClick={() => save('keep')}>

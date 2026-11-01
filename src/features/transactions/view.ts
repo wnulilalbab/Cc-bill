@@ -1,6 +1,7 @@
 // What the Transactions list shows: per-row money status, filters, search, date groups and totals. Pure functions over
 // the domain ledger (money from src/domain/amounts), so the screen only renders.
 import { computeMoney, effective, paidOf, remainingOf, txStatus, type MoneyState, type TxStatus } from '../../domain/amounts'
+import { draftIssues } from '../../domain/draft'
 import { sum } from '../../domain/money'
 import { latestBilled, statementSortKey } from '../../domain/statements'
 import { ruleKeyOf } from '../../domain/tagging/merchant'
@@ -169,6 +170,19 @@ export function parseAmount(text: string): number | null {
   if (!/^\d+$/.test(digits)) return null
   const n = Number(digits)
   return n > 0 && Number.isSafeInteger(n) ? n : null
+}
+
+/** Statements (by name) that are Final in `before` and Draft in `after`, e.g. after a payment is unassigned. */
+export function statementsTurningDraft(before: Ledger, after: Ledger): string[] {
+  return before.statements
+    .filter((s) => draftIssues(before, s.id).final && !draftIssues(after, s.id).final)
+    .map((s) => statementName(s).replace(' statement', ''))
+}
+
+/** "The Oct 2026 statement goes back to Draft …" or nothing. */
+export function draftWarning(names: readonly string[]): string | null {
+  if (!names.length) return null
+  return `The ${names.join(' and ')} ${names.length === 1 ? 'statement goes' : 'statements go'} back to Draft until the payment is assigned again.`
 }
 
 /** Credits (refunds, reversals) are stored negative; charges positive. */
