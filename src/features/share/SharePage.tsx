@@ -8,13 +8,14 @@ import type { ShareTarget } from '../../domain/share/message'
 import type { OwnerRecord } from '../../data/cards'
 import { loadLedger } from '../../data/repo'
 import { useData } from '../data/DataContext'
+import { localIsoDate } from '../data/today'
 import { useDbQuery } from '../data/useDbQuery'
 import { useAppearance } from '../look/Appearance'
 import { rp } from '../settings/format'
 import { dayLabel, defaultStatementId, statementName, statementsForPicker } from '../transactions/view'
-import { localToday, ShareSheet } from './ShareSheet'
+import { ShareSheet } from './ShareSheet'
 
-export function SharePage({ today = localToday() }: { today?: string }) {
+export function SharePage({ today = localIsoDate() }: { today?: string }) {
   const { db } = useData()
   const { cards, selected, selectCard } = useAppearance()
   const cardId = selected?.card.id

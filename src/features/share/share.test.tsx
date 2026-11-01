@@ -13,7 +13,8 @@ import { renderScreen } from '../../test-utils/ui'
 import { freshNewDb } from '../../../test/data/oldDb'
 import { BCA_OWNERS, householdLedger, seedHousehold, TODAY } from '../../../test/payments/household'
 import { TransactionsPage } from '../transactions/TransactionsPage'
-import { imageIO, localToday, nav, SEND_LIMIT, ShareSheet } from './ShareSheet'
+import { localIsoDate } from '../data/today'
+import { imageIO, nav, SEND_LIMIT, ShareSheet } from './ShareSheet'
 import { paletteOf } from '../look/palettes'
 import { shareCard } from '../../domain/share/message'
 import { SharePage } from './SharePage'
@@ -290,7 +291,7 @@ describe('entry points', () => {
     await user.click(await screen.findByRole('button', { name: 'Share' }))
     const ledger = await loadLedger(db, 'bca')
     expect(screen.getByRole('button', { name: 'Share with: Everyone' })).toBeTruthy()
-    expect(preview()).toBe(shareMessage({ ...ctx(), ledger, today: localToday() }, 'all').text)
+    expect(preview()).toBe(shareMessage({ ...ctx(), ledger, today: localIsoDate() }, 'all').text)
   })
 
   it('the sheet can be used on its own, defaulting to everyone and today', async () => {
@@ -305,10 +306,6 @@ describe('entry points', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('localToday is the local calendar date', () => {
-    expect(localToday(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05')
-    expect(localToday(new Date(2026, 10, 30, 0, 1))).toBe('2026-11-30')
-  })
 })
 
 describe('limits', () => {

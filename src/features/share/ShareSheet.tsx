@@ -13,6 +13,7 @@ import type { Ledger } from '../../domain/types'
 import type { OwnerRecord } from '../../data/cards'
 import { listShares, logShare, sameTarget } from '../../data/shares'
 import { useData } from '../data/DataContext'
+import { localIsoDate } from '../data/today'
 import { useDbQuery } from '../data/useDbQuery'
 import { paletteOf } from '../look/palettes'
 import { canShareFile, rp } from '../settings/format'
@@ -30,10 +31,6 @@ export const SEND_LIMIT = 6000
 
 const PROBE = () => new File([new Uint8Array(0)], 'share.png', { type: 'image/png' })
 
-/** Today on this phone (local calendar date, not UTC). */
-export function localToday(d = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
 const NONE = 'none'
 const toValue = (t: ShareTarget) => (t === 'all' ? 'all' : t.ownerId === null ? NONE : `o:${t.ownerId}`)
@@ -52,7 +49,7 @@ export interface ShareSheetProps {
   onClose(): void
 }
 
-export function ShareSheet({ ledger, card, owners, statementId, initialTarget = 'all', today = localToday(), onClose }: ShareSheetProps) {
+export function ShareSheet({ ledger, card, owners, statementId, initialTarget = 'all', today = localIsoDate(), onClose }: ShareSheetProps) {
   const { db } = useData()
   const toast = useToast()
   const [target, setTarget] = useState<ShareTarget>(initialTarget)

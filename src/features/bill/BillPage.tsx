@@ -12,12 +12,14 @@ import { draftIssues } from '../../domain/draft'
 import { canAcceptSign, sum } from '../../domain/money'
 import { reconcileStatement } from '../../domain/reconcile'
 import type { Ledger, Statement } from '../../domain/types'
-import type { OwnerRecord } from '../../data/cards'
+import type { ShareTarget } from '../../domain/share/message'
+import type { CardRecord, OwnerRecord } from '../../data/cards'
 import { acceptRebate } from '../../data/transactions'
 import { useData } from '../data/DataContext'
 import { ownerColor } from '../look/palettes'
 import { OwnerChip } from '../settings/SettingsPage'
 import { rp } from '../settings/format'
+import { ShareSheet } from '../share/ShareSheet'
 import { dayLabel, fmt, statementName, statementsForPicker } from '../transactions/view'
 import { CardSwitcher, type CardTile } from './CardSwitcher'
 import { statementFor, todayIso, useBill } from './useBill'
@@ -83,7 +85,7 @@ export function BillPage() {
           </Link>
         </div>
       ) : (
-        <Bill ledger={ledger} statement={statement} owners={selected.owners} bank={selected.card.bank} onStatement={setStatement} />
+        <Bill ledger={ledger} statement={statement} owners={selected.owners} card={selected.card} onStatement={setStatement} />
       )}
     </div>
   )
@@ -105,8 +107,10 @@ function Top() {
   )
 }
 
-function Bill({ ledger, statement, owners, bank, onStatement }: { ledger: Ledger; statement: Statement; owners: OwnerRecord[]; bank: string; onStatement(id: string): void }) {
+function Bill({ ledger, statement, owners, card, onStatement }: { ledger: Ledger; statement: Statement; owners: OwnerRecord[]; card: CardRecord; onStatement(id: string): void }) {
   const today = todayIso()
+  const bank = card.bank
+  const [sharing, setSharing] = useState<ShareTarget | null>(null)
   const view = billView(ledger, owners.map((o) => o.id), statement.id, today)
   const un = statement.kind === 'unbilled'
   const name = monthName(statement)
@@ -136,6 +140,8 @@ function Bill({ ledger, statement, owners, bank, onStatement }: { ledger: Ledger
         chargesLabel={un ? 'Unbilled charges' : `${name} charges`}
         totalsDifference={totals && !totals.ok ? totals.difference : undefined}
         creditHint
+        onShare={() => setSharing('all')}
+        shareLabel="Share everyone's bill"
       />
       <div className="note">
         As of {dayLabel(today)}. Paid amounts are live, so a payment made later still reduces this bill. Installments still to come are counted as of this statement.
@@ -143,9 +149,12 @@ function Bill({ ledger, statement, owners, bank, onStatement }: { ledger: Ledger
 
       <div className="row">
         <span className="lbl">By person</span>
+        <button type="button" className="link" onClick={() => setSharing('all')}>
+          Share all
+        </button>
       </div>
       {view.shown.length ? (
-        view.shown.map((b) => <OwnerRow key={b.ownerId ?? 'none'} bill={b} owners={owners} statement={statement} />)
+        view.shown.map((b) => <OwnerRow key={b.ownerId ?? 'none'} bill={b} owners={owners} statement={statement} onShare={() => setSharing({ ownerId: b.ownerId })} />)
       ) : (
         <div className="box empty small">Nothing on this {un ? 'bucket' : 'bill'} yet.</div>
       )}
@@ -157,6 +166,7 @@ function Bill({ ledger, statement, owners, bank, onStatement }: { ledger: Ledger
           Payments
         </Link>
       </div>
+      {sharing && <ShareSheet ledger={ledger} card={card} owners={owners} statementId={statement.id} initialTarget={sharing} today={today} onClose={() => setSharing(null)} />}
     </>
   )
 }
@@ -168,6 +178,8 @@ export function HeroBox({
   chargesLabel,
   totalsDifference,
   creditHint,
+  onShare,
+  shareLabel = 'Share',
 }: {
   view: Pick<BillView, 'hero'>
   bank?: string
@@ -177,6 +189,9 @@ export function HeroBox({
   totalsDifference?: number
   /** Card hero: explain why a credit makes the total higher than the bank balance. */
   creditHint?: boolean
+  /** Shows a Share button in the hero (opens the share sheet). */
+  onShare?(): void
+  shareLabel?: string
 }) {
   const h = view.hero
   return (
@@ -203,6 +218,11 @@ export function HeroBox({
           Totals differ from the bank by {rp(Math.abs(totalsDifference))}.
         </div>
       )}
+      {onShare && (
+        <button type="button" className="btn acc" aria-label={shareLabel} onClick={onShare}>
+          Share to WhatsApp
+        </button>
+      )}
     </div>
   )
 }
@@ -222,10 +242,11 @@ export function ownerLabel(owners: readonly OwnerRecord[], ownerId: string | nul
   return o ? { name: o.name, chip: <OwnerChip name={o.name} color={o.color ?? ownerColor(i)} archived={o.archived} /> } : { name: 'No owner', chip: <span className="pill">No owner</span> }
 }
 
-function OwnerRow({ bill: b, owners, statement }: { bill: OwnerBill; owners: OwnerRecord[]; statement: Statement }) {
+function OwnerRow({ bill: b, owners, statement, onShare }: { bill: OwnerBill; owners: OwnerRecord[]; statement: Statement; onShare(): void }) {
   const { name, chip } = ownerLabel(owners, b.ownerId)
   const month = statement.kind === 'unbilled' ? 'Unbilled' : shortMonth(statement)
   return (
+    <div className="orow-wrap">
     <Link className="orow" to={personPath(b.ownerId, statement.id)} aria-label={`${name}: ${b.settled ? 'Paid' : rp(b.mustPay)}`}>
       <div className="row">
         {chip}
@@ -268,6 +289,10 @@ function OwnerRow({ bill: b, owners, statement }: { bill: OwnerBill; owners: Own
         )}
       </div>
     </Link>
+    <button type="button" className="link xs orow-share" aria-label={`Share ${name}'s bill`} onClick={onShare}>
+      Share
+    </button>
+    </div>
   )
 }
 
