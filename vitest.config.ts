@@ -18,6 +18,7 @@ export default defineConfig({
       exclude: [
         '**/*.test.{ts,tsx}',
         '**/*.d.ts',
+        'src/test-utils/**',
         // Legacy v1 screens: replaced wholesale by Slices 5-12, so they are not measured meanwhile.
         // New files under src/pages/ ARE measured. Delete an entry as each screen is replaced.
         'src/pages/{Dashboard,Import,Installments,Payments,Settings,Transactions}.tsx',
@@ -31,6 +32,7 @@ export default defineConfig({
         'src/import/**': gate(95),
         'src/pages/**': gate(80),
         'src/components/**': gate(80),
+        'src/features/**': gate(80),
       },
     },
   },
