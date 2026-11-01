@@ -44,7 +44,7 @@ export function pickRule(rules: readonly TagRule[], cardId: string, description:
     const [a, b] = [cleanPattern(r.pattern), cleanPattern(rule.pattern)]
     return (r.match === rule.match && a.length === b.length) || (!a.includes(b) && !b.includes(a))
   }
-  const conflict = rule && ok.find((r) => r !== rule && r.ownerId !== rule.ownerId && disagrees(r))
+  const conflict = rule && ok.find((r) => r.ownerId !== rule.ownerId && disagrees(r))
   return { ...(rule && { rule }), ...(conflict && { conflict }), ...(!rule && unusable ? { unusable } : {}) }
 }
 

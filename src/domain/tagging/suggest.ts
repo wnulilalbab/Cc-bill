@@ -28,61 +28,49 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
   const usable = (id: string | null | undefined): id is string => !!id && owners.has(id) && !owners.get(id)!.archived
   const nameOf = (id: string) => owners.get(id)!.name
   const labels = confirmedLabels(history, card.id).filter((h) => usable(h.ownerId))
-  const keys = new Map<string, string>()
-  const keyOf = (description: string) => {
-    let k = keys.get(description)
-    if (k === undefined) keys.set(description, (k = normalizeMerchant(description)))
-    return k
-  }
-  const newestFirst = <T extends { date: string }>(xs: T[]) => xs.slice().sort((a, b) => b.date.localeCompare(a.date))
+  const keyOf = normalizeMerchant
+  /** Newest first (sorts the given array, always a fresh one here). */
+  const newestFirst = <T extends { date: string }>(xs: T[]) => xs.sort((x, y) => y.date.localeCompare(x.date))
   const defaultId = usable(card.defaultOwnerId) ? card.defaultOwnerId : null
 
-  const out: Suggestion[] = []
-  const busy = new Set<number>()
+  // Rows follow at most two links (installment 1/N → reversal → purchase; refund → charge), and a row only follows
+  // a row of another kind, so resolving can't loop.
+  const resolve = (i: number): Suggestion => decide(i)
 
-  const resolve = (i: number): Suggestion => {
-    if (out[i]) return out[i]
-    busy.add(i)
-    const s = decide(i)
-    busy.delete(i)
-    return (out[i] = s)
-  }
-
-  /** A row in this batch (not one being resolved) or a past label that this row follows. */
+  /** A row in this batch (never a later one) or a past label that this row follows. */
   function linked(i: number, kinds: readonly TxKind[], same: (description: string, amount: number) => boolean): { batch?: number; past?: LabelledRow } {
     const row = rows[i]
-    const batch = newestFirst(rows.map((r, j) => ({ ...r, j })).filter((r) => r.j !== i && !busy.has(r.j) && kinds.includes(r.kind) && same(r.description, r.amount)))
     // Never a later row: a refund or reversal can only follow something already bought.
-    const inBatch = batch.find((r) => r.date <= row.date)
+    const inBatch = newestFirst(rows.map((r, j) => ({ ...r, j })).filter((r) => kinds.includes(r.kind) && r.date <= row.date && same(r.description, r.amount)))[0]
     if (inBatch) return { batch: inBatch.j }
     const past = newestFirst(labels.filter((h) => kinds.includes(h.kind) && same(h.description, h.amount)))[0]
     return past ? { past } : {}
   }
 
-  function follow(i: number): Draft | undefined {
-    const row = rows[i]
-    const key = keyOf(row.description)
-    let found: { batch?: number; past?: LabelledRow } = {}
-    let reason = ''
-    let source: Suggestion['source'] = 'auto'
-    if (row.kind === 'refund') {
-      found = linked(i, CHARGE_KINDS, (d, a) => keyOf(d) === key && Math.abs(a) === Math.abs(row.amount))
-      reason = 'Same owner as the refunded purchase'
-    } else if (row.kind === 'reversal') {
-      const target = row.reverses && keyOf(row.reverses)
-      found = linked(i, ['purchase'], (d, a) => (target ? keyOf(d) === target : keyOf(d) === key && Math.abs(a) === Math.abs(row.amount)))
-      reason = 'Same owner as the purchase it cancels'
-    } else if (row.kind === 'installment' && row.installment?.n === 1) {
-      found = linked(i, ['reversal'], (d) => keyOf(d) === key)
-      if (found.past) found = {} // only a reversal in the same statement starts a plan
-      reason = 'Same owner as the purchase moved to installment'
-      source = 'plan'
-    }
+  function link(found: { batch?: number; past?: LabelledRow }, reason: string, source: Suggestion['source']): Draft | undefined {
     if (found.batch !== undefined) {
       const s = resolve(found.batch)
       return { ownerId: s.ownerId, check: s.check, source, confidence: s.confidence, reason, follows: found.batch }
     }
-    if (found.past) return { ownerId: found.past.ownerId, check: false, source, confidence: 0.9, reason }
+    return found.past && { ownerId: found.past.ownerId, check: false, source, confidence: 0.9, reason }
+  }
+
+  function follow(i: number): Draft | undefined {
+    const row = rows[i]
+    const key = keyOf(row.description)
+    const amount = Math.abs(row.amount)
+    if (row.kind === 'refund') {
+      return link(linked(i, CHARGE_KINDS, (d, a) => keyOf(d) === key && Math.abs(a) === amount), 'Same owner as the refunded purchase', 'auto')
+    }
+    if (row.kind === 'reversal') {
+      const target = row.reverses && keyOf(row.reverses)
+      const same = target ? (d: string) => keyOf(d) === target : (d: string, a: number) => keyOf(d) === key && Math.abs(a) === amount
+      return link(linked(i, ['purchase'], same), 'Same owner as the purchase it cancels', 'auto')
+    }
+    if (row.kind === 'installment' && row.installment?.n === 1) {
+      // Only a reversal in the same statement starts a plan.
+      return link({ batch: linked(i, ['reversal'], (d) => keyOf(d) === key).batch }, 'Same owner as the purchase moved to installment', 'plan')
+    }
     return undefined
   }
 
@@ -95,13 +83,13 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
         : { ownerId: null, check: true, source: 'default', confidence: 0, reason: 'No rule or history matches and the card has no default owner' }
     if (row.kind === 'fee' || row.kind === 'interest') return byDefault()
 
+    // Per owner: how many past labels, and the newest one's date (labels are read newest first).
     const counts = new Map<string, { n: number; last: string }>()
     let total = 0
-    for (const h of labels) {
-      if (h.kind !== 'purchase' || keyOf(h.description) !== key) continue
+    for (const h of newestFirst(labels.filter((x) => x.kind === 'purchase' && keyOf(x.description) === key))) {
       total++
-      const c = counts.get(h.ownerId!) ?? { n: 0, last: '' }
-      counts.set(h.ownerId!, { n: c.n + 1, last: h.date > c.last ? h.date : c.last })
+      const c = counts.get(h.ownerId!) ?? { n: 0, last: h.date }
+      counts.set(h.ownerId!, { n: c.n + 1, last: c.last })
     }
     const top = [...counts].sort((a, b) => b[1].n - a[1].n || b[1].last.localeCompare(a[1].last))[0]
     if (top && top[1].n >= 2 && top[1].n * 2 > total) {
@@ -156,6 +144,5 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
     return finish(note ? { ...d, check: true, confidence: Math.min(d.confidence, 0.5), reason: `${d.reason}. ${note}` } : d)
   }
 
-  rows.forEach((_, i) => resolve(i))
-  return out
+  return rows.map((_, i) => resolve(i))
 }
