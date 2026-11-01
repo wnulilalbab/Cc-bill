@@ -1,5 +1,6 @@
 // The Phase-1 IndexedDB database. Stores the domain model of src/domain/types.ts as is.
 import Dexie, { type DexieOptions, type Table } from 'dexie'
+import type { TagRule } from '../domain/tagging/types'
 import type { Card, InstallmentPlan, Owner, Payment, Statement, Transaction } from '../domain/types'
 import { newDbName } from './env'
 
@@ -9,7 +10,7 @@ export interface MetaRecord {
   value: unknown
 }
 
-export const DATA_TABLES = ['cards', 'owners', 'statements', 'transactions', 'payments', 'plans'] as const
+export const DATA_TABLES = ['cards', 'owners', 'statements', 'transactions', 'payments', 'plans', 'rules'] as const
 export type DataTable = (typeof DATA_TABLES)[number]
 
 export interface DataRecords {
@@ -19,12 +20,13 @@ export interface DataRecords {
   transactions: Transaction
   payments: Payment
   plans: InstallmentPlan
+  rules: TagRule
 }
 
 /** Every domain record in the database, one array per table. */
 export type NewData = { [K in DataTable]: DataRecords[K][] }
 
-export const emptyData = (): NewData => ({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [] })
+export const emptyData = (): NewData => ({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [], rules: [] })
 
 export class NewDb extends Dexie {
   cards!: Table<Card, string>
@@ -33,6 +35,7 @@ export class NewDb extends Dexie {
   transactions!: Table<Transaction, string>
   payments!: Table<Payment, string>
   plans!: Table<InstallmentPlan, string>
+  rules!: Table<TagRule, string>
   meta!: Table<MetaRecord, string>
 
   constructor(name: string = newDbName(), options?: DexieOptions) {
@@ -46,6 +49,8 @@ export class NewDb extends Dexie {
       plans: '&id, cardId',
       meta: '&key',
     })
+    // Slice 7: tagging rules, per card.
+    this.version(2).stores({ rules: '&id, cardId' })
   }
 
   dataTables(): Table[] {

@@ -393,7 +393,7 @@ const META_VERIFICATION = 'verification'
 export async function applyMigration(db: NewDb, plan: MigrationPlan, now: string = new Date().toISOString()): Promise<void> {
   await db.transaction('rw', [...db.dataTables(), db.meta], async () => {
     const previous = (await db.meta.get(META_MIGRATION))?.value as MigrationRecord | undefined
-    if (previous) for (const t of DATA_TABLES) await db.table(t).bulkDelete(previous.ids[t])
+    if (previous) for (const t of DATA_TABLES) await db.table(t).bulkDelete(previous.ids[t] ?? []) // runs before Slice 7 have no rules ids
     for (const t of DATA_TABLES) await db.table(t).bulkPut(plan.data[t])
     const ids = Object.fromEntries(DATA_TABLES.map((t) => [t, plan.data[t].map((r) => r.id)])) as Record<DataTable, string[]>
     await db.meta.put({ key: META_MIGRATION, value: { ranAt: now, oldFingerprint: plan.oldFingerprint, ids } satisfies MigrationRecord })
@@ -479,6 +479,7 @@ function migratedPart(data: NewData): NewData {
     transactions: mine(data.transactions),
     payments: mine(data.payments),
     plans: mine(data.plans),
+    rules: mine(data.rules),
   }
 }
 
@@ -566,7 +567,7 @@ export async function deleteOldData(
   const run = (await db.meta.get(META_MIGRATION))?.value as MigrationRecord | undefined
   if (!run) throw new MigrationError('There is no record of a migration in the new app. Run the migration first.')
   let missing = 0
-  for (const t of DATA_TABLES) missing += (await db.table(t).bulkGet(run.ids[t])).filter((r) => r === undefined).length
+  for (const t of DATA_TABLES) missing += (await db.table(t).bulkGet(run.ids[t] ?? [])).filter((r) => r === undefined).length
   if (missing) {
     throw new MigrationError(`The migrated data is no longer complete in the new app (${plural(missing, 'record')} missing). Run the migration again before deleting the old data.`)
   }

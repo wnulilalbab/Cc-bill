@@ -132,7 +132,7 @@ describe('the review draft', () => {
   it('a draft from another card is refused', async () => {
     const { db, draft, cards } = await base()
     const card = (await db.cards.get(cards.mandiri))!
-    expect(() => planImport({ ledger: { statements: [], transactions: [], payments: [], plans: [] }, card, draft, newId: (p) => p })).toThrow('This import belongs to another card.')
+    expect(() => planImport({ ledger: { statements: [], transactions: [], payments: [], plans: [] }, card, owners: [], rules: [], draft, newId: (p) => p })).toThrow('This import belongs to another card.')
   })
 
   it('overlap merge: twice on one screenshot = two rows; once on each of two = one row', () => {

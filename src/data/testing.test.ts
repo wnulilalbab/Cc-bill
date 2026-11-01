@@ -16,7 +16,7 @@ describe('testing-mode tools', () => {
     const first = await readAll(db)
 
     await resetNewData(db)
-    expect(await readAll(db)).toEqual({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [] })
+    expect(await readAll(db)).toEqual({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [], rules: [] })
     expect(await db.meta.count()).toBe(0)
     expect(await dumpIdb(oldName)).toEqual(before)
 

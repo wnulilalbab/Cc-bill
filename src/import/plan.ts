@@ -2,13 +2,18 @@
 // Statement imports: rows that match Unbilled rows move into the statement (owners, labels and payment assignments
 // kept); a re-imported month replaces the old rows but matching rows keep theirs; installment plans are linked and
 // installment conversions applied; hand-recorded payments are matched to the bank's payment lines (±5 days).
+// New rows are tagged by src/domain/tagging (rules, learned history, linked purchases, marketplace Check), and every
+// new row records how its owner was chosen (tagSource).
 import { draftIssues } from '../domain/draft'
 import { convertToInstallment, parseInstallment } from '../domain/installments'
 import { applyLinks, matchManualPayments, type PaymentLink } from '../domain/matching'
 import { daysBetween, monthIndex } from '../domain/money'
 import { deleteTransaction } from '../domain/payments'
 import { billedOf } from '../domain/statements'
-import type { BilledStatement, Card, InstallmentPlan, Ledger, Payment, Statement, Transaction, TxKind } from '../domain/types'
+import { withSuggestion } from '../domain/tagging/apply'
+import { suggestOwners } from '../domain/tagging/suggest'
+import type { TagRow, TagRule } from '../domain/tagging/types'
+import type { BilledStatement, Card, InstallmentPlan, Ledger, Owner, Payment, Statement, Transaction, TxKind } from '../domain/types'
 import { checkTotals, ImportError, printedOf, problems, skippedKeys, type ImportDraft } from './draft'
 import { sameText, type DraftRow } from './normalize'
 
@@ -59,6 +64,9 @@ export interface ImportPlan {
 export interface PlanInput {
   ledger: Ledger
   card: Card
+  /** The card's owners and tagging rules, for tagging new rows. */
+  owners: readonly Owner[]
+  rules: readonly TagRule[]
   draft: ImportDraft
   newId: (prefix: string) => string
   /** The user confirmed saving a statement whose totals do not match. */
@@ -81,7 +89,7 @@ export function planName(description: string): string {
   return name || description
 }
 
-export function planImport({ ledger, card, draft, newId, acceptDifference }: PlanInput): ImportPlan {
+export function planImport({ ledger, card, owners, rules, draft, newId, acceptDifference }: PlanInput): ImportPlan {
   const todo = problems(draft)
   if (todo.length) throw new ImportError(todo[0])
   const difference = checkTotals(draft)?.difference ?? null
@@ -127,9 +135,9 @@ export function planImport({ ledger, card, draft, newId, acceptDifference }: Pla
   const skipped = skippedKeys(draft)
   const rows = draft.rows.filter((r) => !skipped.has(r.key))
 
+  /** Rows this import adds, in file order: tagged once everything is linked (see the end). */
+  const fresh: string[] = []
   const newTx = (r: DraftRow, statementId: string): Transaction => {
-    const kind = r.kind as TxKind
-    const feeLike = kind === 'fee' || kind === 'interest'
     const t: Transaction = {
       id: newId('tx'),
       cardId: card.id,
@@ -137,14 +145,15 @@ export function planImport({ ledger, card, draft, newId, acceptDifference }: Pla
       date: r.date,
       description: r.description,
       amount: r.amount,
-      kind,
-      ownerId: card.defaultOwnerId,
-      // Fees and interest go to the card's default owner without a check (M-07); tagging (Slice 7) settles the rest.
-      check: !(feeLike && card.defaultOwnerId !== null),
+      kind: r.kind as TxKind,
+      ownerId: null,
     }
     if (r.installment) t.installment = r.installment
+    fresh.push(t.id)
     return t
   }
+  /** Reversal and installment 1/N of a conversion: they take the original purchase's owner. */
+  const converted = new Map<string, string>()
   const newPayment = (r: DraftRow, source: 'statement' | 'unbilled', statementId: string): Payment => ({
     id: newId('pay'),
     cardId: card.id,
@@ -276,6 +285,8 @@ export function planImport({ ledger, card, draft, newId, acceptDifference }: Pla
       }
       result.transactions.forEach(putTx)
       result.payments.forEach(putPay)
+      converted.set(result.reversalId, result.originalId)
+      converted.set(result.installmentId, result.originalId)
       // A plan started by this import belongs to the purchase's owner; an existing plan keeps its owner.
       const isNew = !ledger.plans.some((p) => p.id === result.plan.id)
       if (isNew) putPlan({ ...result.plan, ownerId: txs.get(result.originalId)!.ownerId })
@@ -283,6 +294,32 @@ export function planImport({ ledger, card, draft, newId, acceptDifference }: Pla
     }
   }
   report.statementId = statementId
+
+  // Tagging (Slice 7): new rows in one batch, so refunds and installments can follow rows of the same file.
+  const toTag = fresh.filter((id) => txs.has(id) && !converted.has(id)).map((id) => txs.get(id)!)
+  const history = [...txs.values()].filter((t) => !fresh.includes(t.id))
+  const tagRows: TagRow[] = toTag.map((t) => ({
+    description: t.description,
+    kind: t.kind,
+    amount: t.amount,
+    date: t.date,
+    ...(t.installment && { installment: t.installment }),
+    ...(t.planId && { planId: t.planId }),
+  }))
+  const suggestions = suggestOwners(card, tagRows, history, { owners, rules, plans: [...plans.values()] })
+  toTag.forEach((t, i) => putTx(withSuggestion(t, suggestions[i])))
+  for (const [id, originalId] of converted) {
+    if (!fresh.includes(id)) continue
+    const { check: _c, ...t } = txs.get(id)!
+    const original = txs.get(originalId)!
+    putTx({ ...t, ownerId: original.ownerId, tagSource: 'plan', ...(original.check && { check: true }) })
+  }
+  // A plan this import started from a new installment belongs to that installment's owner.
+  for (const id of fresh) {
+    const t = txs.get(id)
+    const plan = t?.planId ? plans.get(t.planId) : undefined
+    if (plan && plan.ownerId === null && changedPlan.has(plan.id) && !ledger.plans.some((p) => p.id === plan.id)) putPlan({ ...plan, ownerId: t!.ownerId })
+  }
 
   // Hand-recorded payments ↔ bank payment lines, same amount within ±5 days (counted once).
   const links = matchManualPayments([...pays.values()].filter((p) => p.cardId === card.id))

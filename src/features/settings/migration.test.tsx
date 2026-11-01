@@ -50,7 +50,7 @@ describe('Settings → Data → Migrate old data', () => {
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(await readAll(db)).toEqual({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [] })
+    expect(await readAll(db)).toEqual({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [], rules: [] })
     expect(await db.meta.count()).toBe(0)
     expect(await dumpIdb(oldName)).toEqual(before)
   })

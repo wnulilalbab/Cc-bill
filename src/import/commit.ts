@@ -15,7 +15,8 @@ export const newImportId = (prefix: string) => `${prefix}-${Date.now().toString(
 export async function previewImport(db: NewDb, draft: ImportDraft): Promise<ImportReport> {
   const card = await db.cards.get(draft.cardId)
   if (!card) throw new ImportError('This card no longer exists.')
-  return planImport({ ledger: await loadLedger(db, card.id), card, draft, newId: newImportId, acceptDifference: true }).report
+  const [ledger, owners, rules] = await Promise.all([loadLedger(db, card.id), db.owners.where('cardId').equals(card.id).toArray(), db.rules.where('cardId').equals(card.id).toArray()])
+  return planImport({ ledger, card, owners, rules, draft, newId: newImportId, acceptDifference: true }).report
 }
 
 export interface CommitOptions {
@@ -26,10 +27,11 @@ export interface CommitOptions {
 
 /** Saves the import. Every record is checked before writing; any failure leaves the database unchanged. */
 export async function commitImport(db: NewDb, draft: ImportDraft, { acceptDifference, newId = newImportId }: CommitOptions = {}): Promise<ImportReport> {
-  return db.transaction('rw', [db.cards, db.statements, db.transactions, db.payments, db.plans, db.meta], async () => {
+  return db.transaction('rw', [db.cards, db.owners, db.rules, db.statements, db.transactions, db.payments, db.plans, db.meta], async () => {
     const card = await db.cards.get(draft.cardId)
     if (!card) throw new ImportError('This card no longer exists.')
-    const plan = planImport({ ledger: await loadLedger(db, card.id), card, draft, newId, acceptDifference })
+    const [ledger, owners, rules] = await Promise.all([loadLedger(db, card.id), db.owners.where('cardId').equals(card.id).toArray(), db.rules.where('cardId').equals(card.id).toArray()])
+    const plan = planImport({ ledger, card, owners, rules, draft, newId, acceptDifference })
     plan.statements.forEach((r) => checkRecord('statements', r))
     plan.transactions.forEach((r) => checkRecord('transactions', r))
     plan.payments.forEach((r) => checkRecord('payments', r))

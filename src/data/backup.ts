@@ -25,6 +25,8 @@ export function parseNewBackup(json: string): NewData {
   if (obj?.format !== BACKUP_FORMAT) throw new MigrationError('This file is not a CC Bill backup of the new app.')
   if (obj.version !== BACKUP_VERSION) throw new MigrationError(`Unsupported backup version ${JSON.stringify(obj.version)}.`)
   for (const t of DATA_TABLES) {
+    // Backups made before tagging rules existed (Slice 7) have no "rules" list: no rules.
+    if (t === 'rules' && obj.data && !('rules' in obj.data)) obj.data.rules = []
     const rows = obj.data?.[t]
     if (!Array.isArray(rows)) throw new MigrationError(`The backup is missing the "${t}" list.`)
     const seen = new Set<string>()
@@ -38,7 +40,15 @@ export function parseNewBackup(json: string): NewData {
       seen.add(r.id)
     })
   }
-  return obj.data as unknown as NewData
+  const data = obj.data as unknown as NewData
+  // Rules must point to a card and an owner of that card that the backup holds (the same rule as saving one).
+  const cards = new Set(data.cards.map((c) => c.id))
+  const owners = new Map(data.owners.map((o) => [o.id, o.cardId]))
+  data.rules.forEach((r, i) => {
+    if (!cards.has(r.cardId)) throw new MigrationError(`rules[${i}] is invalid: card "${r.cardId}" is not in the backup.`)
+    if (owners.get(r.ownerId) !== r.cardId) throw new MigrationError(`rules[${i}] is invalid: owner "${r.ownerId}" is not an owner of card "${r.cardId}".`)
+  })
+  return data
 }
 
 /** Replaces every record of the new database with the backup's, in one transaction. */

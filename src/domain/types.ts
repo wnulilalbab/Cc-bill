@@ -54,6 +54,12 @@ export type Statement = BilledStatement | UnbilledStatement
 
 export type TxKind = 'purchase' | 'installment' | 'fee' | 'interest' | 'refund' | 'reversal'
 
+/**
+ * How a row got its owner (shown as You / Rule / Auto / AI / Card default / Plan). Unset on rows from before tagging
+ * existed (e.g. migrated), which count as not set by hand.
+ */
+export type TagSource = 'manual' | 'rule' | 'auto' | 'ai' | 'default' | 'plan'
+
 export interface Transaction {
   id: string
   cardId: string
@@ -67,6 +73,8 @@ export interface Transaction {
   ownerId: string | null
   /** Yellow "Check" dot. */
   check?: boolean
+  /** How the owner was chosen (src/domain/tagging). */
+  tagSource?: TagSource
   /** A purchase that was moved to installment: not counted. */
   cancelled?: boolean
   /** On a reversal: id of the transaction it cancels. */

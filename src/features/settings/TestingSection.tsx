@@ -16,6 +16,7 @@ const TABLE_LABELS: Record<DataTable, string> = {
   transactions: 'Transactions',
   payments: 'Payments',
   plans: 'Installment plans',
+  rules: 'Tagging rules',
 }
 
 type ToolId = 'reset' | 'rerun' | 'demo'

@@ -2,6 +2,8 @@
 // so nothing reaches the database that the money core would reject.
 import { allocatedOf } from '../domain/amounts'
 import { assertRupiah } from '../domain/money'
+import { cleanPattern } from '../domain/tagging/rules'
+import { RULE_MATCHES, type TagRule } from '../domain/tagging/types'
 import type { InstallmentPlan, Payment, Statement, Transaction } from '../domain/types'
 import type { DataRecords, DataTable } from './db'
 
@@ -14,6 +16,7 @@ export class RecordError extends Error {
 
 const TX_KINDS = new Set(['purchase', 'installment', 'fee', 'interest', 'refund', 'reversal'])
 const SOURCES = new Set(['statement', 'unbilled', 'manual'])
+const TAG_SOURCES = new Set(['manual', 'rule', 'auto', 'ai', 'default', 'plan'])
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
 const isText = (v: unknown): v is string => typeof v === 'string' && v.length > 0
@@ -36,6 +39,7 @@ function checkTransaction(t: Transaction, what: string): void {
   need(TX_KINDS.has(t.kind), `${what} kind must be one of ${[...TX_KINDS].join(', ')}`)
   need(typeof t.date === 'string' && ISO_DATE.test(t.date), `${what} date must be a date (YYYY-MM-DD)`)
   need(ownerOk(t.ownerId), `${what} ownerId must be a text or null`)
+  need(t.tagSource === undefined || TAG_SOURCES.has(t.tagSource), `${what} tagSource must be one of ${[...TAG_SOURCES].join(', ')}`)
   assertRupiah(t.amount, `${what} amount`)
 }
 
@@ -51,6 +55,14 @@ function checkPlan(p: InstallmentPlan, what: string): void {
   need(ownerOk(p.ownerId), `${what} ownerId must be a text or null`)
   need(Number.isSafeInteger(p.total) && p.total >= 1, `${what} total must be a whole number of months`)
   assertRupiah(p.monthly, `${what} monthly amount`)
+}
+
+function checkRule(r: TagRule, what: string): void {
+  need(RULE_MATCHES.includes(r.match), `${what} match must be one of ${RULE_MATCHES.join(', ')}`)
+  need(typeof r.pattern === 'string' && cleanPattern(r.pattern).length >= 2, `${what} pattern must have at least 2 letters`)
+  need(r.origin === undefined || r.origin === 'you' || r.origin === 'analyze', `${what} origin must be "you" or "analyze"`)
+  need(isText(r.ownerId), `${what} ownerId must be a non-empty text`)
+  need(isText(r.updatedAt), `${what} updatedAt must be a timestamp`)
 }
 
 /** Throws (RecordError, or the domain's MoneyError) when `record` cannot be stored in `table`. */
@@ -69,5 +81,6 @@ export function checkRecord<K extends DataTable>(table: K, record: DataRecords[K
   else if (table === 'statements') checkStatement(record as Statement, what)
   else if (table === 'transactions') checkTransaction(record as Transaction, what)
   else if (table === 'payments') checkPayment(record as Payment, what)
+  else if (table === 'rules') checkRule(record as TagRule, what)
   else checkPlan(record as InstallmentPlan, what)
 }
