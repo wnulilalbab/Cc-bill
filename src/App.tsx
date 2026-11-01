@@ -12,6 +12,7 @@ import { RulesPage } from './features/tagging/RulesPage'
 import { ImportPage } from './features/import/ImportPage'
 import { TransactionsPage } from './features/transactions/TransactionsPage'
 import { PaymentsRoutes } from './features/payments/PaymentsRoutes'
+import { SharePage } from './features/share/SharePage'
 
 function BottomNav() {
   const location = useLocation()
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="/v2/import" element={<Shell><ImportPage /></Shell>} />
             <Route path="/v2/transactions" element={<Shell><TransactionsPage /></Shell>} />
             <Route path="/v2/payments/*" element={<Shell><PaymentsRoutes /></Shell>} />
+            <Route path="/v2/share" element={<Shell><SharePage /></Shell>} />
           </Routes>
         </main>
         <BottomNav />

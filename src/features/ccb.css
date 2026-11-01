@@ -165,3 +165,6 @@
   .ccb .ccb-full { animation: ccb-slidein 0.22s ease-out; }
 }
 @keyframes ccb-slidein { from { transform: translateX(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }
+
+/* Share sheet (Slice 11): the message preview keeps its line breaks. */
+.ccb .share-preview { margin: 0; white-space: pre-wrap; word-break: break-word; font: inherit; font-size: 13px; line-height: 1.45; border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: #fff; }
