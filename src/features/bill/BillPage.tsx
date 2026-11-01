@@ -3,7 +3,6 @@
 // comes from the domain (cardBill / ownerBill) through ./view.
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { GearIcon } from '../../components/icons'
 import { Picker } from '../../components/Picker'
 import { useToast } from '../../components/Toast'
 import { unassignedOf } from '../../domain/amounts'
@@ -19,6 +18,7 @@ import { ownerColor } from '../look/palettes'
 import { OwnerChip } from '../settings/SettingsPage'
 import { rp } from '../settings/format'
 import { dayLabel, fmt, statementName, statementsForPicker } from '../transactions/view'
+import { TopBar } from '../shell/TopBar'
 import { CardSwitcher, type CardTile } from './CardSwitcher'
 import { statementFor, todayIso, useBill } from './useBill'
 import { billView, monthName, shortMonth, type BillView } from './view'
@@ -31,10 +31,10 @@ const shortDay = (iso: string) => dayLabel(iso).slice(0, -5)
 /** Path segment for rows without an owner. Real owner ids are generated ("owner-…"), so this can't collide. */
 export const NO_OWNER = '_none'
 export const personPath = (ownerId: string | null, statementId: string) =>
-  `/v2/bill/person/${encodeURIComponent(ownerId ?? NO_OWNER)}?s=${encodeURIComponent(statementId)}`
-export const txPath = (statementId: string, extra: Record<string, string> = {}) => `/v2/transactions?${new URLSearchParams({ statement: statementId, ...extra })}`
+  `/bill/person/${encodeURIComponent(ownerId ?? NO_OWNER)}?s=${encodeURIComponent(statementId)}`
+export const txPath = (statementId: string, extra: Record<string, string> = {}) => `/transactions?${new URLSearchParams({ statement: statementId, ...extra })}`
 /** The Payments list, or one payment's full-screen assign page (Slice 9 routes). */
-export const payPath = (paymentId?: string) => (paymentId ? `/v2/payments/${encodeURIComponent(paymentId)}` : '/v2/payments')
+export const payPath = (paymentId?: string) => (paymentId ? `/payments/${encodeURIComponent(paymentId)}` : '/payments')
 
 /** A card with no billed statement and nothing in Unbilled has nothing to bill yet. */
 export const isEmptyCard = (l: Ledger) => !l.statements.some((s) => s.kind === 'billed') && l.transactions.length === 0 && l.payments.length === 0
@@ -54,7 +54,7 @@ export function BillPage() {
         <Top />
         <div className="box empty">
           <div>No cards yet. Add your card, its owners and its palette first.</div>
-          <Link className="btn acc" to="/v2/settings">
+          <Link className="btn acc" to="/settings">
             Add a card
           </Link>
         </div>
@@ -78,7 +78,7 @@ export function BillPage() {
       ) : isEmptyCard(ledger) ? (
         <div className="box empty">
           <div>No statements on this card yet.</div>
-          <Link className="btn acc" to="/v2/import">
+          <Link className="btn acc" to="/import">
             Import the first one
           </Link>
         </div>
@@ -90,19 +90,7 @@ export function BillPage() {
 }
 
 function Top() {
-  return (
-    <>
-      <div className="top">
-        <h1>Bill</h1>
-        <Link className="iconbtn" to="/v2/settings" aria-label="Settings">
-          <GearIcon />
-        </Link>
-      </div>
-      <Link className="note" to="/dashboard">
-        Old dashboard
-      </Link>
-    </>
-  )
+  return <TopBar title="Bill" />
 }
 
 function Bill({ ledger, statement, owners, bank, onStatement }: { ledger: Ledger; statement: Statement; owners: OwnerRecord[]; bank: string; onStatement(id: string): void }) {

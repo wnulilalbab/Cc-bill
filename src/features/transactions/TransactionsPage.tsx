@@ -1,4 +1,4 @@
-// Transactions (docs/intent/phase-1.md §6; layout and wording from the prototype): card and statement pickers,
+// Transactions (docs/intent/phase-1.md §6; layout and wording from the prototype): card carousel, statement picker,
 // search, filters, rows grouped by day with owner / Check / status, totals for what is shown, Draft/Final with jump
 // links, the row sheet, bulk "Set owner" / "Mark reviewed", and "+ Add a missing transaction".
 import { useMemo, useState, type ReactNode } from 'react'
@@ -19,6 +19,8 @@ import { useAppearance } from '../look/Appearance'
 import { ownerColor } from '../look/palettes'
 import { OwnerChip } from '../settings/SettingsPage'
 import { rp } from '../settings/format'
+import { CardCarousel, plainTiles } from '../cards/CardCarousel'
+import { TopBar } from '../shell/TopBar'
 import { TagSheet } from '../tagging/TagSheet'
 import { AddRowSheet } from './AddRowSheet'
 import { BulkOwnerSheet } from './BulkOwnerSheet'
@@ -120,16 +122,14 @@ export function TransactionsPage() {
         </button>
       </Header>
 
-      <Picker
-        title="Card"
-        value={cardId}
-        options={cards.map((c) => ({ value: c.card.id, label: c.card.name, sub: `${c.card.bank}${c.card.last4 ? ` •••• ${c.card.last4}` : ''}` }))}
-        onChange={(id) => {
+      <CardCarousel
+        tiles={plainTiles(cards)}
+        selectedId={cardId}
+        onSelect={(id) => {
           selectCard(id)
           setFilters(NO_FILTERS)
           endSelect()
         }}
-        field
       />
 
       <input
@@ -310,17 +310,7 @@ export function TransactionsPage() {
 }
 
 function Header({ children }: { children?: ReactNode }) {
-  return (
-    <>
-      <div className="top">
-        <h1>Transactions</h1>
-        {children}
-      </div>
-      <Link className="note" to="/transactions">
-        Old transactions screen
-      </Link>
-    </>
-  )
+  return <TopBar title="Transactions" actions={children} />
 }
 
 function TxRow({ row, owners, selecting, picked, onClick }: { row: RowView; owners: readonly OwnerRecord[]; selecting: boolean; picked: boolean; onClick(): void }) {
@@ -389,7 +379,7 @@ function DraftPanel({ ledger, statementId, onCheckRows, onRow }: { ledger: Ledge
   )
   const payItem = (id: string, why: string) => (
     <li key={`${why}-${id}`}>
-      <Link className="link xs" to={`/v2/payments/${encodeURIComponent(id)}`}>
+      <Link className="link xs" to={`/payments/${encodeURIComponent(id)}`}>
         {why}: {payText(pay(id))}
         {why === 'Not fully assigned' && ` (${rp(unassignedOf(pay(id)))} left)`}
       </Link>
@@ -415,7 +405,7 @@ function DraftPanel({ ledger, statementId, onCheckRows, onRow }: { ledger: Ledge
       </ul>
       {issues.blockingPayments.length + issues.missingPayments.length + issues.possibleDuplicatePayments.length + issues.notOnStatementPayments.length > 0 && (
         <div className="xs muted">
-          Tap a payment to assign or resolve it, or open <Link to="/v2/payments">Payments</Link>.
+          Tap a payment to assign or resolve it, or open <Link to="/payments">Payments</Link>.
         </div>
       )}
     </div>

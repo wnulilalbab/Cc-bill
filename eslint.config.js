@@ -1,9 +1,10 @@
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 
-// Scope: the new, tested layers and the tooling. The legacy screens in src/pages are replaced in
-// later slices and are deliberately not linted. Add folders here as they are created.
+// Scope: all of the app and the tooling (the legacy screens in src/pages were retired in Slice 12).
 const scope = [
+  'src/*.{ts,tsx}',
+  'src/lib/**/*.ts',
   'src/domain/**/*.ts',
   'src/data/**/*.ts',
   'src/ai/**/*.ts', // incl. src/ai/tagging (Slice 7)

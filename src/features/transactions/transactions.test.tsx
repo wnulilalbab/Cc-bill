@@ -195,7 +195,10 @@ describe('Transactions screen', () => {
     expect(screen.getByText('No transactions match these filters.')).toBeTruthy()
     expect(within(screen.getByLabelText('Draft or Final')).getByText('Final ✓')).toBeTruthy()
 
-    await choose(user, 'Card', 'Mandiri Pribadi')
+    // The card carousel: tapping the peeking Mandiri card selects it.
+    const cards = screen.getByRole('group', { name: 'Cards' })
+    await user.click(within(cards).getByRole('button', { name: 'Mandiri Pribadi' }))
+    await waitFor(() => expect(within(cards).getByRole('button', { name: 'Mandiri Pribadi' }).getAttribute('aria-pressed')).toBe('true'))
     expect(await screen.findByRole('button', { name: 'Statement: Unbilled' })).toBeTruthy()
     expect(rowNames()).toEqual([])
   })

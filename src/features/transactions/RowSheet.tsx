@@ -361,7 +361,7 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
           </div>
           {coverage.payments.map((c) => (
             <div key={c.paymentId} className="row small">
-              <Link to={`/v2/payments/${encodeURIComponent(c.paymentId)}`} aria-label={`Open payment of ${dayLabel(c.date)}`}>
+              <Link to={`/payments/${encodeURIComponent(c.paymentId)}`} aria-label={`Open payment of ${dayLabel(c.date)}`}>
                 {dayLabel(c.date)} · {payLine(paymentById(c.paymentId))}
                 {c.afterDue && <span className="pill warn"> after due</span>}
               </Link>

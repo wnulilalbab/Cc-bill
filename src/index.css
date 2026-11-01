@@ -1,22 +1,53 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  html {
-    -webkit-tap-highlight-color: transparent;
-  }
-  body {
-    @apply bg-gray-50 text-gray-900;
-    overscroll-behavior: none;
-  }
+/* Page-level base: a small reset (the parts of the old Tailwind preflight the screens rely on). The screens' own
+   styles live in src/features/ccb.css. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border: 0 solid #e4e7ec;
 }
-
-@layer utilities {
-  .pb-safe {
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
-  }
-  .safe-bottom {
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4rem);
-  }
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  color-scheme: light;
+}
+body {
+  margin: 0;
+  background: var(--bg, #edf1f7);
+  color: #111318;
+  overscroll-behavior: none;
+}
+h1, h2, h3, h4, h5, h6, p, ul, ol, figure, blockquote, dl, dd, pre {
+  margin: 0;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+ul, ol {
+  list-style: none;
+  padding: 0;
+}
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+button, input, textarea {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+}
+button {
+  background-color: transparent;
+  padding: 0;
+}
+textarea {
+  resize: vertical;
+}
+img, svg, video {
+  display: block;
+  vertical-align: middle;
+}
+table {
+  border-collapse: collapse;
 }

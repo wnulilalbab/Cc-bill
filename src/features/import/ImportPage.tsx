@@ -30,6 +30,8 @@ import { useData } from '../data/DataContext'
 import { useAppearance } from '../look/Appearance'
 import { readAiSettings } from '../settings/aiSettings'
 import { rp } from '../settings/format'
+import { PATHS } from '../shell/paths'
+import { TopBar } from '../shell/TopBar'
 import { loadPdfjs } from './pdfjs'
 
 export interface ImportPageProps {
@@ -147,10 +149,9 @@ export function ImportPage({ pdfjs = loadPdfjs, fetch }: ImportPageProps) {
       <div className="screen">
         <Top />
         <div className="box empty small">
-          Add a card first in <Link to="/v2/settings">Settings</Link>.
+          Add a card first in <Link to={PATHS.settings}>Settings</Link>.
         </div>
-        <OldImport />
-      </div>
+        </div>
     )
 
   return (
@@ -255,27 +256,12 @@ export function ImportPage({ pdfjs = loadPdfjs, fetch }: ImportPageProps) {
           onAgain={restart}
         />
       )}
-      <OldImport />
-    </div>
-  )
-}
-
-function OldImport() {
-  return (
-    <div className="note">
-      <Link to="/import">Old import screen</Link>
     </div>
   )
 }
 
 function Top() {
-  return (
-    <div className="top">
-      <span style={{ width: 38 }} />
-      <h1>Import</h1>
-      <span style={{ width: 38 }} />
-    </div>
-  )
+  return <TopBar title="Import" />
 }
 
 function Review({ draft, onChange, onSave, onCancel, saving, error }: { draft: ImportDraft; onChange(d: ImportDraft): void; onSave(acceptDifference: boolean): void; onCancel(): void; saving: boolean; error: string }) {

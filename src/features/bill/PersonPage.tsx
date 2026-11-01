@@ -1,13 +1,14 @@
 // One person's bill (docs/intent/phase-1.md §8, prototype "owner detail"): this statement's charges grouped by kind
 // with what paid each one ("after due" marked), the payments and deposits behind "Already paid", carried credit,
 // older unpaid bills, not billed yet and installments to come. Lines add up to the hero numbers (M-10).
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { BackIcon } from '../../components/icons'
+import { Link, useParams } from 'react-router-dom'
 import { computeMoney } from '../../domain/amounts'
 import { coverageOf, ownerBill, type BillLine, type OwnerBill } from '../../domain/bill'
 import type { Ledger, Payment, Statement } from '../../domain/types'
 import type { OwnerRecord } from '../../data/cards'
 import { rp } from '../settings/format'
+import { PATHS } from '../shell/paths'
+import { TopBar } from '../shell/TopBar'
 import { StatusPill } from '../transactions/RowSheet'
 import { dayLabel, fmt, MONTHS, statementName, TAG_SOURCE_LABEL } from '../transactions/view'
 import { HeroBox, NO_OWNER, ownerLabel, payPath, txPath } from './BillPage'
@@ -35,24 +36,7 @@ export function PersonPage() {
 }
 
 function Header({ title, sub, statementId }: { title: string; sub: string; statementId: string }) {
-  const navigate = useNavigate()
-  return (
-    <div className="top">
-      <button
-        type="button"
-        className="iconbtn"
-        aria-label="Back"
-        onClick={() => ((window.history.state as { idx?: number } | null)?.idx ? navigate(-1) : navigate(`/v2/bill?s=${encodeURIComponent(statementId)}`))}
-      >
-        <BackIcon />
-      </button>
-      <div style={{ textAlign: 'center', minWidth: 0 }}>
-        <div className="xs muted">{sub}</div>
-        <h1>{title}</h1>
-      </div>
-      <span style={{ width: 38 }} />
-    </div>
-  )
+  return <TopBar title={title} sub={sub} backTo={`${PATHS.bill}?s=${encodeURIComponent(statementId)}`} />
 }
 
 function heroOf(b: OwnerBill): Hero {
