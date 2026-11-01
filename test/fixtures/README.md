@@ -2,7 +2,7 @@
 
 Everything here is **fictional** (household "Andi Pratama"). No real statements, names or backups are used anywhere in testing. See [`docs/intent/dev-loop.md`](../../docs/intent/dev-loop.md#test-data).
 
-Source of truth: `scripts/fixtures/data.ts`. Regenerate with `npm run fixtures` (PDFs, expected results, backup) and `npm run fixtures:screens` (PNG screenshots, needs Playwright's Chromium). `test/fixtures.test.ts` fails if a committed file drifts from the generator.
+Source of truth: `scripts/fixtures/data.ts`. Regenerate with `npm run fixtures` (PDFs — locked ones too, via a seeded random source — expected results, backup) and `npm run fixtures:screens` (PNG screenshots, needs Playwright's Chromium). `test/fixtures.test.ts` fails if a committed file drifts from the generator.
 
 | Path | What | Tests it enables |
 |---|---|---|

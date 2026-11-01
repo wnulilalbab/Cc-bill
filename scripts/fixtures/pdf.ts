@@ -137,6 +137,35 @@ export async function renderMandiri(st: Statement, opts: { lock: boolean }): Pro
     }
     right(p, ctx, `Hal / Page ${pi + 1} of ${chunks.length}`, 555, 30, 7)
   })
-  if (opts.lock) ctx.doc.encrypt({ userPassword: PASSWORD, ownerPassword: 'owner-' + PASSWORD, permissions: {} })
-  return ctx.doc.save({ useObjectStreams: false })
+  if (!opts.lock) return ctx.doc.save({ useObjectStreams: false })
+  // Encryption draws random file IDs, keys, salts and IVs. These are test fixtures with a public password,
+  // so a seeded source makes the locked PDFs byte-for-byte reproducible.
+  return withSeededRandom(st.file, async () => {
+    ctx.doc.encrypt({ userPassword: PASSWORD, ownerPassword: 'owner-' + PASSWORD, permissions: {} })
+    return ctx.doc.save({ useObjectStreams: false })
+  })
+}
+
+async function withSeededRandom<T>(seedText: string, fn: () => Promise<T>): Promise<T> {
+  let seed = [...seedText].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 2166136261)
+  const next = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32)
+  const realCrypto = globalThis.crypto
+  const realRandom = Math.random
+  const fakeCrypto = Object.create(realCrypto, {
+    getRandomValues: {
+      value: <A extends ArrayBufferView>(arr: A): A => {
+        const view = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength)
+        for (let i = 0; i < view.length; i++) view[i] = Math.floor(next() * 256)
+        return arr
+      },
+    },
+  })
+  Object.defineProperty(globalThis, 'crypto', { value: fakeCrypto, configurable: true, writable: true })
+  Math.random = next
+  try {
+    return await fn()
+  } finally {
+    Object.defineProperty(globalThis, 'crypto', { value: realCrypto, configurable: true, writable: true })
+    Math.random = realRandom
+  }
 }
