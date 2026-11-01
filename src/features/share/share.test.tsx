@@ -13,7 +13,9 @@ import { renderScreen } from '../../test-utils/ui'
 import { freshNewDb } from '../../../test/data/oldDb'
 import { BCA_OWNERS, householdLedger, seedHousehold, TODAY } from '../../../test/payments/household'
 import { TransactionsPage } from '../transactions/TransactionsPage'
-import { localToday, nav, ShareSheet } from './ShareSheet'
+import { imageIO, localToday, nav, ShareSheet } from './ShareSheet'
+import { paletteOf } from '../look/palettes'
+import { shareCard } from '../../domain/share/message'
 import { SharePage } from './SharePage'
 
 const HH = householdLedger()
@@ -21,7 +23,7 @@ const OWNERS = BCA_OWNERS.map((name) => ({ id: name, name }))
 const NOV = 'bca-2026-11'
 const ctx = (extra: Partial<ShareContext> = {}): ShareContext => ({ ledger: HH, card: { name: 'BCA Keluarga' }, owners: OWNERS, statementId: NOV, today: TODAY, ...extra })
 
-const setNavigator = (key: 'share' | 'clipboard', value: unknown) => Object.defineProperty(navigator, key, { value, configurable: true, writable: true })
+const setNavigator = (key: 'share' | 'canShare' | 'clipboard', value: unknown) => Object.defineProperty(navigator, key, { value, configurable: true, writable: true })
 
 beforeEach(() => {
   vi.stubGlobal('__APP_ENV__', 'production')
@@ -32,6 +34,7 @@ afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
   setNavigator('share', undefined)
+  setNavigator('canShare', undefined)
 })
 
 const preview = () => screen.getByLabelText('Message preview').textContent
@@ -198,7 +201,7 @@ describe('sending', () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     setNavigator('clipboard', { writeText })
     await user.click(screen.getByRole('button', { name: "Share Keluarga's bill" }))
-    await user.click(screen.getByRole('button', { name: 'Copy' }))
+    await user.click(screen.getByRole('button', { name: 'Copy as text' }))
     expect(writeText).toHaveBeenCalledWith(preview())
     expect(writeText.mock.calls[0][0]).toBe(shareMessage(ctx(), { ownerId: 'Keluarga' }).text)
     expect((await screen.findByRole('status')).textContent).toBe('Copied. Paste it in WhatsApp.')
@@ -209,7 +212,7 @@ describe('sending', () => {
     const { user } = await openPage()
     setNavigator('clipboard', { writeText: vi.fn().mockRejectedValue(new Error('no')) })
     await user.click(screen.getByRole('button', { name: 'Share all' }))
-    await user.click(screen.getByRole('button', { name: 'Copy' }))
+    await user.click(screen.getByRole('button', { name: 'Copy as text' }))
     const box = (await screen.findByRole('textbox', { name: 'Message text' })) as HTMLTextAreaElement
     expect(box.value).toBe(preview())
     expect(box.selectionEnd - box.selectionStart).toBe(box.value.length)
@@ -223,6 +226,60 @@ describe('sending', () => {
     await user.click(screen.getByRole('button', { name: 'Share all' }))
     await user.click(screen.getByRole('button', { name: 'Send via WhatsApp' }))
     expect((await screen.findByRole('status')).textContent).toBe('Shared, but could not log it: disk full')
+  })
+})
+
+describe('share image', () => {
+  const png = new Blob(['png'], { type: 'image/png' })
+
+  it('Share image hands a PNG of the share card to the phone share sheet and logs it', async () => {
+    const { user, db } = await openPage()
+    const share = vi.fn().mockResolvedValue(undefined)
+    const canShare = vi.fn(({ files }: { files: File[] }) => files[0].type === 'image/png')
+    setNavigator('share', share)
+    setNavigator('canShare', canShare)
+    const render = vi.spyOn(imageIO, 'render').mockResolvedValue(png)
+    await user.click(screen.getByRole('button', { name: "Share Sari's bill" }))
+    await user.click(screen.getByRole('button', { name: 'Share image' }))
+    expect(render).toHaveBeenCalledWith(shareCard(ctx(), { ownerId: 'Sari' }), paletteOf(undefined))
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
+    const file = share.mock.calls[0][0].files[0] as File
+    expect([file.name, file.type, file.size]).toEqual(['tagihan-bca-keluarga-nov-2026-sari.png', 'image/png', png.size])
+    await waitFor(async () => expect(await listShares(db, 'bca', NOV)).toEqual([{ target: { ownerId: 'Sari' }, total: ownerBill(HH, 'Sari', NOV, TODAY).mustPay, date: TODAY }]))
+  })
+
+  it('Save image downloads the PNG when the phone cannot share files', async () => {
+    const { user, db } = await openPage()
+    vi.spyOn(imageIO, 'render').mockResolvedValue(png)
+    const create = vi.fn(() => 'blob:share')
+    Object.assign(URL, { createObjectURL: create, revokeObjectURL: vi.fn() })
+    const saved: string[] = []
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      saved.push(this.download)
+    })
+    await user.click(screen.getByRole('button', { name: 'Share all' }))
+    await user.click(screen.getByRole('button', { name: 'English' }))
+    await user.click(screen.getByRole('button', { name: 'Save image' }))
+    expect((await screen.findByRole('status')).textContent).toBe('Image saved. Send it from your gallery or files.')
+    expect(saved).toEqual(['bill-bca-keluarga-nov-2026-everyone.png'])
+    expect(create).toHaveBeenCalledWith(png)
+    await waitFor(async () => expect(await listShares(db, 'bca', NOV)).toHaveLength(1))
+  })
+
+  it('closing the share sheet logs nothing; a drawing failure says so', async () => {
+    const { user, db } = await openPage()
+    setNavigator('share', vi.fn().mockRejectedValue(Object.assign(new Error('closed'), { name: 'AbortError' })))
+    setNavigator('canShare', () => true)
+    const render = vi.spyOn(imageIO, 'render').mockResolvedValueOnce(png).mockRejectedValueOnce(new Error('no canvas')).mockRejectedValueOnce('odd')
+    await user.click(screen.getByRole('button', { name: 'Share all' }))
+    await user.click(screen.getByRole('button', { name: 'Share image' }))
+    await waitFor(() => expect(render).toHaveBeenCalledTimes(1))
+    expect(screen.queryByRole('status')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Share image' }))
+    expect((await screen.findByRole('status')).textContent).toBe('Could not make the image: no canvas')
+    await user.click(screen.getByRole('button', { name: 'Share image' }))
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Could not make the image: odd'))
+    expect(await listShares(db, 'bca', NOV)).toEqual([])
   })
 })
 

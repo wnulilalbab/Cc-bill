@@ -6,7 +6,7 @@ import { BCA_OWNERS, householdLedger, TODAY } from '../../../test/payments/house
 import { cardBill, ownerBill } from '../bill'
 import { MoneyError } from '../money'
 import { rupiah } from './format'
-import { shareMessage, type ShareContext } from './message'
+import { shareCard, shareMessage, shareText, type ShareContext } from './message'
 
 const HH = householdLedger()
 const OWNERS = BCA_OWNERS.map((name) => ({ id: name, name }))
@@ -264,5 +264,68 @@ describe('labels and privacy', () => {
   it('refuses an unknown statement or owner', () => {
     expect(() => shareMessage(ctx('nope'), 'all')).toThrow(new MoneyError('unknown statement nope'))
     expect(() => shareMessage(ctx('bca-2026-11'), { ownerId: 'Zed' })).toThrow(new MoneyError('unknown owner Zed'))
+  })
+})
+
+describe('share card (the model the text and the image are drawn from)', () => {
+  it('S-06 one model: the text is rendered from the same card the image draws', () => {
+    for (const s of ['bca-2026-08', 'bca-2026-11', 'bca-unb']) {
+      for (const t of ['all', { ownerId: 'Andi' }] as const) expect(shareText(shareCard(ctx(s), t))).toBe(shareMessage(ctx(s), t).text)
+    }
+  })
+
+  it('one person: header, "Per <date>", draft, rows with marks, older per month, extras', () => {
+    expect(shareCard(ctx('bca-2026-08', { lang: 'en' }), { ownerId: 'Andi' })).toEqual({
+      lang: 'en',
+      title: 'Bill BCA Keluarga · Aug 2026',
+      due: 'due 28 Aug',
+      asOf: 'As of 1 Nov 2026',
+      draft: { label: 'PROVISIONAL', note: 'numbers may change' },
+      who: 'Andi',
+      blocks: [
+        {
+          name: 'Andi',
+          amount: 'Rp 0',
+          settled: true,
+          headline: 'Paid ✓',
+          summary: ['Charges Aug 2026: Rp 508.917', 'Already paid: Rp 718.425'],
+          rows: [
+            { label: '14 Jul GRAB', amount: '9.000', mark: 'paid', paid: true },
+            { label: '21 Jul SHOPEE', amount: '381.327', mark: 'paid', paid: true },
+            { label: '25 Jul GARMIN INDONESIA (installment 2/12)', amount: '499.917', mark: null, paid: false },
+            { label: '2 Aug SHOPEE', amount: '−381.327', mark: 'refund', paid: false },
+          ],
+          older: [],
+          extras: ['Refund credit (lowers the next bill): Rp 209.508'],
+          empty: null,
+        },
+      ],
+      nothing: null,
+      totalLine: null,
+      total: 0,
+      final: false,
+    })
+  })
+
+  it('everyone: who is "Semua", headline is the amount when open, older per month', () => {
+    const c = shareCard(ctx('bca-2026-11'), 'all')
+    expect([c.who, c.due, c.asOf, c.draft, c.totalLine, c.nothing]).toEqual([
+      'Semua',
+      'jatuh tempo 28 Nov',
+      'Per 1 Nov 2026',
+      { label: 'SEMENTARA', note: 'angka bisa berubah' },
+      `Total semua: ${rupiah(cardBill(HH, BCA_OWNERS, 'bca-2026-11', TODAY).total)}`,
+      null,
+    ])
+    const bima = c.blocks.find((b) => b.name === 'Bima')!
+    expect(bima).toMatchObject({ headline: 'Rp 535.000', settled: false, rows: [], older: [{ label: 'Sisa Okt 2026', amount: '245.000' }, { label: 'Sisa Sep 2026', amount: '290.000' }], empty: null })
+    expect(shareCard(ctx('bca-2026-07'), { ownerId: 'Sari' }).blocks[0]).toMatchObject({ headline: 'Lunas ✓', empty: 'Tidak ada transaksi di tagihan ini.' })
+    expect(shareCard(ctx('bca-unb', { lang: 'en' }), 'all')).toMatchObject({ who: 'Everyone', due: null, draft: null, final: true })
+  })
+
+  it('masks card numbers in owner names and row labels too', () => {
+    const l = ledger({ statements: months(), transactions: [tx('a', 'oct', '2026-10-01', 1000, 'o', { label: 'Kartu 4556771234561234' })] })
+    const c = shareCard({ ledger: l, card: { name: 'K' }, owners: [{ id: 'o', name: 'Sari 4556 7712 3456 9999' }], statementId: 'oct', today: '2026-10-20' }, { ownerId: 'o' })
+    expect([c.who, c.blocks[0].name, c.blocks[0].rows[0].label]).toEqual(['Sari ••••9999', 'Sari ••••9999', '1 Okt Kartu ••••1234'])
   })
 })

@@ -8,17 +8,24 @@ import { useToast } from '../../components/Toast'
 import { cardBill } from '../../domain/bill'
 import type { ShareLang } from '../../domain/share/format'
 import { whatsappAppUrl, whatsappWebUrl } from '../../domain/share/links'
-import { shareMessage, type ShareTarget } from '../../domain/share/message'
+import { shareCard, shareText, type ShareTarget } from '../../domain/share/message'
 import type { Ledger } from '../../domain/types'
 import type { OwnerRecord } from '../../data/cards'
 import { listShares, logShare, sameTarget } from '../../data/shares'
 import { useData } from '../data/DataContext'
 import { useDbQuery } from '../data/useDbQuery'
-import { rp } from '../settings/format'
+import { paletteOf } from '../look/palettes'
+import { canShareFile, rp } from '../settings/format'
 import { dayLabel, statementName } from '../transactions/view'
+import { downloadBlob, imageFileName, renderSharePng } from './image'
 
 /** Navigation the sheet does itself (the WhatsApp app scheme when the browser blocks the new tab). Replaceable in tests. */
 export const nav = { assign: (url: string) => window.location.assign(url) }
+
+/** Draws the share image (canvas). Replaceable in tests: jsdom has no canvas. */
+export const imageIO = { render: renderSharePng }
+
+const PROBE = () => new File([new Uint8Array(0)], 'share.png', { type: 'image/png' })
 
 /** Today on this phone (local calendar date, not UTC). */
 export function localToday(d = new Date()): string {
@@ -31,7 +38,7 @@ const toTarget = (v: string): ShareTarget => (v === 'all' ? 'all' : v === NONE ?
 
 export interface ShareSheetProps {
   ledger: Ledger
-  card: { id: string; name: string }
+  card: { id: string; name: string; palette?: string }
   /** The card's owners, archived ones included. */
   owners: readonly OwnerRecord[]
   statementId: string
@@ -55,7 +62,10 @@ export function ShareSheet({ ledger, card, owners, statementId, initialTarget = 
   }, [manualCopy])
 
   const ctx = { ledger, card, owners, statementId, today, lang, list }
-  const message = shareMessage(ctx, target)
+  const shared = shareCard(ctx, target)
+  const message = { text: shareText(shared), total: shared.total, final: shared.final }
+  const [canShareImage] = useState(() => canShareFile(PROBE()))
+  const [imageBusy, setImageBusy] = useState(false)
   const bills = useMemo(() => cardBill(ledger, owners.map((o) => o.id), statementId, today), [ledger, owners, statementId, today])
   const nowOf = (t: ShareTarget) => (t === 'all' ? bills.total : (bills.owners.find((b) => b.ownerId === t.ownerId)?.mustPay ?? 0))
   const nameOf = (t: ShareTarget) => (t === 'all' ? 'Everyone' : t.ownerId === null ? 'No owner' : (owners.find((o) => o.id === t.ownerId)?.name ?? 'Unknown'))
@@ -90,6 +100,26 @@ export function ShareSheet({ ledger, card, owners, statementId, initialTarget = 
       // The person closed the phone's share sheet: nothing was sent.
       if (e instanceof Error && e.name === 'AbortError') return
       toast(`Could not share: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
+  const shareImage = async () => {
+    if (imageBusy) return
+    setImageBusy(true)
+    try {
+      const png = await imageIO.render(shared, paletteOf(card.palette))
+      const file = new File([png], imageFileName(shared), { type: 'image/png' })
+      if (canShareFile(file)) {
+        await navigator.share({ files: [file] })
+      } else {
+        downloadBlob(file.name, png)
+        toast('Image saved. Send it from your gallery or files.')
+      }
+      void log()
+    } catch (e) {
+      if (!(e instanceof Error && e.name === 'AbortError')) toast(`Could not make the image: ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setImageBusy(false)
     }
   }
 
@@ -166,13 +196,16 @@ export function ShareSheet({ ledger, card, owners, statementId, initialTarget = 
         Send via WhatsApp
       </button>
       <div className="btns">
+        <button type="button" className="btn ghost" disabled={imageBusy} onClick={shareImage}>
+          {canShareImage ? 'Share image' : 'Save image'}
+        </button>
         {canShare && (
           <button type="button" className="btn ghost" onClick={shareNative}>
             Share…
           </button>
         )}
         <button type="button" className="btn ghost" onClick={copy}>
-          Copy
+          Copy as text
         </button>
       </div>
     </Sheet>
