@@ -7,6 +7,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { sendMessages, type FetchLike } from '../../src/ai/client'
 import { buildRequest } from '../../src/ai/prompt'
+import { DEFAULT_AI_MODEL } from '../../src/features/settings/aiSettings'
 import { parseAiAnswer } from '../../src/ai/schema'
 import { reconcile } from '../../src/domain/reconcile'
 import { normalizeRows, statementRows } from '../../src/import/normalize'
@@ -14,8 +15,8 @@ import { readPdfPages, type PdfJsLike } from '../../src/import/pdf'
 import { redactStatement } from '../../src/import/redact'
 
 export const MODEL = 'claude-haiku-4-5'
-/** The parse check uses the app's default model (DEFAULT_AI_MODEL in src/features/settings/aiSettings.ts): the one users run. */
-export const PARSE_MODEL = 'claude-opus-5-5'
+/** The parse check uses the app's default model: the one users run. */
+export const PARSE_MODEL = DEFAULT_AI_MODEL
 export const PARSE_FIXTURE = 'statements/bca-2026-10'
 const FIXTURES = join(import.meta.dirname, '../../test/fixtures')
 

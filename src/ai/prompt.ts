@@ -1,9 +1,7 @@
 // The single AI request of an import: statement text (from a PDF, personal details already removed on the device)
-// or screenshots, plus the output schema. Bump PROMPT_VERSION whenever the prompt or schema changes: cached answers
-// are keyed by it.
+// or screenshots, plus the output schema. Cached answers are keyed by PROMPT_VERSION, which is derived from the
+// prompt and the schema: any change to either makes a new version, so stale answers are never reused.
 import { AI_SCHEMA } from './schema'
-
-export const PROMPT_VERSION = 'import-v1'
 
 export type AiInput =
   | { kind: 'text'; text: string }
@@ -28,6 +26,15 @@ Totals and dates (as printed; null when not shown)
 
 const USER_TEXT = 'Read this statement. Personal details were removed on the device.'
 const USER_IMAGES = 'Read these screenshots, in order.'
+
+/** FNV-1a (32-bit), hex. Not for security: only to notice that the prompt changed. */
+export function fnv1a(text: string): string {
+  let h = 0x811c9dc5
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193) >>> 0
+  return h.toString(16).padStart(8, '0')
+}
+
+export const PROMPT_VERSION = `import-${fnv1a([SYSTEM_PROMPT, USER_TEXT, USER_IMAGES, JSON.stringify(AI_SCHEMA)].join('\u0000'))}`
 
 export interface MessagesRequest {
   model: string

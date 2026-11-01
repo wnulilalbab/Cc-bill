@@ -1,14 +1,17 @@
 // @vitest-environment jsdom
 import 'fake-indexeddb/auto'
-import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, configure, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { freshNewDb } from '../../../test/data/oldDb'
 import { aiAnswerFor, expected, fileOf, mockFetch, pdfjsLib, seedCards, TEST_KEY } from '../../../test/import/helpers'
 import type { FetchLike } from '../../ai/client'
-import { recallPassword } from '../../import/passwords'
+import { recallPassword, rememberPassword } from '../../import/passwords'
 import { renderScreen } from '../../test-utils/ui'
 import { saveAiKey } from '../settings/aiSettings'
 import { ImportPage, parseTyped } from './ImportPage'
+
+// Reading a PDF with pdf.js is slow under coverage instrumentation: wait longer than the 1 s default.
+configure({ asyncUtilTimeout: 8000 })
 
 beforeEach(() => {
   vi.stubGlobal('__APP_ENV__', 'production')
@@ -58,6 +61,9 @@ describe('Import screen', () => {
 
     await user.clear(screen.getByLabelText('PDF password'))
     await user.type(screen.getByLabelText('PDF password'), 'test1234')
+    const remember = screen.getByRole('checkbox', { name: /Remember for this card/ }) as HTMLInputElement
+    expect(remember.checked).toBe(false) // unticked by default
+    await user.click(remember)
     await user.click(screen.getByRole('button', { name: 'Unlock and read' }))
     expect(await screen.findByText('Totals match the bank ✓')).toBeTruthy()
     expect(screen.getByText('8 lines found')).toBeTruthy()
@@ -75,6 +81,35 @@ describe('Import screen', () => {
     await user.click(screen.getByRole('button', { name: 'Read statement' }))
     expect(await screen.findByText('Totals match the bank ✓')).toBeTruthy()
     expect(screen.queryByLabelText('PDF password')).toBeNull()
+
+    // Forget clears it: the next import asks again.
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    await user.click(await screen.findByRole('button', { name: 'Forget saved password' }))
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Forget saved password' })).toBeNull())
+    expect(await recallPassword(db, cards.mandiri)).toBeNull()
+  })
+
+  it('I-04 without Remember nothing is saved; unticking Remember deletes a password saved earlier', async () => {
+    const fetch = mockFetch(aiAnswerFor(expected('statements/mandiri-2026-10')))
+    const { user, db, cards } = await setup(fetch)
+    await rememberPassword(db, cards.mandiri, 'old-wrong')
+    await pickCard(user, 'Mandiri Pribadi')
+    expect(await screen.findByRole('button', { name: 'Forget saved password' })).toBeTruthy()
+    choose(asFile('statements/mandiri-2026-10.pdf'))
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Read statement' }) as HTMLButtonElement).disabled).toBe(false))
+    await user.click(screen.getByRole('button', { name: 'Read statement' }))
+    // The remembered password no longer works: it is dropped and the password is asked for.
+    expect(await screen.findByLabelText('PDF password')).toBeTruthy()
+    expect(await recallPassword(db, cards.mandiri)).toBeNull()
+    await rememberPassword(db, cards.mandiri, 'again')
+    const remember = screen.getByRole('checkbox', { name: /Remember for this card/ })
+    await user.click(remember)
+    await user.click(remember)
+    await waitFor(async () => expect(await recallPassword(db, cards.mandiri)).toBeNull())
+    await user.type(screen.getByLabelText('PDF password'), 'test1234')
+    await user.click(screen.getByRole('button', { name: 'Unlock and read' }))
+    expect(await screen.findByText('Totals match the bank ✓')).toBeTruthy()
+    expect(await recallPassword(db, cards.mandiri)).toBeNull()
   })
 
   it('I-02 corrupt October: "Totals differ by Rp 1"; fixing the row re-runs the check', async () => {
@@ -83,7 +118,11 @@ describe('Import screen', () => {
     await waitFor(() => expect((screen.getByRole('button', { name: 'Read statement' }) as HTMLButtonElement).disabled).toBe(false))
     await user.click(screen.getByRole('button', { name: 'Read statement' }))
     expect(await screen.findByText('Totals differ by Rp 1')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Save with a difference of Rp 1' })).toBeTruthy()
+    // Saving with a difference needs a confirmation; "Go back" leaves the review as it was.
+    await user.click(screen.getByRole('button', { name: 'Save with a difference of Rp 1' }))
+    expect(screen.getByRole('alertdialog', { name: 'Save with a difference?' })).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Go back' }))
+    expect(screen.queryByRole('alertdialog')).toBeNull()
 
     const row = screen.getByLabelText('GRAMEDIA MATRAMAN 245.001')
     await user.click(within(row).getByRole('button', { name: 'Fix amount' }))
@@ -95,6 +134,33 @@ describe('Import screen', () => {
     await user.click(screen.getByRole('button', { name: 'Save statement' }))
     expect(await screen.findByText('Saved ✓')).toBeTruthy()
     expect(screen.getByText(/the original purchase was not found/)).toBeTruthy()
+  })
+
+  it('I-02 Save anyway saves the statement with its difference', async () => {
+    const { user } = await setup(mockFetch(aiAnswerFor(expected('statements/bca-2026-10-corrupt'))))
+    choose(asFile('statements/bca-2026-10-corrupt.pdf'))
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Read statement' }) as HTMLButtonElement).disabled).toBe(false))
+    await user.click(screen.getByRole('button', { name: 'Read statement' }))
+    await user.click(await screen.findByRole('button', { name: 'Save with a difference of Rp 1' }))
+    await user.click(screen.getByRole('button', { name: 'Save anyway' }))
+    expect(await screen.findByText(/Totals differ by Rp 1\./)).toBeTruthy()
+  })
+
+  it('an AI total that disagrees with the printed one blocks "match" until the printed figure is used', async () => {
+    const e = expected('statements/bca-2026-10')
+    const answer = aiAnswerFor(e)
+    answer.totals.prevBalance = 1
+    const { user } = await setup(mockFetch(answer))
+    choose(asFile('statements/bca-2026-10.pdf', '22965532_SEP_2026.pdf'))
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Read statement' }) as HTMLButtonElement).disabled).toBe(false))
+    await user.click(screen.getByRole('button', { name: 'Read statement' }))
+    expect(await screen.findByText("Totals can't be confirmed")).toBeTruthy()
+    expect(screen.getByText(/The file name says Sep 2026, but the statement is dated Oct 2026/)).toBeTruthy()
+    expect(screen.queryByText('Totals match the bank ✓')).toBeNull()
+    expect((screen.getByRole('button', { name: 'Save statement' }) as HTMLButtonElement).disabled).toBe(true)
+    await user.click(screen.getByRole('button', { name: 'Use the printed figure' }))
+    expect(await screen.findByText('Totals match the bank ✓')).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'Save statement' }) as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('I-13 screenshot statement: Save waits for the typed total', async () => {

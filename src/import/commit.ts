@@ -15,15 +15,21 @@ export const newImportId = (prefix: string) => `${prefix}-${Date.now().toString(
 export async function previewImport(db: NewDb, draft: ImportDraft): Promise<ImportReport> {
   const card = await db.cards.get(draft.cardId)
   if (!card) throw new ImportError('This card no longer exists.')
-  return planImport({ ledger: await loadLedger(db, card.id), card, draft, newId: newImportId }).report
+  return planImport({ ledger: await loadLedger(db, card.id), card, draft, newId: newImportId, acceptDifference: true }).report
+}
+
+export interface CommitOptions {
+  /** The user confirmed saving although the totals differ. */
+  acceptDifference?: boolean
+  newId?: (prefix: string) => string
 }
 
 /** Saves the import. Every record is checked before writing; any failure leaves the database unchanged. */
-export async function commitImport(db: NewDb, draft: ImportDraft, newId: (prefix: string) => string = newImportId): Promise<ImportReport> {
+export async function commitImport(db: NewDb, draft: ImportDraft, { acceptDifference, newId = newImportId }: CommitOptions = {}): Promise<ImportReport> {
   return db.transaction('rw', [db.cards, db.statements, db.transactions, db.payments, db.plans, db.meta], async () => {
     const card = await db.cards.get(draft.cardId)
     if (!card) throw new ImportError('This card no longer exists.')
-    const plan = planImport({ ledger: await loadLedger(db, card.id), card, draft, newId })
+    const plan = planImport({ ledger: await loadLedger(db, card.id), card, draft, newId, acceptDifference })
     plan.statements.forEach((r) => checkRecord('statements', r))
     plan.transactions.forEach((r) => checkRecord('transactions', r))
     plan.payments.forEach((r) => checkRecord('payments', r))

@@ -1,6 +1,6 @@
 // Import (minimal; Slice 12 does the look): pick card, type and file → password if locked → review rows and the
 // totals check → save. Wording follows docs/prototype/ccbill-prototype.html.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { FetchLike } from '../../ai/client'
 import { Picker } from '../../components/Picker'
@@ -14,12 +14,13 @@ import {
   setPrinted,
   setRowAmount,
   setTypedTotal,
+  totalsConflicts,
   type ImportDraft,
   type ImportTarget,
 } from '../../import/draft'
 import type { DraftRow } from '../../import/normalize'
 import { PdfPasswordError, type PdfJsLike } from '../../import/pdf'
-import { forgetPassword, recallPassword, rememberPassword } from '../../import/passwords'
+import { forgetPassword, hasPassword, recallPassword, rememberPassword } from '../../import/passwords'
 import type { ImportReport, RowSummary } from '../../import/plan'
 import { readImport, type ImportFile } from '../../import/read'
 import { useData } from '../data/DataContext'
@@ -65,7 +66,8 @@ export function ImportPage({ pdfjs = loadPdfjs, fetch }: ImportPageProps) {
   const [target, setTarget] = useState<ImportTarget>('statement')
   const [files, setFiles] = useState<ImportFile[]>([])
   const [password, setPassword] = useState('')
-  const [remember, setRemember] = useState(true)
+  const [remember, setRemember] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [locked, setLocked] = useState(false)
   const [error, setError] = useState('')
   const [phase, setPhase] = useState<Phase>('form')
@@ -75,6 +77,22 @@ export function ImportPage({ pdfjs = loadPdfjs, fetch }: ImportPageProps) {
 
   const card = cards?.find((c) => c.card.id === cardId) ?? selected
   const pdf = files.length === 1 && /\.pdf$/i.test(files[0].name)
+  const savedCardId = card?.card.id
+
+  // Whether the selected card has a remembered PDF password (shows "Forget saved password").
+  useEffect(() => {
+    let live = true
+    if (savedCardId) hasPassword(db, savedCardId).then((v) => live && setSaved(v), () => {})
+    return () => {
+      live = false
+    }
+  }, [db, savedCardId, phase])
+
+  async function forget() {
+    if (!card) return
+    await forgetPassword(db, card.card.id)
+    setSaved(false)
+  }
 
   async function read() {
     if (!card) return
@@ -97,12 +115,12 @@ export function ImportPage({ pdfjs = loadPdfjs, fetch }: ImportPageProps) {
     }
   }
 
-  async function save() {
+  async function save(acceptDifference: boolean) {
     if (!draft) return
     setPhase('saving')
     setError('')
     try {
-      setReport(await commitImport(db, draft))
+      setReport(await commitImport(db, draft, { acceptDifference }))
       setPhase('done')
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -186,8 +204,24 @@ export function ImportPage({ pdfjs = loadPdfjs, fetch }: ImportPageProps) {
               <h3>This PDF is locked</h3>
               <input className="inp" type="password" aria-label="PDF password" placeholder="PDF password" value={password} onChange={(e) => setPassword(e.target.value)} />
               <label className="small">
-                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember for this card (encrypted, kept on this phone only)
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => {
+                    setRemember(e.target.checked)
+                    if (!e.target.checked) void forget() // unticking also removes a password saved earlier
+                  }}
+                />{' '}
+                Remember for this card (encrypted, kept on this phone only)
               </label>
+            </div>
+          )}
+          {saved && (
+            <div className="row small">
+              <span>A PDF password is saved for {card?.card.name} on this phone.</span>
+              <button type="button" className="link" onClick={forget}>
+                Forget saved password
+              </button>
             </div>
           )}
           {error && (
@@ -241,9 +275,14 @@ function Top() {
   )
 }
 
-function Review({ draft, onChange, onSave, onCancel, saving, error }: { draft: ImportDraft; onChange(d: ImportDraft): void; onSave(): void; onCancel(): void; saving: boolean; error: string }) {
+function Review({ draft, onChange, onSave, onCancel, saving, error }: { draft: ImportDraft; onChange(d: ImportDraft): void; onSave(acceptDifference: boolean): void; onCancel(): void; saving: boolean; error: string }) {
   const [fixing, setFixing] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState(false)
   const check = checkTotals(draft)
+  const conflicts = totalsConflicts(draft)
+  /** Totals differ (and the printed figures themselves are not in question). */
+  const differs = check !== null && !check.ok && conflicts.length === 0
+  const asking = confirming && differs
   const todo = problems(draft)
   const isStatement = draft.target === 'statement'
   const dupOf = (key: string) => draft.duplicates.find((q) => q.rowKey === key)
@@ -278,7 +317,25 @@ function Review({ draft, onChange, onSave, onCancel, saving, error }: { draft: I
       )}
       {draft.alreadyImported && !draft.replaces && <div className="status draft xs">This file was imported before ({draft.alreadyImported.at.slice(0, 10)}).</div>}
 
-      {check && (
+      {draft.warnings.map((w) => (
+        <div key={w} className="status draft xs">
+          {w}
+        </div>
+      ))}
+      {conflicts.length > 0 && (
+        <div className="status bad">
+          <h3>Totals can&apos;t be confirmed</h3>
+          {conflicts.map((c) => (
+            <div key={c.field} className="small">
+              The AI read the {c.field === 'newBalance' ? 'new balance' : 'previous balance'} as {c.ai === null ? 'nothing' : rp(c.ai)}, but the statement prints {rp(c.printed)}.{' '}
+              <button type="button" className="link" onClick={() => onChange(setPrinted(draft, { [c.field]: c.printed }))}>
+                Use the printed figure
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {check && conflicts.length === 0 && (
         <div className="box tight" aria-label="Totals check">
           <div className="row">
             <b>{check.ok ? 'Totals match the bank ✓' : `Totals differ by ${rp(Math.abs(check.difference))}`}</b>
@@ -348,9 +405,29 @@ function Review({ draft, onChange, onSave, onCancel, saving, error }: { draft: I
           {error}
         </div>
       )}
+      {asking ? (
+        <div className="status draft" role="alertdialog" aria-label="Save with a difference?">
+          <div className="small">
+            The totals differ from the bank by <b>{rp(Math.abs(check!.difference))}</b>. The bill for this statement may be wrong until a row is fixed. Save anyway?
+          </div>
+          <div className="btns">
+            <button type="button" className="btn danger" disabled={saving} onClick={() => onSave(true)}>
+              Save anyway
+            </button>
+            <button type="button" className="btn ghost" onClick={() => setConfirming(false)}>
+              Go back
+            </button>
+          </div>
+        </div>
+      ) : null}
       <div className="btns">
-        <button type="button" className="btn acc" disabled={todo.length > 0 || saving} onClick={onSave}>
-          {saving ? 'Saving…' : !isStatement ? 'Save to Unbilled' : check && !check.ok ? `Save with a difference of ${rp(Math.abs(check.difference))}` : 'Save statement'}
+        <button
+          type="button"
+          className="btn acc"
+          disabled={todo.length > 0 || saving || asking}
+          onClick={() => (differs ? setConfirming(true) : onSave(false))}
+        >
+          {saving ? 'Saving…' : !isStatement ? 'Save to Unbilled' : differs ? `Save with a difference of ${rp(Math.abs(check!.difference))}` : 'Save statement'}
         </button>
         <button type="button" className="btn ghost" onClick={onCancel}>
           Cancel

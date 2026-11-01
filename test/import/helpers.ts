@@ -112,6 +112,8 @@ export interface ImportOptions {
   duplicates?: 'keep' | 'skip'
   answer?: AiStatement
   page?: (e: Expected) => AiStatement
+  /** Confirm saving although the totals differ. */
+  acceptDifference?: boolean
 }
 
 /** Reads a fixture with a mocked AI answering from its expected file, answers the questions, saves. */
@@ -125,6 +127,6 @@ export async function importFixture(db: NewDb, cardId: string, path: string, opt
   )
   if (draft.format === 'screenshots' && draft.target === 'statement') draft = setTypedTotal(draft, opts.typedTotal ?? e.printed!.newBalance)
   for (const q of draft.duplicates) draft = decideDuplicate(draft, q.rowKey, opts.duplicates ?? 'keep')
-  const report = await commitImport(db, draft)
+  const report = await commitImport(db, draft, { acceptDifference: opts.acceptDifference })
   return { draft, report, fetch, expected: e }
 }

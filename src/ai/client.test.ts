@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { apiResponse, TEST_KEY } from '../../test/import/helpers'
 import { AiRequestError, API_VERSION, MESSAGES_URL, sendMessages, type FetchLike } from './client'
-import { buildRequest, PROMPT_VERSION, SYSTEM_PROMPT } from './prompt'
+import { buildRequest, fnv1a, PROMPT_VERSION, SYSTEM_PROMPT } from './prompt'
 import { AI_SCHEMA, AiResponseError } from './schema'
 
 const body = buildRequest({ kind: 'text', text: 'LINES' }, 'claude-opus-5-5')
@@ -12,7 +12,14 @@ describe('Claude Messages request', () => {
   it('builds one request with the system prompt, the redacted text and the strict output schema', () => {
     expect(body).toMatchObject({ model: 'claude-opus-5-5', max_tokens: 16000, system: SYSTEM_PROMPT, output_config: { format: { type: 'json_schema', schema: AI_SCHEMA } } })
     expect(body.messages).toEqual([{ role: 'user', content: [{ type: 'text', text: expect.stringContaining('LINES') }] }])
-    expect(PROMPT_VERSION).toMatch(/^import-v\d+$/)
+    expect(PROMPT_VERSION).toMatch(/^import-[0-9a-f]{8}$/)
+  })
+
+  it('the prompt version is derived from the prompt and schema: any edit makes a new cache key', () => {
+    expect(fnv1a('')).toBe('811c9dc5')
+    expect(fnv1a('a')).toBe('e40c292c')
+    expect(fnv1a(SYSTEM_PROMPT + ' ')).not.toBe(fnv1a(SYSTEM_PROMPT))
+    expect(fnv1a(JSON.stringify({ ...AI_SCHEMA, required: [] }))).not.toBe(fnv1a(JSON.stringify(AI_SCHEMA)))
   })
 
   it('sends screenshots as base64 images in order, then the instruction', () => {

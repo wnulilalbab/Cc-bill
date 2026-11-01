@@ -38,6 +38,10 @@ export interface ImportDraft {
   duplicates: DuplicateQuestion[]
   /** This exact file was imported before. */
   alreadyImported?: { at: string; statementId: string }
+  /** PDFs: previous and new balance read on the device from the printed text, to cross-check the AI (prompt injection guard). */
+  deviceTotals?: { prevBalance: number | null; newBalance: number | null }
+  /** Things worth a look that do not block saving (e.g. the file name and the printed month disagree). */
+  warnings: string[]
   /** Statement imports: a statement for the same month already exists and will be replaced. */
   replaces?: { statementId: string; statementDate: string }
 }
@@ -74,6 +78,18 @@ export function printedOf(d: ImportDraft): PrintedTotals | null {
   return printed
 }
 
+/**
+ * Printed figures the AI reported differently from what the device read in the same text. While any is open the
+ * totals check is never shown as matching, and the import cannot be saved.
+ */
+export function totalsConflicts(d: ImportDraft): { field: 'prevBalance' | 'newBalance'; ai: number | null; printed: number }[] {
+  if (d.target !== 'statement' || !d.deviceTotals) return []
+  return (['prevBalance', 'newBalance'] as const).flatMap((field) => {
+    const printed = d.deviceTotals![field]
+    return printed !== null && d.printed[field] !== printed ? [{ field, ai: d.printed[field], printed }] : []
+  })
+}
+
 /** The totals check (statements only): previous − credits + charges = printed new balance. */
 export function checkTotals(d: ImportDraft): Reconciliation | null {
   const printed = d.target === 'statement' ? printedOf(d) : null
@@ -90,6 +106,8 @@ export function problems(d: ImportDraft): string[] {
     else if (d.printed.newBalance === null && d.format === 'pdf') out.push("Type the statement's new balance.")
     if (d.printed.prevBalance === null) out.push("Type the statement's previous balance.")
   } else if (d.rows.length === 0) out.push('No transactions were found on these screenshots.')
+  for (const c of totalsConflicts(d))
+    out.push(`The ${c.field === 'newBalance' ? 'new balance' : 'previous balance'} read by the AI (${c.ai ?? 'none'}) is not the one printed on the statement (${c.printed}). Use the printed figure.`)
   const unknown = d.rows.filter((r) => r.kind === 'unknownCredit').length
   if (unknown) out.push(`Say what ${unknown === 1 ? '1 credit line is' : `${unknown} credit lines are`}: a payment or a refund.`)
   const open = d.duplicates.filter((q) => !q.decision).length

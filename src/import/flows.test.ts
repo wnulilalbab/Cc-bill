@@ -252,7 +252,7 @@ describe('re-import and duplicates', () => {
     const e = expected('statements/bca-2026-10-corrupt')
     const answer = aiAnswerFor(e)
     answer.rows = answer.rows.filter((r) => r.amount !== 1470000)
-    const { report } = await importFixture(db, cards.bca, 'statements/bca-2026-10-corrupt.pdf', { answer })
+    const { report } = await importFixture(db, cards.bca, 'statements/bca-2026-10-corrupt.pdf', { answer, acceptDifference: true })
     expect(report.removed).toEqual([
       { date: '2026-10-02', description: 'GRAMEDIA MATRAMAN', amount: 245000 },
       { date: '2026-09-27', description: 'PEMBAYARAN - MBCA', amount: -1470000 },

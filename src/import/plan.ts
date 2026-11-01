@@ -61,6 +61,8 @@ export interface PlanInput {
   card: Card
   draft: ImportDraft
   newId: (prefix: string) => string
+  /** The user confirmed saving a statement whose totals do not match. */
+  acceptDifference?: boolean
 }
 
 const summary = (x: { date: string; description?: string; amount: number }): RowSummary => ({ date: x.date, description: x.description ?? 'Payment', amount: x.amount })
@@ -79,9 +81,11 @@ export function planName(description: string): string {
   return name || description
 }
 
-export function planImport({ ledger, card, draft, newId }: PlanInput): ImportPlan {
+export function planImport({ ledger, card, draft, newId, acceptDifference }: PlanInput): ImportPlan {
   const todo = problems(draft)
   if (todo.length) throw new ImportError(todo[0])
+  const difference = checkTotals(draft)?.difference ?? null
+  if (difference && !acceptDifference) throw new ImportError(`The totals differ by Rp ${Math.abs(difference).toLocaleString('id-ID')}. Confirm to save anyway.`)
   if (draft.cardId !== card.id) throw new ImportError('This import belongs to another card.')
 
   const txs = new Map(ledger.transactions.map((t) => [t.id, t]))
@@ -104,7 +108,7 @@ export function planImport({ ledger, card, draft, newId }: PlanInput): ImportPla
   const report: ImportReport = {
     statementId: '',
     target: draft.target,
-    difference: checkTotals(draft)?.difference ?? null,
+    difference,
     added: [],
     moved: [],
     movedPayments: [],

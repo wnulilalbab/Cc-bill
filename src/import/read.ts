@@ -8,8 +8,8 @@ import { billedOf } from '../domain/statements'
 import { ImportError, mergeOverlaps, type DuplicateQuestion, type ImportDraft, type ImportTarget } from './draft'
 import { monthFromFileName } from './month'
 import { normalizeRows, rowIdentity, type DraftRow } from './normalize'
-import { readPdfPages, type PdfJsLike } from './pdf'
-import { redactStatement } from './redact'
+import { LIMITS, readPdfPages, type PdfJsLike } from './pdf'
+import { printedBalances, redactStatement } from './redact'
 
 export interface ImportFile {
   name: string
@@ -43,6 +43,8 @@ function imageType(f: ImportFile): ImageMediaType | null {
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const monthLabel = (iso: string) => `${MONTH_NAMES[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`
 const lastDay = (month: string) => new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate()
 
 export async function readImport(deps: ImportDeps, req: ReadRequest): Promise<ImportDraft> {
@@ -56,10 +58,18 @@ export async function readImport(deps: ImportDeps, req: ReadRequest): Promise<Im
   if (!pdf && images.some((i) => !i.type)) throw new ImportError('Choose one PDF statement, or screenshots (PNG or JPEG).')
   if (pdf && req.target === 'unbilled') throw new ImportError('Unbilled takes screenshots from the bank app, not a PDF.')
 
+  if (images.length > LIMITS.images) throw new ImportError(`Choose at most ${LIMITS.images} screenshots at a time.`)
+  const big = images.find((i) => i.f.bytes.length > LIMITS.imageBytes)
+  if (big) throw new ImportError(`${big.f.name} is larger than ${LIMITS.imageBytes / 1024 / 1024} MB. Use a normal phone screenshot.`)
+
   let input: AiInput
+  let deviceTotals: ImportDraft['deviceTotals']
   if (pdf) {
     if (!deps.pdfjs) throw new ImportError('The PDF reader is not available.')
-    input = { kind: 'text', text: redactStatement(await readPdfPages(deps.pdfjs, req.files[0].bytes, req.password)) }
+    const text = redactStatement(await readPdfPages(deps.pdfjs, req.files[0].bytes, req.password), { last4: card.last4 })
+    if (text.length > LIMITS.textChars) throw new ImportError('This PDF holds far more text than a card statement. Check the file.')
+    input = { kind: 'text', text }
+    deviceTotals = printedBalances(text)
   } else {
     input = { kind: 'images', images: images.map((i) => ({ mediaType: i.type!, base64: toBase64(i.f.bytes) })) }
   }
@@ -74,6 +84,7 @@ export async function readImport(deps: ImportDeps, req: ReadRequest): Promise<Im
   const fromName = monthFromFileName(req.files[0].name)
   let statementDate: string | null = null
   if (req.target === 'statement') {
+    // The printed date wins; the file name is the fallback (and a warning when the months disagree).
     statementDate = answer.statementDate ?? fromName?.date ?? null
     if (!statementDate && fromName) statementDate = `${fromName.month}-${pad(Math.min(card.statementDay ?? lastDay(fromName.month), lastDay(fromName.month)))}`
   }
@@ -99,7 +110,11 @@ export async function readImport(deps: ImportDeps, req: ReadRequest): Promise<Im
     rows,
     overlapMerged,
     duplicates: req.target === 'unbilled' ? await duplicateQuestions(db, card.id, rows) : [],
+    warnings: [],
   }
+  if (deviceTotals) draft.deviceTotals = deviceTotals
+  if (req.target === 'statement' && answer.statementDate && fromName && fromName.month !== answer.statementDate.slice(0, 7))
+    draft.warnings.push(`The file name says ${monthLabel(fromName.month)}, but the statement is dated ${monthLabel(answer.statementDate)}. The printed date is used.`)
   const seen = (await db.meta.get(`${IMPORT_META_PREFIX}${fileHash}`))?.value as ImportDraft['alreadyImported'] | undefined
   if (seen) draft.alreadyImported = seen
   if (statementDate) {

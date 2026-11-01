@@ -13,7 +13,7 @@ export interface PdfDocLike {
 }
 
 export interface PdfJsLike {
-  getDocument(src: { data: Uint8Array; password?: string; verbosity?: number }): { promise: Promise<PdfDocLike> }
+  getDocument(src: { data: Uint8Array; password?: string; verbosity?: number; isEvalSupported?: boolean }): { promise: Promise<PdfDocLike>; destroy?(): Promise<void> }
 }
 
 export type PdfLockReason = 'needed' | 'wrong'
@@ -57,21 +57,41 @@ export function linesOf(items: readonly TextItemLike[]): string[] {
 }
 
 /** Text lines of every page. Throws PdfPasswordError for a locked file without (or with a wrong) password. */
+/** Limits on what is opened and sent (review: keep a hostile or huge file from costing time or money). */
+export const LIMITS = {
+  pdfBytes: 15 * 1024 * 1024,
+  pages: 30,
+  textChars: 200_000,
+  images: 10,
+  imageBytes: 8 * 1024 * 1024,
+} as const
+
+const mb = (n: number) => `${Math.round(n / 1024 / 1024)} MB`
+
+/** Text lines of every page. Throws PdfPasswordError for a locked file without (or with a wrong) password. */
 export async function readPdfPages(lib: PdfJsLike, bytes: Uint8Array, password?: string): Promise<string[][]> {
-  let doc: PdfDocLike
+  if (bytes.length > LIMITS.pdfBytes) throw new PdfReadError(`This PDF is larger than ${mb(LIMITS.pdfBytes)}. A card statement is much smaller: check the file.`)
+  // pdf.js takes ownership of the buffer it is given: pass a copy so a retry with another password still has the bytes.
+  // No eval: font programs in a hostile PDF must not become JavaScript.
+  const task = lib.getDocument({ data: bytes.slice(), password: password || undefined, verbosity: 0, isEvalSupported: false })
+  let doc: PdfDocLike | undefined
   try {
-    // pdf.js takes ownership of the buffer it is given: pass a copy so a retry with another password still has the bytes.
-    doc = await lib.getDocument({ data: bytes.slice(), password: password || undefined, verbosity: 0 }).promise
-  } catch (e) {
-    const err = e as { name?: string; code?: number }
-    if (err?.name === 'PasswordException') throw new PdfPasswordError(err.code === INCORRECT_PASSWORD ? 'wrong' : err.code === NEED_PASSWORD && password ? 'wrong' : 'needed')
-    throw new PdfReadError()
+    try {
+      doc = await task.promise
+    } catch (e) {
+      const err = e as { name?: string; code?: number }
+      if (err?.name === 'PasswordException') throw new PdfPasswordError(err.code === INCORRECT_PASSWORD ? 'wrong' : err.code === NEED_PASSWORD && password ? 'wrong' : 'needed')
+      throw new PdfReadError()
+    }
+    if (doc.numPages > LIMITS.pages) throw new PdfReadError(`This PDF has ${doc.numPages} pages; a statement has at most ${LIMITS.pages}. Check the file.`)
+    const pages: string[][] = []
+    for (let n = 1; n <= doc.numPages; n++) {
+      const content = await (await doc.getPage(n)).getTextContent()
+      pages.push(linesOf(content.items))
+    }
+    return pages
+  } finally {
+    // Free the worker and the document whatever happened (a failed open leaves only the loading task).
+    await (doc?.destroy ? doc.destroy() : task.destroy?.())?.catch(() => {})
   }
-  const pages: string[][] = []
-  for (let n = 1; n <= doc.numPages; n++) {
-    const content = await (await doc.getPage(n)).getTextContent()
-    pages.push(linesOf(content.items))
-  }
-  await doc.destroy?.()
-  return pages
 }

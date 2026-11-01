@@ -71,10 +71,12 @@ describe('every synthetic statement', () => {
     expect(report.difference).toBe(0)
   })
 
-  it('I-02 a statement saved with the difference keeps reporting it', async () => {
+  it('I-02 saving with a difference needs confirmation, and the saved statement keeps reporting it', async () => {
     const db = freshNewDb()
     const cards = await seedCards(db)
-    const { report } = await importFixture(db, cards.bca, 'statements/bca-2026-10-corrupt.pdf')
+    await expect(importFixture(db, cards.bca, 'statements/bca-2026-10-corrupt.pdf')).rejects.toThrow('The totals differ by Rp 1. Confirm to save anyway.')
+    expect(await db.statements.where('kind').equals('billed').count()).toBe(0)
+    const { report } = await importFixture(db, cards.bca, 'statements/bca-2026-10-corrupt.pdf', { acceptDifference: true })
     expect(report.difference).toBe(1)
     expect(reconcileStatement(await loadLedger(db, cards.bca), report.statementId).difference).toBe(1)
   })
