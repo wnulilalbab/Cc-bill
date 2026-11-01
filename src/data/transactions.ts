@@ -127,6 +127,8 @@ export interface RowPatch {
   description?: string
   /** Empty = no label. */
   label?: string
+  /** Fixing a misread kind (e.g. a credit read as a purchase). Not for installment rows or conversions. */
+  kind?: TxKind
 }
 
 export const INSTALLMENT_AMOUNT = 'This is an installment: its amount comes from the plan. Edit the plan instead.'
@@ -151,6 +153,10 @@ export async function updateRow(db: NewDb, txId: string, patch: RowPatch): Promi
       const assigned = sum(payments.flatMap((p) => p.allocations.filter((a) => a.txId === t.id).map((a) => a.amount)))
       if (assigned > 0 && patch.amount < assigned) throw new RowError(`Payments cover Rp ${assigned.toLocaleString('id-ID')} of this row. Unassign them first, or enter at least that.`)
       next.amount = patch.amount
+    }
+    if (patch.kind !== undefined && patch.kind !== t.kind) {
+      if (t.kind === 'installment' || patch.kind === 'installment' || isConverted(t) || t.planId) throw new RowError('The kind of an installment or a converted row cannot be changed here.')
+      next.kind = patch.kind
     }
     if (patch.date !== undefined) {
       if (!ISO_DATE.test(patch.date)) throw new RowError('Pick a date.')

@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react'
 import { Sheet } from '../../components/Sheet'
 import { useToast } from '../../components/Toast'
 import { computeMoney, depositPaidOf } from '../../domain/amounts'
-import { coverageOf } from '../../domain/bill'
+import { coverageOf, ownerBill, type OwnerBill } from '../../domain/bill'
 import { deleteTransaction } from '../../domain/payments'
 import { parseInstallmentReversal, type ConversionError, type ConversionResult } from '../../domain/installments'
 import { sum } from '../../domain/money'
 import { isMarketplace } from '../../domain/tagging/merchant'
-import type { Ledger, Payment } from '../../domain/types'
+import type { Ledger, Payment, Transaction, TxKind } from '../../domain/types'
 import type { OwnerRecord } from '../../data/cards'
 import {
   CONVERSION_ERRORS,
@@ -41,7 +41,12 @@ export interface RowSheetProps {
   onPickOwner(ownerId: string): void
 }
 
-type Step = 'main' | 'delete' | 'convert'
+type Step = 'main' | 'delete' | 'convert' | 'sign'
+
+const KIND_NAME: Record<TxKind, string> = { purchase: 'purchase', installment: 'installment', fee: 'fee', interest: 'interest', refund: 'refund', reversal: 'reversal' }
+/** A row whose sign contradicts its kind can be fixed two ways: flip the sign, or keep it and pick the kind that fits. */
+const KINDS_FOR_SIGN = (amount: number): TxKind[] => (amount < 0 ? ['refund', 'reversal'] : ['purchase', 'fee', 'interest'])
+const today = () => new Date().toISOString().slice(0, 10)
 
 const payLine = (p: Payment | undefined) => (!p ? 'Payment' : p.description ?? (p.source === 'manual' ? 'Recorded by you' : 'Bank payment'))
 
@@ -143,6 +148,47 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
             Delete
           </button>
         </div>
+      </Sheet>
+    )
+  }
+
+  if (step === 'sign') {
+    const flipped = -t.amount
+    // What the owner's bill for this statement becomes with each fix (domain ownerBill, live as of today).
+    const billWith = (patch: Partial<Transaction>) =>
+      ownerBill({ ...ledger, transactions: ledger.transactions.map((x) => (x.id === t.id ? { ...x, ...patch } : x)) }, t.ownerId, t.statementId, today())
+    const now = billWith({})
+    const options = KINDS_FOR_SIGN(t.amount)
+    const line = (after: OwnerBill) => `${nameOf(t.ownerId)}'s ${statementName(statement).replace(' statement', '')} bill: ${rp(now.mustPay)} → ${rp(after.mustPay)}`
+    return (
+      <Sheet title="Fix the sign" onClose={() => setStep('main')}>
+        <div className="small">
+          {t.description}: {rp(t.amount)} is stored as a {KIND_NAME[t.kind]}, but a {KIND_NAME[t.kind]} should be {t.amount < 0 ? 'positive' : 'negative'}.
+        </div>
+        <div className="box tight small" aria-label="Flip the sign">
+          <b>
+            Keep as {KIND_NAME[t.kind]}, flip the sign: {rp(t.amount)} → {rp(flipped)}
+          </b>
+          <span className="xs muted">{line(billWith({ amount: flipped }))}</span>
+          <button type="button" className="btn ghost sm" disabled={busy} onClick={() => run(async () => (await updateRow(db, t.id, { amount: flipped }), 'Sign fixed'))}>
+            Keep as {KIND_NAME[t.kind]}, flip the sign
+          </button>
+        </div>
+        {options.map((k) => (
+          <div key={k} className="box tight small" aria-label={`Change to ${k}`}>
+            <b>
+              It&apos;s a {KIND_NAME[k]}: change the kind, keep {rp(t.amount)}
+            </b>
+            <span className="xs muted">{line(billWith({ kind: k }))}</span>
+            <button type="button" className="btn ghost sm" disabled={busy} onClick={() => run(async () => (await updateRow(db, t.id, { kind: k }), `Changed to ${KIND_NAME[k]}`))}>
+              It&apos;s a {KIND_NAME[k]}: change the kind
+            </button>
+          </div>
+        ))}
+        {error && <div className="small err">{error}</div>}
+        <button type="button" className="btn ghost" onClick={() => setStep('main')}>
+          Cancel
+        </button>
       </Sheet>
     )
   }
@@ -279,7 +325,7 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
               type="button"
               className="btn ghost sm"
               disabled={busy}
-              onClick={() => run(async () => (await updateRow(db, t.id, { amount: signedFor(t.kind, Math.abs(t.amount)) }), 'Sign fixed'))}
+              onClick={() => setStep('sign')}
             >
               Fix the sign: {fmt(signedFor(t.kind, Math.abs(t.amount)))}
             </button>

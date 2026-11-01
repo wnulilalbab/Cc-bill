@@ -197,6 +197,19 @@ describe('credits, installments, conversions (data)', () => {
     expect((await updateRow(db, 'w', { amount: -5_000 })).amount).toBe(-5_000)
   })
 
+  it('a misread kind can be changed (sign kept); not on installments or converted rows', async () => {
+    const db = await seedCards(freshNewDb())
+    await db.transactions.bulkPut([
+      tx('x', OCT.id, '2026-10-11', 'CASHBACK', -40_000, 'andi', { kind: 'purchase' }),
+      tx('i', OCT.id, '2026-10-10', 'CICILAN KE 02 DARI 06', 200_000, 'sari', { kind: 'installment' }),
+      tx('o', 'bca-sep', '2026-09-03', 'BLIBLI *1', 100_000, 'sari', { cancelled: true }),
+    ])
+    expect(await updateRow(db, 'x', { kind: 'refund' })).toMatchObject({ amount: -40_000, kind: 'refund' })
+    await expect(updateRow(db, 'i', { kind: 'purchase' })).rejects.toThrow('cannot be changed here')
+    await expect(updateRow(db, 'x', { kind: 'installment' })).rejects.toThrow('cannot be changed here')
+    await expect(updateRow(db, 'o', { kind: 'fee' })).rejects.toThrow('cannot be changed here')
+  })
+
   it('an installment amount is refused (edit the plan); the same amount is not a change', async () => {
     const db = await seedCards(freshNewDb())
     await db.transactions.put(tx('i', OCT.id, '2026-10-10', 'CICILAN KE 02 DARI 06', 200_000, 'sari', { kind: 'installment', tagSource: 'plan' }))

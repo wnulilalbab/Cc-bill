@@ -561,19 +561,75 @@ describe('review fixes', () => {
     await screen.findByText('Saved. Totals check re-run for the Oct 2026 statement.')
     expect((await db.transactions.get('r1'))?.amount).toBe(-40_000)
 
-    // Label-only save on a wrong-sign row does not flip it; "Fix the sign" does.
+    // Label-only save on a wrong-sign row does not flip it; "Fix the sign" → "flip the sign" does.
     await user.click(row('REFUND SALAH 5.000'))
     sheet = screen.getByRole('dialog')
     await user.type(within(sheet).getByLabelText('Label'), 'Oops')
     await user.click(within(sheet).getByRole('button', { name: 'Save' }))
     await screen.findByText('Saved')
     expect((await db.transactions.get('w'))?.amount).toBe(5_000)
+    // Andi's Oct bill: 50.570 with the refund at −44.631; now −40.000 (+4.631) and the positive "refund" counts +5.000.
+    expect((await money(db)).bill('andi').mustPay).toBe(60_201)
     await user.click(await screen.findByRole('button', { name: 'Oops 5.000' }))
     sheet = screen.getByRole('dialog')
     await user.click(within(sheet).getByText('Fix amount, date or description'))
     await user.click(within(sheet).getByRole('button', { name: 'Fix the sign: −5.000' }))
+    const confirm = screen.getByRole('dialog', { name: 'Fix the sign' })
+    expect(within(confirm).getByText('Keep as refund, flip the sign: Rp 5.000 → −Rp 5.000')).toBeTruthy()
+    expect(within(screen.getByLabelText('Flip the sign')).getByText("Andi's Oct 2026 bill: Rp 60.201 → Rp 50.201")).toBeTruthy()
+    expect(within(screen.getByLabelText('Change to purchase')).getByText("Andi's Oct 2026 bill: Rp 60.201 → Rp 60.201")).toBeTruthy()
+    await user.click(within(confirm).getByRole('button', { name: 'Keep as refund, flip the sign' }))
     await screen.findByText('Sign fixed')
-    expect((await db.transactions.get('w'))?.amount).toBe(-5_000)
+    expect(await db.transactions.get('w')).toMatchObject({ amount: -5_000, kind: 'refund' })
+    expect((await money(db)).bill('andi').mustPay).toBe(50_201)
+  })
+
+  it('Fix the sign on a credit read as a purchase: Cancel changes nothing; "It\'s a refund" keeps the sign and changes the kind', async () => {
+    const db = await seedScreen()
+    await db.transactions.put(tx('x', OCT.id, '2026-10-11', 'CASHBACK TOKO', -40_000, 'andi', { kind: 'purchase' }))
+    const before = await db.transactions.get('x')
+    expect((await money(db)).bill('andi').mustPay).toBe(10_570) // 50.570 − 40.000
+    const { user } = renderScreen(<TransactionsPage />, { db })
+    const openConfirm = async () => {
+      await user.click(await screen.findByRole('button', { name: 'CASHBACK TOKO −40.000' }))
+      await user.click(within(screen.getByRole('dialog')).getByText('Fix amount, date or description'))
+      await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Fix the sign: 40.000' }))
+      return screen.getByRole('dialog', { name: 'Fix the sign' })
+    }
+
+    let confirm = await openConfirm()
+    expect(within(confirm).getByText('CASHBACK TOKO: −Rp 40.000 is stored as a purchase, but a purchase should be positive.')).toBeTruthy()
+    expect(within(confirm).getByText('Keep as purchase, flip the sign: −Rp 40.000 → Rp 40.000')).toBeTruthy()
+    expect(within(screen.getByLabelText('Flip the sign')).getByText("Andi's Oct 2026 bill: Rp 10.570 → Rp 90.570")).toBeTruthy()
+    expect(within(screen.getByLabelText('Change to refund')).getByText("Andi's Oct 2026 bill: Rp 10.570 → Rp 10.570")).toBeTruthy()
+    expect(screen.getByLabelText('Change to reversal')).toBeTruthy()
+    await user.click(within(confirm).getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('dialog', { name: 'CASHBACK TOKO' })).toBeTruthy()
+    expect(await db.transactions.get('x')).toEqual(before)
+    expect((await money(db)).bill('andi').mustPay).toBe(10_570)
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }))
+
+    confirm = await openConfirm()
+    await user.click(within(confirm).getByRole('button', { name: "It's a refund: change the kind" }))
+    await screen.findByText('Changed to refund')
+    expect(await db.transactions.get('x')).toMatchObject({ amount: -40_000, kind: 'refund' })
+    const m = await money(db)
+    expect(m.bill('andi').mustPay).toBe(10_570)
+    expect(m.status('x')).toBe('refund')
+    await waitFor(() => expect(within(row('CASHBACK TOKO −40.000')).getByText('Refund')).toBeTruthy())
+  })
+
+  it('Fix the sign → flip on a credit read as a purchase turns it into a charge (bill rises by twice the amount)', async () => {
+    const db = await seedScreen()
+    await db.transactions.put(tx('x', OCT.id, '2026-10-11', 'CASHBACK TOKO', -40_000, 'andi', { kind: 'purchase' }))
+    const { user } = renderScreen(<TransactionsPage />, { db })
+    await user.click(await screen.findByRole('button', { name: 'CASHBACK TOKO −40.000' }))
+    await user.click(within(screen.getByRole('dialog')).getByText('Fix amount, date or description'))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Fix the sign: 40.000' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Fix the sign' })).getByRole('button', { name: 'Keep as purchase, flip the sign' }))
+    await screen.findByText('Sign fixed')
+    expect(await db.transactions.get('x')).toMatchObject({ amount: 40_000, kind: 'purchase' })
+    expect((await money(db)).bill('andi').mustPay).toBe(90_570)
   })
 
   it('X-05 on a deposit-paid row: the question names the deposit; Keep assigns the deposit use to the row', async () => {
