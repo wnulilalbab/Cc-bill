@@ -148,6 +148,8 @@ describe('the full-screen assign page', () => {
     expect(await screen.findByRole('region', { name: 'Assign payment' })).toBeTruthy()
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(document.querySelector('.overlay')).toBeNull()
+    // Focus moves to the page's heading.
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Assign payment' }))
     expect(screen.queryByRole('heading', { name: 'Payments' })).toBeNull()
     expect(screen.getByText('Nov 2026 statement')).toBeTruthy()
     expect(left()).toBe('1.500.000')
@@ -476,6 +478,8 @@ describe('payment actions', () => {
     expect(within(bank).getByText('Not on Nov 2026 statement')).toBeTruthy()
     await user.click(within(bank).getByRole('button', { name: 'Paid to another card' }))
     const sheet = screen.getByRole('dialog', { name: 'Paid to which card?' })
+    expect(within(within(sheet).getByLabelText('Becomes unpaid')).getByText('3 Oct 2026 · IKEA')).toBeTruthy()
+    expect(within(sheet).getByText('300.000 left')).toBeTruthy()
     await user.click(within(sheet).getByRole('button', { name: /Mandiri Pribadi/ }))
     await waitFor(() => expect(where()).toBe('/v2/payments'))
     expect(toast()).toBe('Moved to Mandiri Pribadi. Assign it there.')
@@ -499,6 +503,10 @@ describe('payment actions', () => {
     await user.click(within(panel()).getByRole('link', { name: 'Rp 300.000 5 Oct 2026' }))
     const bank = await screen.findByRole('region', { name: 'At the bank' })
     expect(within(bank).getByText(/already assigned. If that is this transfer, the money is counted twice/)).toBeTruthy()
+    await user.click(within(bank).getByRole('button', { name: 'Same transfer, delete this one' }))
+    const del = screen.getByRole('dialog', { name: 'Delete this payment?' })
+    expect(within(del).getByText('The bank line of 6 Oct 2026 (Rp 300.000) keeps its assignments.')).toBeTruthy()
+    await user.click(within(del).getByRole('button', { name: 'Keep it' }))
     await user.click(within(bank).getByRole('button', { name: 'Different transfers, keep both' }))
     const sheet = screen.getByRole('dialog', { name: 'Keep both payments?' })
     expect(within(sheet).getByText(/counted twice and the bills come out too low/)).toBeTruthy()
@@ -509,6 +517,31 @@ describe('payment actions', () => {
     expect(toast()).toBe('Kept both. This one waits for its own bank line.')
     expect(draftIssues(await loadLedger(db, 'bca'), OCT.id).possibleDuplicatePayments).toEqual([])
     expect(tab(/^Possible duplicates$/)).toBeTruthy()
+  })
+
+  it('a bank line matched to a hand-recorded payment opens that payment instead (counted once)', async () => {
+    const db = await seedCards(freshNewDb())
+    await db.transactions.put(tx('t1', OCT.id, '2026-10-03', 'IKEA', 300_000, 'andi'))
+    await db.payments.bulkPut([
+      pay('line', '2026-10-06', 300_000, { source: 'statement', statementId: OCT.id }),
+      pay('hand', '2026-10-05', 300_000, { linkedStatementLine: 'line', allocations: [{ txId: 't1', amount: 300_000 }] }),
+    ])
+    renderAt('/v2/payments/line', db)
+    await waitFor(() => expect(where()).toBe('/v2/payments/hand'))
+    expect(await screen.findByText('Matched to Oct 2026 statement ✓')).toBeTruthy()
+  })
+
+  it('a double tap on Save writes one payment', async () => {
+    const db = await seedAssign()
+    const { user } = renderAt('/v2/payments/new', db)
+    await user.type(await screen.findByLabelText('Amount'), '100000')
+    fireEvent.change(screen.getByLabelText('Date you transferred'), { target: { value: '2026-10-15' } })
+    await user.click(who('Andi'))
+    await user.click(screen.getByRole('button', { name: 'TOKO SATU' }))
+    fireEvent.click(save())
+    fireEvent.click(save())
+    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    expect((await db.payments.toArray()).filter((p) => p.source === 'manual')).toHaveLength(1)
   })
 
   it('an Unbilled payment line the statement did not show: Keep waiting', async () => {
@@ -597,5 +630,7 @@ describe('Transactions → Payments', () => {
 describe('view helpers', () => {
   it('typedRupiah reads typed amounts', () => {
     expect([typedRupiah('Rp 1.500.000'), typedRupiah(''), typedRupiah('abc'), typedRupiah('9'.repeat(20))]).toEqual([1_500_000, 0, 0, 0])
+    // Not whole rupiah above 0: counts as 0 (Save stays disabled), never a misread amount.
+    expect([typedRupiah('1.500.000,00'), typedRupiah('-500.000')]).toEqual([0, 0])
   })
 })

@@ -5,7 +5,7 @@ import { sum } from '../../domain/money'
 import { allocStatus, bankStatus, deletePayment, paymentTab } from '../../domain/payments'
 import { latestBilled } from '../../domain/statements'
 import type { BilledStatement, Ledger, Payment, Rupiah, Transaction } from '../../domain/types'
-import { rp } from '../settings/format'
+import { parseAmount, rp } from '../settings/format'
 import { dayLabel, fmt, statementName, statementsTurningDraft } from '../transactions/view'
 
 export type ListTab = 'toAssign' | 'assigned' | 'notOnStatement' | 'duplicates'
@@ -166,10 +166,5 @@ export function ownerDeposits(ledger: Ledger, cardId: string, ownerIds: readonly
 /** Sum of what the given payments still have to assign (for the tab badge). */
 export const toAssignTotal = (payments: readonly Payment[]) => sum(payments.map((p) => Math.max(0, unassignedOf(p))))
 
-/** Typed amount → whole rupiah ("1.500.000", "Rp 1500000"); empty or no digits = 0. */
-export function typedRupiah(text: string): number {
-  const digits = text.replace(/\D/g, '')
-  if (!digits) return 0
-  const n = Number(digits)
-  return Number.isSafeInteger(n) ? n : 0
-}
+/** Typed amount for the live display (shared parseAmount): anything that is not a whole rupiah amount above 0 counts as 0. */
+export const typedRupiah = (text: string): number => parseAmount(text) ?? 0

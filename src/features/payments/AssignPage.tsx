@@ -3,8 +3,8 @@
 // first, Pay all in this statement), and a sticky footer (assigned total, deposit or Decide later, Save).
 // Every rule comes from src/domain/allocate.ts; the payment actions (Keep waiting, Paid to another card, Delete) from
 // src/domain/payments.ts through src/data/payments.ts.
-import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { BackIcon } from '../../components/icons'
 import { Sheet } from '../../components/Sheet'
 import { useToast } from '../../components/Toast'
@@ -24,7 +24,7 @@ import {
 import { bankStatus, canEditAmountAndDate } from '../../domain/payments'
 import type { Ledger, Payment } from '../../domain/types'
 import type { CardWithOwners } from '../../data/cards'
-import { keepPaymentWaiting, movePayment, removePayment, saveAssign } from '../../data/payments'
+import { keepPaymentWaiting, movePayment, newPaymentId, removePayment, saveAssign } from '../../data/payments'
 import { loadLedger } from '../../data/repo'
 import { Picker } from '../../components/Picker'
 import { useData } from '../data/DataContext'
@@ -66,6 +66,9 @@ export function AssignPage() {
       </div>
     )
   }
+  // A bank line merged into a hand-recorded payment is assigned through that payment (counted once).
+  const hand = data.payment && data.payment.source !== 'manual' ? data.ledger.payments.find((p) => p.source === 'manual' && p.linkedStatementLine === data.payment!.id) : undefined
+  if (hand) return <Navigate to={`${LIST}/${encodeURIComponent(hand.id)}`} replace />
   return (
     <AssignForm
       key={data.payment?.id ?? `new-${card.card.id}`}
@@ -108,6 +111,11 @@ function AssignForm({ payment, card, cards, ledger, onCardChange }: FormProps) {
   const [step, setStep] = useState<Step>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // One write at a time, even before React re-renders the disabled button; a new payment keeps one id across retries.
+  const inFlight = useRef(false)
+  const [newId] = useState(newPaymentId)
+  const heading = useRef<HTMLHeadingElement>(null)
+  useEffect(() => heading.current?.focus(), [])
 
   // Ticks on charges that no longer exist (deleted elsewhere) are dropped, so the domain never sees an unknown row.
   const live = useMemo(() => {
@@ -127,7 +135,8 @@ function AssignForm({ payment, card, cards, ledger, onCardChange }: FormProps) {
 
   const leave = () => navigate(LIST)
   const run = async (what: () => Promise<void>) => {
-    if (busy) return
+    if (inFlight.current) return
+    inFlight.current = true
     setBusy(true)
     setError(null)
     try {
@@ -136,6 +145,7 @@ function AssignForm({ payment, card, cards, ledger, onCardChange }: FormProps) {
       setError(errText(e))
       setStep(null)
     } finally {
+      inFlight.current = false
       setBusy(false)
     }
   }
@@ -175,7 +185,7 @@ function AssignForm({ payment, card, cards, ledger, onCardChange }: FormProps) {
     })
   const save = () =>
     run(async () => {
-      const r = await saveAssign(db, live, check.left > 0 ? deposit : null, editable ? note : undefined)
+      const r = await saveAssign(db, live, check.left > 0 ? deposit : null, { ...(editable && { description: note }), newId })
       const left = check.left
       if (r.linkedTo) toast(`Saved and matched to the bank line of ${dayLabel(r.linkedTo.date)}. It's counted once.`)
       else if (left > 0 && !deposit) toast(`Saved. ${fmt(left)} is still unassigned, so the bill stays Draft.`)
@@ -199,7 +209,9 @@ function AssignForm({ payment, card, cards, ledger, onCardChange }: FormProps) {
           </button>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="xs muted">{sourceText}</div>
-            <h2>{payment ? 'Assign payment' : 'Record a payment'}</h2>
+            <h1 ref={heading} tabIndex={-1}>
+              {payment ? 'Assign payment' : 'Record a payment'}
+            </h1>
           </div>
           <div style={{ textAlign: 'right' }} aria-live="polite">
             <div className="xs muted">Left to assign</div>
@@ -480,7 +492,11 @@ function AssignForm({ payment, card, cards, ledger, onCardChange }: FormProps) {
               </div>
             </>
           )}
-          {error && <div className="small err">{error}</div>}
+          {error && (
+            <div className="small err" role="alert">
+              {error}
+            </div>
+          )}
           <div className="btns">
             <button type="button" className="btn ghost" onClick={leave}>
               Cancel
@@ -492,7 +508,7 @@ function AssignForm({ payment, card, cards, ledger, onCardChange }: FormProps) {
         </div>
       </div>
 
-      {step === 'delete' && payment && <DeleteSheet ledger={ledger} payment={payment} busy={busy} onClose={() => setStep(null)} onDelete={() => run(async () => {
+      {step === 'delete' && payment && <DeleteSheet ledger={ledger} payment={payment} busy={busy} duplicateOf={status?.kind === 'possibleDuplicate' ? ledger.payments.find((x) => x.id === status.lineId) : undefined} onClose={() => setStep(null)} onDelete={() => run(async () => {
         await removePayment(db, payment.id)
         toast('Payment deleted')
         leave()
@@ -519,6 +535,7 @@ function AssignForm({ payment, card, cards, ledger, onCardChange }: FormProps) {
       {step === 'move' && payment && (
         <Sheet title="Paid to which card?" onClose={() => setStep(null)}>
           <div className="xs muted">The payment moves there without its assignments. Assign it on that card.</div>
+          <Effects ledger={ledger} paymentId={payment.id} />
           <div className="opts">
             {otherCards.map((c) => (
               <button key={c.card.id} type="button" className="opt" disabled={busy} onClick={() => run(async () => {
@@ -540,14 +557,12 @@ function AssignForm({ payment, card, cards, ledger, onCardChange }: FormProps) {
   )
 }
 
-function DeleteSheet({ ledger, payment, busy, onClose, onDelete }: { ledger: Ledger; payment: Payment; busy: boolean; onClose(): void; onDelete(): void }) {
-  const effect = deleteEffect(ledger, payment.id)
+/** What taking a payment off this card undoes (deleting or moving it): unpaid charges, bank line, statements back to Draft. */
+function Effects({ ledger, paymentId }: { ledger: Ledger; paymentId: string }) {
+  const effect = deleteEffect(ledger, paymentId)
   const warning = draftWarning(effect.drafts)
   return (
-    <Sheet title="Delete this payment?" onClose={onClose} locked={busy}>
-      <div className="small">
-        {dayLabel(payment.date)} · {rp(payment.amount)}
-      </div>
+    <>
       {effect.unpaid.length > 0 ? (
         <div className="box tight" aria-label="Becomes unpaid">
           <div className="lbl">Becomes unpaid</div>
@@ -567,6 +582,32 @@ function DeleteSheet({ ledger, payment, busy, onClose, onDelete }: { ledger: Led
       {warning && (
         <div className="status draft">
           <div className="xs">{warning}</div>
+        </div>
+      )}
+    </>
+  )
+}
+
+interface DeleteSheetProps {
+  ledger: Ledger
+  payment: Payment
+  busy: boolean
+  /** Possible duplicate: the already-assigned bank line it may repeat. */
+  duplicateOf?: Payment
+  onClose(): void
+  onDelete(): void
+}
+
+function DeleteSheet({ ledger, payment, busy, duplicateOf, onClose, onDelete }: DeleteSheetProps) {
+  return (
+    <Sheet title="Delete this payment?" onClose={onClose} locked={busy}>
+      <div className="small">
+        {dayLabel(payment.date)} · {rp(payment.amount)}
+      </div>
+      <Effects ledger={ledger} paymentId={payment.id} />
+      {duplicateOf && (
+        <div className="xs">
+          The bank line of {dayLabel(duplicateOf.date)} ({rp(duplicateOf.amount)}) keeps its assignments.
         </div>
       )}
       <div className="btns">

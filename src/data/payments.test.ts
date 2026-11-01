@@ -8,7 +8,7 @@ import { bankStatus } from '../domain/payments'
 import { freshNewDb } from '../../test/data/oldDb'
 import { handPayments, IDS, seedHousehold, TODAY } from '../../test/payments/household'
 import { OCT, pay, seedCards, tx, UNB } from '../../test/transactions/ledger'
-import { keepPaymentWaiting, movePayment, PaymentError, removePayment, saveAssign } from './payments'
+import { friendlyMoneyError, keepPaymentWaiting, LINKED_LINE, movePayment, newPaymentId, PaymentError, removePayment, saveAssign } from './payments'
 import { loadLedger } from './repo'
 
 const draft = (d: Partial<AssignDraft>): AssignDraft => ({ cardId: 'bca', date: '2026-10-15', amount: 100_000, ownerIds: ['andi'], multi: false, allocations: {}, ...d })
@@ -22,7 +22,7 @@ async function smallDb() {
 describe('saveAssign', () => {
   it('P-18 a new hand payment is saved with its assignments; the leftover becomes the chosen deposit (D-01)', async () => {
     const db = await smallDb()
-    const r = await saveAssign(db, draft({ amount: 400_000, allocations: { t1: 300_000 } }), 'andi', '  Transfer from Andi ')
+    const r = await saveAssign(db, draft({ amount: 400_000, allocations: { t1: 300_000 } }), 'andi', { description: '  Transfer from Andi ' })
     expect(r.linkedTo).toBeUndefined()
     expect(r.payment).toMatchObject({ source: 'manual', amount: 400_000, date: '2026-10-15', allocations: [{ txId: 't1', amount: 300_000 }], depositOwnerId: 'andi', forOwnerIds: ['andi'], description: 'Transfer from Andi' })
     const ledger = await loadLedger(db, 'bca')
@@ -74,11 +74,40 @@ describe('saveAssign', () => {
     await expect(saveAssign(db, draft({ date: '' }), null)).rejects.toThrow('Pick the date you transferred.')
     await expect(saveAssign(db, draft({ ownerIds: ['mdr-andi'] }), null)).rejects.toThrow('Pick an owner of this card.')
     await expect(saveAssign(db, draft({}), 'ghost')).rejects.toThrow('Pick an owner of this card.')
-    // P-09 over-assigned: the domain refuses.
-    await expect(saveAssign(db, draft({ amount: 100_000, allocations: { t1: 200_000 } }), null)).rejects.toThrow(MoneyError)
+    // P-09 over-assigned: the domain refuses, in the user's words.
+    await expect(saveAssign(db, draft({ amount: 100_000, allocations: { t1: 200_000 } }), null)).rejects.toThrow('Assigned more than the payment, or nothing assigned.')
+    await expect(saveAssign(db, draft({ allocations: { gone: 1 } }), null)).rejects.toThrow('A charge on this payment no longer exists. Open the payment again.')
     await db.payments.put(pay('m', '2026-10-05', 10_000, { cardId: 'mdr' }))
     await expect(saveAssign(db, draft({ paymentId: 'm' }), null)).rejects.toThrow('This payment is on another card now. Open it again.')
     expect(await db.payments.count()).toBe(1)
+  })
+})
+
+describe('saveAssign guards', () => {
+  it('a bank line merged into a hand-recorded payment cannot be assigned too (it would count twice)', async () => {
+    const db = await smallDb()
+    await db.payments.bulkPut([
+      pay('line', '2026-10-06', 300_000, { source: 'statement', statementId: OCT.id }),
+      pay('hand', '2026-10-05', 300_000, { linkedStatementLine: 'line', allocations: [{ txId: 't1', amount: 300_000 }] }),
+    ])
+    await expect(saveAssign(db, draft({ paymentId: 'line', amount: 300_000, allocations: { t1: 300_000 } }), null)).rejects.toThrow(LINKED_LINE)
+    expect((await db.payments.get('line'))!.allocations).toEqual([])
+    expect(paidOf(computeMoney(await loadLedger(db, 'bca')), 't1')).toBe(300_000)
+  })
+
+  it('saving a new payment twice with its id updates it instead of adding a second one', async () => {
+    const db = await smallDb()
+    const id = newPaymentId()
+    const first = await saveAssign(db, draft({ amount: 300_000, allocations: { t1: 300_000 } }), null, { newId: id })
+    const second = await saveAssign(db, draft({ amount: 300_000, allocations: { t1: 300_000 } }), null, { newId: id })
+    expect([first.payment.id, second.payment.id]).toEqual([id, id])
+    expect(await db.payments.count()).toBe(1)
+    // The retry does not see its own first write as another payment on the charge.
+    expect(paidOf(computeMoney(await loadLedger(db, 'bca')), 't1')).toBe(300_000)
+  })
+
+  it('friendlyMoneyError words other money errors plainly', () => {
+    expect(friendlyMoneyError(new MoneyError('assigned amount must be an integer number of rupiah, got 1.5'))).toBe('Enter the amounts in whole rupiah.')
   })
 })
 
@@ -116,6 +145,8 @@ describe('payment actions', () => {
     await expect(movePayment(db, 'line', 'mdr')).rejects.toThrow('Only a payment you recorded by hand can move to another card.')
     await expect(movePayment(db, 'h2', 'mdr')).rejects.toThrow('Pick another card.')
     await expect(movePayment(db, 'h2', 'bca-x')).rejects.toThrow('This card no longer exists.')
+    // A payment matched to a bank line stays with that line.
+    await expect(movePayment(db, 'h', 'bca')).rejects.toThrow("This payment is matched to this card's bank line, so it can't move.")
   })
 
   it('P-17 Transfer failed, delete: the payment is gone and the charge it paid is unpaid again; bank lines stay', async () => {
@@ -128,5 +159,18 @@ describe('payment actions', () => {
     expect(ownerBill(await loadLedger(db, 'bca'), 'Bima', 'bca-2026-09', TODAY).mustPay).toBe(290_000)
     await expect(removePayment(db, IDS.OCT30_LINE)).rejects.toThrow('A payment printed on a statement cannot be deleted.')
     await expect(removePayment(db, 'gone')).rejects.toThrow(PaymentError)
+  })
+
+  it('deleting an Unbilled line clears the match of the hand payment that pointed at it', async () => {
+    const db = await smallDb()
+    await db.payments.bulkPut([
+      pay('u', '2026-10-06', 50_000, { source: 'unbilled', statementId: UNB }),
+      pay('hand', '2026-10-05', 50_000, { linkedStatementLine: 'u', allocations: [{ txId: 't2', amount: 50_000 }] }),
+    ])
+    await removePayment(db, 'u')
+    const hand = (await db.payments.get('hand'))!
+    expect(hand).not.toHaveProperty('linkedStatementLine')
+    expect(hand.allocations).toEqual([{ txId: 't2', amount: 50_000 }])
+    expect(await db.payments.count()).toBe(1)
   })
 })

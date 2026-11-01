@@ -28,8 +28,8 @@ import {
   type RowPatch,
 } from '../../data/transactions'
 import { useData } from '../data/DataContext'
-import { rp } from '../settings/format'
-import { dayLabel, draftWarning, fmt, parseAmount, signedFor, statementName, statementsTurningDraft, TAG_SOURCE_LABEL, type RowView } from './view'
+import { parseAmount, rp } from '../settings/format'
+import { dayLabel, draftWarning, fmt, signedFor, statementName, statementsTurningDraft, TAG_SOURCE_LABEL, type RowView } from './view'
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/
 

@@ -164,14 +164,6 @@ export function totalsOf(rows: readonly RowView[]): Totals {
   return { total, paid, left: total - paid }
 }
 
-/** Typed amount: "1.234.567", "1234567" or "Rp 1.234.567" → 1234567; null when not a whole number above 0. */
-export function parseAmount(text: string): number | null {
-  const digits = text.replace(/^\s*rp\.?\s*/i, '').replace(/[.\s]/g, '')
-  if (!/^\d+$/.test(digits)) return null
-  const n = Number(digits)
-  return n > 0 && Number.isSafeInteger(n) ? n : null
-}
-
 /** Statements (by name) that are Final in `before` and Draft in `after`, e.g. after a payment is unassigned. */
 export function statementsTurningDraft(before: Ledger, after: Ledger): string[] {
   return before.statements

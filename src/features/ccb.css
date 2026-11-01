@@ -145,7 +145,9 @@
 .ccb .ccb-full { position: fixed; inset: 0; z-index: 50; background: var(--surface); overflow-y: auto; }
 .ccb .pay-page { padding-top: 0; padding-bottom: 0; }
 .ccb .phead { position: sticky; top: 0; z-index: 2; background: var(--surface); display: flex; align-items: center; gap: 10px; padding: 12px 0 10px; border-bottom: 1px solid var(--line); }
-.ccb .phead h2 { font-size: 17px; margin: 0; font-weight: 800; }
+.ccb .phead h1 { font-size: 17px; margin: 0; font-weight: 800; }
+.ccb .phead h1:focus { outline: none; }
+.ccb .chip[role='tab'][aria-selected='true'] { background: var(--acc); border-color: var(--acc); color: #fff; }
 .ccb .grp { width: 100%; border: 0; background: var(--raise); border-radius: 12px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; margin-top: 8px; }
 .ccb .grp .t { font-weight: 800; font-size: 13px; }
 .ccb .grp .chev { width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); transition: transform 0.15s; flex: none; }

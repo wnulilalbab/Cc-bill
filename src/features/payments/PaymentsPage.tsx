@@ -77,7 +77,7 @@ export function PaymentsPage() {
 
       <div className="filters" role="tablist" aria-label="Payments">
         {TABS.map((t) => (
-          <button key={t} type="button" role="tab" className="chip" aria-selected={tab === t} aria-pressed={tab === t} onClick={() => setTab(t)}>
+          <button key={t} type="button" role="tab" className="chip" aria-selected={tab === t} onClick={() => setTab(t)}>
             {TAB_LABEL[t]}
             {count(t) > 0 && ` · ${count(t)}`}
           </button>
