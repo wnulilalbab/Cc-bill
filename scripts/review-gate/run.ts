@@ -5,13 +5,20 @@ import { decide, type GateComment } from './decide'
 
 export const CONTEXT = 'review-gate'
 
-/** PR number from a `pull_request` or `issue_comment` event payload; undefined for comments on plain issues. */
+/**
+ * PR number from a `pull_request`, `issue_comment` or `workflow_dispatch` (input `pr`) event payload;
+ * undefined for comments on plain issues. Dispatch exists because comments posted with an app token
+ * do not start `issue_comment` runs, so the Lead re-runs the gate by hand after posting markers.
+ */
 export function prNumberFromEvent(event?: {
   pull_request?: { number?: number }
   issue?: { number?: number; pull_request?: unknown }
+  inputs?: { pr?: unknown }
 }): number | undefined {
   if (event?.pull_request?.number) return event.pull_request.number
   if (event?.issue?.number && event.issue.pull_request) return event.issue.number
+  const input = event?.inputs?.pr
+  if (typeof input === 'string' && /^[1-9]\d{0,8}$/.test(input)) return Number(input)
   return undefined
 }
 
