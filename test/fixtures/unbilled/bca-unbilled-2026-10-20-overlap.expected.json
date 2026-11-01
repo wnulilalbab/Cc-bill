@@ -1,0 +1,25 @@
+{
+  "file": "bca-unbilled-2026-10-20-overlap",
+  "card": "bca",
+  "capturedAt": "2026-10-20",
+  "note": "A second screenshot of the same screen, scrolled: repeats TOKOPEDIA and HALODOC (the same rows seen twice, not new purchases).",
+  "rows": [
+    {
+      "txDate": "2026-10-16",
+      "postDate": "2026-10-16",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 320000,
+      "kind": "purchase",
+      "expectedOwner": "Sari",
+      "needsCheck": true
+    },
+    {
+      "txDate": "2026-10-18",
+      "postDate": "2026-10-18",
+      "description": "HALODOC JAKARTA",
+      "amount": 85000,
+      "kind": "purchase",
+      "expectedOwner": "Medis"
+    }
+  ]
+}

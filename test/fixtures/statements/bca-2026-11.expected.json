@@ -1,0 +1,102 @@
+{
+  "file": "bca-2026-11",
+  "card": "bca",
+  "bank": "BCA",
+  "format": "pdf",
+  "locked": false,
+  "statementDate": "2026-11-12",
+  "dueDate": "2026-11-28",
+  "printed": {
+    "prevBalance": 3281096,
+    "credits": 3500000,
+    "purchases": 1829284,
+    "feesInterest": 15000,
+    "newBalance": 1625380,
+    "minPayment": 96269
+  },
+  "rows": [
+    {
+      "txDate": "2026-10-20",
+      "postDate": "2026-10-20",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -2000000,
+      "kind": "payment",
+      "expectedOwner": null
+    },
+    {
+      "txDate": "2026-10-30",
+      "postDate": "2026-10-30",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -1500000,
+      "kind": "payment",
+      "expectedOwner": null
+    },
+    {
+      "txDate": "2026-10-14",
+      "postDate": "2026-10-15",
+      "description": "GRAB* A-1NOV01EEEE JAKARTA PUSATID",
+      "amount": 9000,
+      "kind": "purchase",
+      "expectedOwner": "Andi"
+    },
+    {
+      "txDate": "2026-10-15",
+      "postDate": "2026-10-15",
+      "description": "CICILAN BCA KE 02 DARI 06, BLIBLI.COM",
+      "amount": 729367,
+      "kind": "installment",
+      "expectedOwner": "Sari",
+      "installment": {
+        "n": 2,
+        "of": 6,
+        "plan": "Sepeda Statis (Blibli)"
+      }
+    },
+    {
+      "txDate": "2026-10-16",
+      "postDate": "2026-10-16",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 320000,
+      "kind": "purchase",
+      "expectedOwner": "Sari",
+      "needsCheck": true
+    },
+    {
+      "txDate": "2026-10-18",
+      "postDate": "2026-10-18",
+      "description": "HALODOC JAKARTA",
+      "amount": 85000,
+      "kind": "purchase",
+      "expectedOwner": "Medis"
+    },
+    {
+      "txDate": "2026-10-25",
+      "postDate": "2026-10-25",
+      "description": "CICILAN BCA KE 05 DARI 12, GARMIN INDONESIA",
+      "amount": 499917,
+      "kind": "installment",
+      "expectedOwner": "Andi",
+      "installment": {
+        "n": 5,
+        "of": 12,
+        "plan": "Garmin Forerunner"
+      }
+    },
+    {
+      "txDate": "2026-11-08",
+      "postDate": "2026-11-08",
+      "description": "NETFLIX.COM",
+      "amount": 186000,
+      "kind": "purchase",
+      "expectedOwner": "Keluarga"
+    },
+    {
+      "txDate": "2026-11-12",
+      "postDate": "2026-11-12",
+      "description": "BIAYA ADM KARTU",
+      "amount": 15000,
+      "kind": "fee",
+      "expectedOwner": "Keluarga"
+    }
+  ]
+}

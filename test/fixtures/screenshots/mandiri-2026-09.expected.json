@@ -1,0 +1,64 @@
+{
+  "file": "mandiri-2026-09",
+  "card": "mandiri",
+  "bank": "Mandiri",
+  "format": "screenshots",
+  "locked": false,
+  "statementDate": "2026-09-11",
+  "dueDate": "2026-09-30",
+  "printed": {
+    "prevBalance": 603800,
+    "credits": 603800,
+    "purchases": 377933,
+    "feesInterest": 0,
+    "newBalance": 377933,
+    "minPayment": 18897
+  },
+  "rows": [
+    {
+      "txDate": "2026-08-31",
+      "postDate": "2026-08-31",
+      "description": "PAYMENT THANK YOU - Livin",
+      "amount": -603800,
+      "kind": "payment",
+      "expectedOwner": null
+    },
+    {
+      "txDate": "2026-08-14",
+      "postDate": "2026-08-15",
+      "description": "KOPI SOE BLILI MART",
+      "amount": 39600,
+      "kind": "purchase",
+      "expectedOwner": "Andi"
+    },
+    {
+      "txDate": "2026-08-20",
+      "postDate": "2026-08-21",
+      "description": "RK BUAH GROSIR, CIPUTAT",
+      "amount": 130000,
+      "kind": "purchase",
+      "expectedOwner": "Rumah"
+    },
+    {
+      "txDate": "2026-08-30",
+      "postDate": "2026-08-30",
+      "description": "UNIQLO AEON BSD 001/003",
+      "amount": 133333,
+      "kind": "installment",
+      "expectedOwner": "Andi",
+      "installment": {
+        "n": 1,
+        "of": 3,
+        "plan": "Uniqlo AEON BSD"
+      }
+    },
+    {
+      "txDate": "2026-08-23",
+      "postDate": "2026-08-25",
+      "description": "OPENAI *CHATGPT SUBSCR SAN FRANCISCO USA",
+      "amount": 75000,
+      "kind": "purchase",
+      "expectedOwner": "Kantor"
+    }
+  ]
+}

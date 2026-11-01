@@ -1,0 +1,40 @@
+{
+  "file": "bca-unbilled-2026-10-10",
+  "card": "bca",
+  "capturedAt": "2026-10-10",
+  "note": "Before the Oct statement. Watsons was paid the next day (payment line). GRAB 27.000 on 9 Oct is a pending charge that never appears on any statement.",
+  "rows": [
+    {
+      "txDate": "2026-09-25",
+      "postDate": "2026-09-25",
+      "description": "WATSONS SENAYAN CITY",
+      "amount": 200000,
+      "kind": "purchase",
+      "expectedOwner": "Sari"
+    },
+    {
+      "txDate": "2026-09-26",
+      "postDate": "2026-09-26",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -200000,
+      "kind": "payment",
+      "expectedOwner": null
+    },
+    {
+      "txDate": "2026-10-02",
+      "postDate": "2026-10-03",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 245000,
+      "kind": "purchase",
+      "expectedOwner": "Bima"
+    },
+    {
+      "txDate": "2026-10-09",
+      "postDate": "2026-10-09",
+      "description": "GRAB* A-1PENDING JAKARTA PUSATID",
+      "amount": 27000,
+      "kind": "purchase",
+      "expectedOwner": "Andi"
+    }
+  ]
+}

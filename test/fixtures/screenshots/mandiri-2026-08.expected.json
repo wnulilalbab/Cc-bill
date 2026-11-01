@@ -1,0 +1,51 @@
+{
+  "file": "mandiri-2026-08",
+  "card": "mandiri",
+  "bank": "Mandiri",
+  "format": "screenshots",
+  "locked": false,
+  "statementDate": "2026-08-11",
+  "dueDate": "2026-08-31",
+  "printed": {
+    "prevBalance": 0,
+    "credits": 0,
+    "purchases": 603800,
+    "feesInterest": 0,
+    "newBalance": 603800,
+    "minPayment": 30190
+  },
+  "rows": [
+    {
+      "txDate": "2026-07-14",
+      "postDate": "2026-07-15",
+      "description": "KOPI SOE BLILI MART",
+      "amount": 19800,
+      "kind": "purchase",
+      "expectedOwner": "Andi"
+    },
+    {
+      "txDate": "2026-07-20",
+      "postDate": "2026-07-21",
+      "description": "TOKO LILI",
+      "amount": 500000,
+      "kind": "purchase",
+      "expectedOwner": "Rumah"
+    },
+    {
+      "txDate": "2026-07-23",
+      "postDate": "2026-07-25",
+      "description": "OPENAI *CHATGPT SUBSCR SAN FRANCISCO USA",
+      "amount": 75000,
+      "kind": "purchase",
+      "expectedOwner": "Kantor"
+    },
+    {
+      "txDate": "2026-08-01",
+      "postDate": "2026-08-02",
+      "description": "Grab* A-2AUG01FFFF JAKARTA PUSAT IDN",
+      "amount": 9000,
+      "kind": "purchase",
+      "expectedOwner": "Andi"
+    }
+  ]
+}
