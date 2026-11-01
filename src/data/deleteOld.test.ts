@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 import Dexie from 'dexie'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { dumpIdb, fixture, freshNewDb, seedOldDb, uniqueName } from '../../test/data/oldDb'
 import { deleteOldData, migrate, planMigration, type OldBackup } from './migration'
 import { parseOldBackup, readOldData } from './old'
@@ -77,8 +77,9 @@ describe('Delete old data', () => {
   it('G-04 waits for the backup step to resolve before deleting', async () => {
     const { oldName, db } = await migrated()
     let release!: () => void
-    const pending = deleteOldData(db, { oldName, beforeDelete: () => new Promise<void>((r) => (release = r)) })
-    await new Promise((r) => setTimeout(r, 20))
+    const beforeDelete = vi.fn(() => new Promise<void>((r) => (release = r)))
+    const pending = deleteOldData(db, { oldName, beforeDelete })
+    await vi.waitFor(() => expect(beforeDelete).toHaveBeenCalled())
     expect(await Dexie.exists(oldName)).toBe(true)
     release()
     expect((await pending).json.length).toBeGreaterThan(1000)
