@@ -18,6 +18,7 @@ import {
   markReviewed,
   previewBulkOwner,
   previewConversion,
+  acceptRebate,
   RowError,
   updateRow,
 } from './transactions'
@@ -195,6 +196,32 @@ describe('credits, installments, conversions (data)', () => {
     expect((await updateRow(db, 'r', { amount: -45_000 })).amount).toBe(-45_000)
     expect(await updateRow(db, 'w', { label: 'Wrong sign' })).toMatchObject({ amount: 5_000, label: 'Wrong sign' })
     expect((await updateRow(db, 'w', { amount: -5_000 })).amount).toBe(-5_000)
+  })
+
+  it('F-10 a negative fee or interest is accepted as a rebate: stored on the row, the statement no longer Draft; a fix asks again', async () => {
+    const db = await seedCards(freshNewDb())
+    await db.transactions.bulkPut([
+      tx('fr', OCT.id, '2026-10-12', 'BIAYA ADM KARTU REBATE', -15_000, 'andi', { kind: 'fee', tagSource: 'default' }),
+      tx('ir', OCT.id, '2026-10-12', 'BUNGA KOREKSI', -2_500, 'andi', { kind: 'interest' }),
+      tx('nb', OCT.id, '2026-10-12', 'CASHBACK', -1_000, 'andi', { kind: 'purchase' }),
+    ])
+    const issues = async () => draftIssues(await loadLedger(db, 'bca'), OCT.id).wrongSignRows
+    expect(await issues()).toEqual(['fr', 'ir', 'nb'])
+    expect(await acceptRebate(db, 'fr')).toMatchObject({ amount: -15_000, kind: 'fee', signAccepted: true })
+    expect((await db.transactions.get('fr'))!.signAccepted).toBe(true)
+    // Accepting twice changes nothing.
+    expect((await acceptRebate(db, 'fr')).signAccepted).toBe(true)
+    await acceptRebate(db, 'ir')
+    expect(await issues()).toEqual(['nb'])
+    await expect(acceptRebate(db, 'nb')).rejects.toThrow('Only a fee or interest with a negative amount can be accepted as a rebate.')
+    await expect(acceptRebate(db, 'gone')).rejects.toBeInstanceOf(RowError)
+
+    // A label keeps the acceptance; a new amount or kind clears it.
+    expect((await updateRow(db, 'fr', { label: 'Fee rebate' })).signAccepted).toBe(true)
+    expect((await updateRow(db, 'fr', { amount: -14_000 })).signAccepted).toBeUndefined()
+    expect(await issues()).toEqual(['fr', 'nb'])
+    expect((await updateRow(db, 'ir', { kind: 'refund' })).signAccepted).toBeUndefined()
+    expect(await issues()).toEqual(['fr', 'nb'])
   })
 
   it('a misread kind can be changed (sign kept); not on installments or converted rows', async () => {

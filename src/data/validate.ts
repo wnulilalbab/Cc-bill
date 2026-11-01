@@ -1,7 +1,7 @@
 // Shape and money checks for records of the new database. Used by every repository write and by backup import,
 // so nothing reaches the database that the money core would reject.
 import { allocatedOf } from '../domain/amounts'
-import { assertRupiah } from '../domain/money'
+import { assertRupiah, canAcceptSign } from '../domain/money'
 import { cleanPattern } from '../domain/tagging/rules'
 import { RULE_MATCHES, type TagRule } from '../domain/tagging/types'
 import type { InstallmentPlan, Payment, Statement, Transaction } from '../domain/types'
@@ -41,6 +41,10 @@ function checkTransaction(t: Transaction, what: string): void {
   need(ownerOk(t.ownerId), `${what} ownerId must be a text or null`)
   need(t.tagSource === undefined || TAG_SOURCES.has(t.tagSource), `${what} tagSource must be one of ${[...TAG_SOURCES].join(', ')}`)
   assertRupiah(t.amount, `${what} amount`)
+  need(
+    t.signAccepted === undefined || (t.signAccepted === true && canAcceptSign(t.kind, t.amount)),
+    `${what} signAccepted is only for a fee or interest row with a negative amount`,
+  )
 }
 
 function checkPayment(p: Payment, what: string): void {

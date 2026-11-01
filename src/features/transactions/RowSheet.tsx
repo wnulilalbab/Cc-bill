@@ -8,7 +8,7 @@ import { computeMoney, depositPaidOf } from '../../domain/amounts'
 import { coverageOf, ownerBill, type OwnerBill } from '../../domain/bill'
 import { deleteTransaction } from '../../domain/payments'
 import { parseInstallmentReversal, type ConversionError, type ConversionResult } from '../../domain/installments'
-import { sum } from '../../domain/money'
+import { canAcceptSign, sum } from '../../domain/money'
 import { isMarketplace } from '../../domain/tagging/merchant'
 import type { Ledger, Payment, Transaction, TxKind } from '../../domain/types'
 import type { OwnerRecord } from '../../data/cards'
@@ -25,9 +25,11 @@ import {
   RowError,
   UNDO_CONVERSION,
   updateRow,
+  acceptRebate,
   type RowPatch,
 } from '../../data/transactions'
 import { useData } from '../data/DataContext'
+import { localIsoDate } from '../data/today'
 import { parseAmount, rp } from '../settings/format'
 import { dayLabel, draftWarning, fmt, signedFor, statementName, statementsTurningDraft, TAG_SOURCE_LABEL, type RowView } from './view'
 
@@ -47,7 +49,7 @@ type Step = 'main' | 'delete' | 'convert' | 'sign'
 const KIND_NAME: Record<TxKind, string> = { purchase: 'purchase', installment: 'installment', fee: 'fee', interest: 'interest', refund: 'refund', reversal: 'reversal' }
 /** A row whose sign contradicts its kind can be fixed two ways: flip the sign, or keep it and pick the kind that fits. */
 const KINDS_FOR_SIGN = (amount: number): TxKind[] => (amount < 0 ? ['refund', 'reversal'] : ['purchase', 'fee', 'interest'])
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => localIsoDate()
 
 const payLine = (p: Payment | undefined) => (!p ? 'Payment' : p.description ?? (p.source === 'manual' ? 'Recorded by you' : 'Bank payment'))
 
@@ -175,6 +177,17 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
             Keep as {KIND_NAME[t.kind]}, flip the sign
           </button>
         </div>
+        {canAcceptSign(t.kind, t.amount) && (
+          <div className="box tight small" aria-label="Accept as rebate">
+            <b>
+              It&apos;s a rebate: keep it as a {KIND_NAME[t.kind]} of {rp(t.amount)}
+            </b>
+            <span className="xs muted">{line(now)}. The statement no longer waits on this row.</span>
+            <button type="button" className="btn ghost sm" disabled={busy} onClick={() => run(async () => (await acceptRebate(db, t.id), 'Accepted as a rebate'))}>
+              Accept as rebate
+            </button>
+          </div>
+        )}
         {options.map((k) => (
           <div key={k} className="box tight small" aria-label={`Change to ${k}`}>
             <b>
@@ -321,7 +334,8 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
           </div>
           {t.kind === 'installment' && <div className="xs muted">{INSTALLMENT_AMOUNT}</div>}
           {dateWarning && <div className="xs warn-text">{dateWarning}</div>}
-          {signedFor(t.kind, Math.abs(t.amount)) !== t.amount && (
+          {t.signAccepted && <div className="xs muted">Accepted as a rebate.</div>}
+          {signedFor(t.kind, Math.abs(t.amount)) !== t.amount && !t.signAccepted && (
             <button
               type="button"
               className="btn ghost sm"
@@ -414,7 +428,7 @@ function ConversionPreview({ result, ledger, nameOf }: { result: ConversionResul
 
 export function StatusPill({ row }: { row: RowView }) {
   if (row.status === 'notCounted') return <span className="pill">Not counted</span>
-  if (row.status === 'refund') return <span className="pill ok">Refund</span>
+  if (row.status === 'refund') return <span className="pill ok">{canAcceptSign(row.tx.kind, row.tx.amount) ? 'Rebate' : 'Refund'}</span>
   if (row.status === 'paid') return <span className="pill ok">Paid</span>
   if (row.status === 'partial') return <span className="pill warn">{fmt(row.remaining)} left</span>
   return <span className="pill">Unpaid</span>

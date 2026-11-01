@@ -26,6 +26,11 @@ export function signContradicts(kind: string, amount: Rupiah): boolean {
   return CREDIT_KINDS.includes(kind) ? amount > 0 : amount < 0
 }
 
+/** A fee or interest row with a negative amount is a rebate: its contradicting sign may be accepted as valid. */
+export function canAcceptSign(kind: string, amount: Rupiah): boolean {
+  return (kind === 'fee' || kind === 'interest') && amount < 0
+}
+
 /** Whole days from `a` to `b` (positive when `b` is later). */
 export function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000)

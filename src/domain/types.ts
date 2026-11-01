@@ -86,6 +86,11 @@ export interface Transaction {
   keepWaiting?: boolean
   /** The user's own name for the row (Transactions row sheet), shown instead of the merchant. Not used by the money. */
   label?: string
+  /**
+   * A fee or interest row with a negative amount (a rebate) that the user accepted as it is: its sign is then not a
+   * Draft issue. Only valid on such a row (see `canAcceptSign`); cleared when the amount or kind is fixed.
+   */
+  signAccepted?: boolean
 }
 
 export interface Allocation {

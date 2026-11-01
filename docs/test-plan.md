@@ -30,8 +30,8 @@ Additional rules:
 | M-06 | Reversal row + original marked moved | Both have effective amount 0; excluded from totals |
 | M-07 | Fees and interest without rule | Owner = card default owner; no Check |
 | M-08 | Bill for Unbilled selection | Shows unbilled charges + older unpaid billed |
-| M-09 | Card tile total | Equals sum of owners' bill for the selected statement |
-| M-10 | Hero arithmetic | charges − already paid + older unpaid = total, to the rupiah |
+| M-09 | Card tile total | Equals sum of owners' bill (must-pay) for the selected statement; equals the bank's new balance when every payment is assigned and no owner has a credit. An owner with credit (refunds > charges) shows "Paid ✓" + credit, is not offset against other owners, so the total is above the bank by that credit and the hero explains why |
+| M-10 | Hero arithmetic | charges − already paid + older unpaid (+ owners' credit) = total, to the rupiah; person detail lines (kind groups, payments + deposit) add up to the same numbers |
 | M-11 | Owner with nothing open | Shows "Paid ✓", not 0 |
 
 ## Draft / Final (F)
@@ -46,7 +46,8 @@ Additional rules:
 | F-06 | Payment with leftover "Decide later" | Blocks |
 | F-07 | Hand-recorded payment missing from next statement | Blocks, item "isn't on a statement" |
 | F-08 | Unbilled row dated before latest statement, not matched | Blocks latest statement only |
-| F-09 | All resolved | Final ✓ |
+| F-09 | All resolved | Final ✓; a totals difference does not block Final but shows "Final, but totals differ from the bank by Rp X" on the panel and the hero |
+| F-10 | Fee/interest row with a negative amount (rebate) → Accept | Stored on the row (`signAccepted`); no longer a Draft issue; fixing amount/kind clears it |
 
 ## Payments (P)
 

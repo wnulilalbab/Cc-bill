@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom'
+import { HashRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import Import from './pages/Import'
 import Transactions from './pages/Transactions'
@@ -11,6 +11,8 @@ import { SettingsPage } from './features/settings/SettingsPage'
 import { RulesPage } from './features/tagging/RulesPage'
 import { ImportPage } from './features/import/ImportPage'
 import { TransactionsPage } from './features/transactions/TransactionsPage'
+import { BillPage } from './features/bill/BillPage'
+import { PersonPage } from './features/bill/PersonPage'
 import { PaymentsRoutes } from './features/payments/PaymentsRoutes'
 import { SharePage } from './features/share/SharePage'
 
@@ -18,7 +20,7 @@ function BottomNav() {
   const location = useLocation()
 
   const links = [
-    { to: '/', label: 'Dashboard', icon: IconHome },
+    { to: '/v2/bill', label: 'Bill', icon: IconHome },
     { to: '/v2/import', label: 'Import', icon: IconUpload },
     { to: '/v2/transactions', label: 'Transactions', icon: IconList },
     { to: '/v2/payments', label: 'Payments', icon: IconCard },
@@ -29,7 +31,7 @@ function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 pb-safe">
       <div className="flex">
         {links.map(({ to, label, icon: Icon }) => {
-          const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to)
+          const active = location.pathname.startsWith(to)
           return (
             <NavLink
               key={to}
@@ -59,7 +61,9 @@ export default function App() {
         )}
         <main className="flex-1 pb-20">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            {/* Bill is the home screen (Slice 10); the old dashboard stays reachable from it. */}
+            <Route path="/" element={<Navigate to="/v2/bill" replace />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/import" element={<Import />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/installments" element={<Installments />} />
@@ -70,6 +74,8 @@ export default function App() {
             <Route path="/v2/rules" element={<Shell><RulesPage /></Shell>} />
             <Route path="/v2/import" element={<Shell><ImportPage /></Shell>} />
             <Route path="/v2/transactions" element={<Shell><TransactionsPage /></Shell>} />
+            <Route path="/v2/bill" element={<Shell><BillPage /></Shell>} />
+            <Route path="/v2/bill/person/:ownerId" element={<Shell><PersonPage /></Shell>} />
             <Route path="/v2/payments/*" element={<Shell><PaymentsRoutes /></Shell>} />
             <Route path="/v2/share" element={<Shell><SharePage /></Shell>} />
           </Routes>
