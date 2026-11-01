@@ -1,6 +1,14 @@
 /** "Rp 1.234.567" (Indonesian thousands separators), for integer rupiah. */
 export const rp = (n: number) => `${n < 0 ? '−' : ''}Rp ${Math.abs(n).toLocaleString('id-ID')}`
 
+/** Typed amount: "1.234.567", "1234567" or "Rp 1.234.567" → 1234567; null when not a whole number above 0. */
+export function parseAmount(text: string): number | null {
+  const digits = text.replace(/^\s*rp\.?\s*/i, '').replace(/[.\s]/g, '')
+  if (!/^\d+$/.test(digits)) return null
+  const n = Number(digits)
+  return n > 0 && Number.isSafeInteger(n) ? n : null
+}
+
 /** Saves `text` as a file through a temporary link. */
 export function downloadText(fileName: string, text: string, type = 'application/json'): void {
   const url = URL.createObjectURL(new Blob([text], { type }))

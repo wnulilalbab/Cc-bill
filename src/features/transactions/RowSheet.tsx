@@ -1,6 +1,7 @@
 // Row sheet (docs/intent/phase-1.md §6): owner, Check, label, the payments covering the row, fix amount/date/description,
 // installment conversion on a REVERSAL CICILAN line, Keep waiting on a row the statement did not contain, and Delete.
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Sheet } from '../../components/Sheet'
 import { useToast } from '../../components/Toast'
 import { computeMoney, depositPaidOf } from '../../domain/amounts'
@@ -27,8 +28,8 @@ import {
   type RowPatch,
 } from '../../data/transactions'
 import { useData } from '../data/DataContext'
-import { rp } from '../settings/format'
-import { dayLabel, draftWarning, fmt, parseAmount, signedFor, statementName, statementsTurningDraft, TAG_SOURCE_LABEL, type RowView } from './view'
+import { parseAmount, rp } from '../settings/format'
+import { dayLabel, draftWarning, fmt, signedFor, statementName, statementsTurningDraft, TAG_SOURCE_LABEL, type RowView } from './view'
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/
 
@@ -346,10 +347,10 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
           </div>
           {coverage.payments.map((c) => (
             <div key={c.paymentId} className="row small">
-              <span>
+              <Link to={`/v2/payments/${encodeURIComponent(c.paymentId)}`} aria-label={`Open payment of ${dayLabel(c.date)}`}>
                 {dayLabel(c.date)} · {payLine(paymentById(c.paymentId))}
                 {c.afterDue && <span className="pill warn"> after due</span>}
-              </span>
+              </Link>
               <span className="num" style={{ color: 'var(--ok)' }}>
                 − {fmt(c.amount)}
               </span>

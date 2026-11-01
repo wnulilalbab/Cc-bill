@@ -134,3 +134,34 @@
 .ccb .bulkbar { position: sticky; bottom: 72px; z-index: 30; background: var(--ink); color: #fff; border-radius: 18px; padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .ccb .bulkbar .btn { padding: 7px 12px; font-size: 12px; }
 .ccb details summary { font-size: 12.5px; font-weight: 700; cursor: pointer; }
+
+/* Payments (Slice 9), from the prototype's Payments tab and the full-screen assign page */
+.ccb .orow .amt { font-size: 16px; font-weight: 800; }
+.ccb a.orow, .ccb a.btn { text-decoration: none; color: inherit; display: flex; }
+.ccb a.btn { justify-content: center; }
+.ccb a.btn.ghost { color: var(--ink); }
+.ccb .filters .chip { flex: none; white-space: nowrap; }
+.ccb .chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--oc); display: inline-block; margin-right: 5px; vertical-align: middle; }
+.ccb .ccb-full { position: fixed; inset: 0; z-index: 50; background: var(--surface); overflow-y: auto; }
+.ccb .pay-page { padding-top: 0; padding-bottom: 0; }
+.ccb .phead { position: sticky; top: 0; z-index: 2; background: var(--surface); display: flex; align-items: center; gap: 10px; padding: 12px 0 10px; border-bottom: 1px solid var(--line); }
+.ccb .phead h1 { font-size: 17px; margin: 0; font-weight: 800; }
+.ccb .phead h1:focus { outline: none; }
+.ccb .chip[role='tab'][aria-selected='true'] { background: var(--acc); border-color: var(--acc); color: #fff; }
+.ccb .grp { width: 100%; border: 0; background: var(--raise); border-radius: 12px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; margin-top: 8px; }
+.ccb .grp .t { font-weight: 800; font-size: 13px; }
+.ccb .grp .chev { width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); transition: transform 0.15s; flex: none; }
+.ccb .grp[aria-expanded='true'] .chev { transform: rotate(225deg); }
+.ccb .alloc { display: grid; grid-template-columns: minmax(0, 1fr) 100px; gap: 8px; align-items: center; padding: 6px; margin-top: 6px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.ccb .alloc.on { border-color: var(--ink); background: var(--acc-soft); }
+.ccb .atog { border: 0; background: none; display: flex; align-items: center; gap: 10px; text-align: left; padding: 4px; min-width: 0; width: 100%; }
+.ccb .atog .ck { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--muted); flex: none; display: grid; place-items: center; font-size: 13px; font-weight: 800; color: transparent; }
+.ccb .alloc.on .atog .ck { background: var(--ink); border-color: var(--ink); color: #fff; }
+.ccb .alloc .inp { padding: 7px 8px; font-size: 12.5px; text-align: right; background: var(--surface); }
+.ccb .alloc .inp:disabled { opacity: 0.45; }
+.ccb .alloc .full { grid-column: 2; justify-self: end; margin-top: -4px; }
+.ccb .foot { position: sticky; bottom: 0; background: var(--surface); padding: 10px 0 calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+@media (prefers-reduced-motion: no-preference) {
+  .ccb .ccb-full { animation: ccb-slidein 0.22s ease-out; }
+}
+@keyframes ccb-slidein { from { transform: translateX(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }

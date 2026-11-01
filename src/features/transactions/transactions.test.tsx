@@ -9,10 +9,11 @@ import type { NewDb } from '../../data/db'
 import { loadLedger } from '../../data/repo'
 import { listRules } from '../../data/rules'
 import { renderScreen } from '../../test-utils/ui'
+import { parseAmount } from '../settings/format'
 import { freshNewDb } from '../../../test/data/oldDb'
 import { OCT, pay, seedCards, seedPaidRows, tx, UNB } from '../../../test/transactions/ledger'
 import { TransactionsPage } from './TransactionsPage'
-import { applyFilters, defaultStatementId, NO_FILTERS, parseAmount, rowViews, searchMatches, statementName } from './view'
+import { applyFilters, defaultStatementId, NO_FILTERS, rowViews, searchMatches, statementName } from './view'
 
 // Synthetic household (fictional): card "BCA Keluarga" with Andi, Sari (and archived Bima); see test/transactions/ledger.ts.
 const PRINTED_OCT = { prevBalance: 0, credits: 164_631, purchases: 740_201, feesInterest: 15_000, newBalance: 590_570 }

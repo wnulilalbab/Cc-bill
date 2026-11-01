@@ -40,6 +40,18 @@ describe('routing', () => {
     expect(window.location.hash).toBe('#/transactions')
   })
 
+  it('Payments opens the new Payments screen; the old one stays reachable', async () => {
+    window.location.hash = '#/'
+    const { default: App } = await import('../App')
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('link', { name: 'Payments' }))
+    expect(window.location.hash).toBe('#/v2/payments')
+    expect(await screen.findByRole('heading', { name: 'Payments' })).toBeTruthy()
+    await user.click(screen.getByRole('link', { name: 'Old payments screen' }))
+    expect(window.location.hash).toBe('#/payments')
+  })
+
   it('Import opens the new Import screen; the old import stays reachable', async () => {
     window.location.hash = '#/'
     const { default: App } = await import('../App')
