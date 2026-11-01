@@ -106,6 +106,13 @@ describe('saveAssign guards', () => {
     expect(paidOf(computeMoney(await loadLedger(db, 'bca')), 't1')).toBe(300_000)
   })
 
+  it('a new-payment id can never address a bank line', async () => {
+    const db = await smallDb()
+    await db.payments.put(pay('line', '2026-10-05', 120_000, { source: 'statement', statementId: OCT.id }))
+    await expect(saveAssign(db, draft({ amount: 120_000, allocations: { t1: 120_000 } }), null, { newId: 'line' })).rejects.toThrow(PaymentError)
+    expect((await db.payments.get('line'))!.allocations).toEqual([])
+  })
+
   it('friendlyMoneyError words other money errors plainly', () => {
     expect(friendlyMoneyError(new MoneyError('assigned amount must be an integer number of rupiah, got 1.5'))).toBe('Enter the amounts in whole rupiah.')
   })

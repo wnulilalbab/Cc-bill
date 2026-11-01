@@ -79,6 +79,8 @@ export async function saveAssign(
     let base: Payment
     // A new payment saved again (double tap, retry) updates the one already written under its id.
     const again = !draft.paymentId && newId ? await db.payments.get(newId) : undefined
+    // Only a hand-recorded payment can be re-saved under its client id; never let it address a bank line.
+    if (again && again.source !== 'manual') throw new PaymentError('This payment is on another card now. Open it again.')
     if (draft.paymentId || again) {
       base = again ?? (await paymentOrThrow(db, draft.paymentId!))
       if (base.cardId !== draft.cardId) throw new PaymentError('This payment is on another card now. Open it again.')
