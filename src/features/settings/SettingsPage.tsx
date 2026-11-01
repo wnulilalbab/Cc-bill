@@ -1,12 +1,13 @@
 // Settings (opened by the gear): cards and their owners, look, data and migration, AI, testing tools.
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { cardHasHistory, ownersWithHistory, type CardWithOwners } from '../../data/cards'
-import { BackIcon } from '../../components/icons'
 import { useToast } from '../../components/Toast'
 import { useData } from '../data/DataContext'
 import { useAppearance } from '../look/Appearance'
 import { LOOKS, ownerColor, paletteOf } from '../look/palettes'
+import { PATHS } from '../shell/paths'
+import { TopBar } from '../shell/TopBar'
 import { AiSection } from './AiSection'
 import { CardSheet } from './CardSheet'
 import { DataSection } from './DataSection'
@@ -36,7 +37,6 @@ export function OwnerChip({ name, color, archived }: { name: string; color: stri
 export function SettingsPage() {
   const { db } = useData()
   const toast = useToast()
-  const navigate = useNavigate()
   const { cards, selectCard, look, setLook, selected } = useAppearance()
   const [sheet, setSheet] = useState<CardSheetState | null>(null)
   const [version, setVersion] = useState(0)
@@ -50,13 +50,7 @@ export function SettingsPage() {
 
   return (
     <div className="screen">
-      <div className="top">
-        <button type="button" className="iconbtn" aria-label="Back" onClick={() => ((window.history.state as { idx?: number } | null)?.idx ? navigate(-1) : navigate('/'))}>
-          <BackIcon />
-        </button>
-        <h1>Settings</h1>
-        <span style={{ width: 38 }} />
-      </div>
+      <TopBar title="Settings" backTo={PATHS.bill} gear={false} />
 
       <div className="lbl">Cards</div>
       {cards === undefined ? (
@@ -92,7 +86,7 @@ export function SettingsPage() {
         + Add card
       </button>
       {!!cards?.length && (
-        <Link to="/v2/rules" className="btn ghost">
+        <Link to={PATHS.rules} className="btn ghost">
           Tagging rules
         </Link>
       )}
@@ -114,10 +108,6 @@ export function SettingsPage() {
       <DataSection version={version} onChanged={bump} />
       <AiSection />
       <TestingSection onChanged={bump} />
-
-      <div className="note">
-        <Link to="/settings">Old app settings</Link>
-      </div>
 
       {sheet && (
         <CardSheet

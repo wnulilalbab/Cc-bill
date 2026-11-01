@@ -4,7 +4,7 @@ test.describe('staging smoke', () => {
   test.skip(!process.env.STAGING_URL, 'STAGING_URL is not set')
   test.use({ serviceWorkers: 'block' })
 
-  test('loads with the STAGING banner and no console errors', async ({ page }) => {
+  test('loads with the staging banner and no console errors', async ({ page }) => {
     const problems: string[] = []
     page.on('console', (msg) => {
       if (msg.type() === 'error') problems.push(`console.error: ${msg.text()}`)
@@ -15,7 +15,7 @@ test.describe('staging smoke', () => {
     const response = await page.goto('./', { waitUntil: 'networkidle' })
     expect(response?.ok()).toBe(true)
 
-    await expect(page.getByText(/STAGING/).first()).toBeVisible()
+    await expect(page.getByText(/Staging — test data/).first()).toBeVisible()
     expect(problems).toEqual([])
   })
 

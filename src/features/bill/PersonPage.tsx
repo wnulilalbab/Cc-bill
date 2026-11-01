@@ -2,13 +2,15 @@
 // with what paid each one ("after due" marked), the payments and deposits behind "Already paid", carried credit,
 // older unpaid bills, not billed yet and installments to come. Lines add up to the hero numbers (M-10).
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { BackIcon, ShareIcon } from '../../components/icons'
+import { Link, useParams } from 'react-router-dom'
+import { ShareIcon } from '../../components/icons'
 import { computeMoney } from '../../domain/amounts'
 import { coverageOf, ownerBill, type BillLine, type OwnerBill } from '../../domain/bill'
 import type { Ledger, Payment, Statement } from '../../domain/types'
 import type { CardRecord, OwnerRecord } from '../../data/cards'
 import { rp } from '../settings/format'
+import { PATHS } from '../shell/paths'
+import { TopBar } from '../shell/TopBar'
 import { ShareSheet } from '../share/ShareSheet'
 import { StatusPill } from '../transactions/RowSheet'
 import { dayLabel, fmt, MONTHS, statementName, TAG_SOURCE_LABEL } from '../transactions/view'
@@ -37,30 +39,13 @@ export function PersonPage() {
 }
 
 function Header({ title, sub, statementId, onShare }: { title: string; sub: string; statementId: string; onShare?(): void }) {
-  const navigate = useNavigate()
-  return (
-    <div className="top">
-      <button
-        type="button"
-        className="iconbtn"
-        aria-label="Back"
-        onClick={() => ((window.history.state as { idx?: number } | null)?.idx ? navigate(-1) : navigate(`/v2/bill?s=${encodeURIComponent(statementId)}`))}
-      >
-        <BackIcon />
-      </button>
-      <div style={{ textAlign: 'center', minWidth: 0 }}>
-        <div className="xs muted">{sub}</div>
-        <h1>{title}</h1>
-      </div>
-      {onShare ? (
-        <button type="button" className="iconbtn" aria-label="Share" onClick={onShare}>
-          <ShareIcon />
-        </button>
-      ) : (
-        <span style={{ width: 38 }} />
-      )}
-    </div>
+  // As the prototype's owner detail: Back, the person, and Share on the right.
+  const share = onShare && (
+    <button type="button" className="iconbtn" aria-label="Share" onClick={onShare}>
+      <ShareIcon />
+    </button>
   )
+  return <TopBar title={title} sub={sub} backTo={`${PATHS.bill}?s=${encodeURIComponent(statementId)}`} actions={share} gear={false} />
 }
 
 function heroOf(b: OwnerBill): Hero {

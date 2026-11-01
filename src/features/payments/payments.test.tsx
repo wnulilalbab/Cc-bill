@@ -43,8 +43,8 @@ function renderAt(path: string, db: NewDb) {
     <MemoryRouter initialEntries={[path]}>
       <Shell db={db} oldName={uniqueName('CCBillDB-none')}>
         <Routes>
-          <Route path="/v2/payments/*" element={<PaymentsRoutes />} />
-          <Route path="/v2/transactions" element={<TransactionsPage />} />
+          <Route path="/payments/*" element={<PaymentsRoutes />} />
+          <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="*" element={null} />
         </Routes>
         <Where />
@@ -100,7 +100,7 @@ async function seedAssign(db: NewDb = freshNewDb()) {
 describe('Payments list', () => {
   it('P-19 tabs: To assign / Assigned / Not on a statement (the 5 Sep Bima payment) / Possible duplicates / Deposits', async () => {
     const db = await seedHousehold(freshNewDb(), householdWithHand())
-    const { user } = renderAt('/v2/payments', db)
+    const { user } = renderAt('/payments', db)
     expect(await screen.findByRole('heading', { name: 'Payments' })).toBeTruthy()
     await waitFor(() => expect(tab(/^To assign · 2$/)).toBeTruthy())
     expect(tab(/^To assign/).getAttribute('aria-selected')).toBe('true')
@@ -127,11 +127,11 @@ describe('Payments list', () => {
     const sari = within(panel()).getByRole('region', { name: "Sari's deposit" })
     expect(within(sari).getByText('used, 0 left')).toBeTruthy()
     expect(document.querySelectorAll('select')).toHaveLength(0)
-    expect(screen.getByRole('link', { name: 'Old payments screen' }).getAttribute('href')).toBe('/payments')
+    expect(screen.queryByRole('link', { name: 'Old payments screen' })).toBeNull()
   })
 
   it('shows the way to Settings when there is no card', async () => {
-    renderAt('/v2/payments', freshNewDb())
+    renderAt('/payments', freshNewDb())
     expect(await screen.findByText('Add a card in Settings first.')).toBeTruthy()
   })
 })
@@ -141,9 +141,9 @@ describe('the full-screen assign page', () => {
     const db = await seedHousehold(freshNewDb(), householdWithHand())
     const before = await loadLedger(db, 'bca')
     expect(ownerBill(before, 'Sari', 'bca-2026-11', TODAY)).toMatchObject({ mustPay: 928_734, depositWaiting: 0 })
-    const { user } = renderAt('/v2/payments', db)
+    const { user } = renderAt('/payments', db)
     await user.click(await screen.findByRole('link', { name: 'Rp 1.500.000 30 Oct 2026' }))
-    expect(where()).toBe(`/v2/payments/${encodeURIComponent(IDS.OCT30_LINE)}`)
+    expect(where()).toBe(`/payments/${encodeURIComponent(IDS.OCT30_LINE)}`)
     // Full screen: a page, not a sheet over the list.
     expect(await screen.findByRole('region', { name: 'Assign payment' })).toBeTruthy()
     expect(screen.queryByRole('dialog')).toBeNull()
@@ -170,7 +170,7 @@ describe('the full-screen assign page', () => {
     expect(document.querySelectorAll('select')).toHaveLength(0)
     await user.click(save())
 
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     expect(toast()).toBe('Payment saved')
     const after = await loadLedger(db, 'bca')
     const state = computeMoney(after)
@@ -190,7 +190,7 @@ describe('the full-screen assign page', () => {
 
   it('P-01 / P-02 / P-03 groups oldest first, Unbilled last; later and already-paid charges hidden with a count', async () => {
     const db = await seedAssign()
-    const { user } = renderAt('/v2/payments/p5', db)
+    const { user } = renderAt('/payments/p5', db)
     await user.click(await findWho('Andi'))
     const groups = screen.getAllByRole('button', { expanded: true }).concat(screen.getAllByRole('button', { expanded: false }))
     expect(groups.map((g) => g.querySelector('.t')!.textContent).sort()).toEqual(['Oct 2026 statement', 'Sep 2026 statement', 'Unbilled'])
@@ -211,7 +211,7 @@ describe('the full-screen assign page', () => {
 
   it('P-04 / P-05 / P-08 / P-09 tap caps at what is left, untick first, Pay full, over-assign blocks Save', async () => {
     const db = await seedAssign()
-    const { user } = renderAt('/v2/payments/p5', db)
+    const { user } = renderAt('/payments/p5', db)
     await user.click(await findWho('Andi'))
     await user.click(within(screen.getByRole('region', { name: 'Oct 2026 statement' })).getByRole('button', { expanded: false }))
 
@@ -250,13 +250,13 @@ describe('the full-screen assign page', () => {
 
     // Back leaves without saving.
     await user.click(screen.getByRole('button', { name: 'Back' }))
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     expect((await db.payments.get('p5'))!.allocations).toEqual([])
   })
 
   it('P-06 / P-07 Fill oldest first and Pay all in this statement stop when the payment runs out', async () => {
     const db = await seedAssign()
-    const { user } = renderAt('/v2/payments/p5', db)
+    const { user } = renderAt('/payments/p5', db)
     await user.click(await findWho('Andi'))
     // P-06 500.000 over 5 open charges in date order: 100.000 + 150.000 + 250.000, then it is used up.
     await user.click(screen.getByRole('button', { name: 'Fill oldest first' }))
@@ -278,7 +278,7 @@ describe('the full-screen assign page', () => {
 
     // Save with nothing left over.
     await user.click(save())
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     const l = await loadLedger(db, 'bca')
     expect(l.payments.find((p) => p.id === 'p5')!.allocations).toEqual([{ txId: 'a3', amount: 500_000 }])
     expect(ownerBill(l, 'andi', OCT.id, TODAY)).toMatchObject({ charges: 1_332_000, alreadyPaid: 500_000, thisRemaining: 832_000 })
@@ -286,7 +286,7 @@ describe('the full-screen assign page', () => {
 
   it('P-10 / P-11 one person at a time clears the ticks; "more than one person" adds people and names their rows', async () => {
     const db = await seedAssign()
-    const { user } = renderAt('/v2/payments/p5', db)
+    const { user } = renderAt('/payments/p5', db)
     await user.click(await findWho('Andi'))
     await user.click(screen.getByRole('button', { name: 'TOKO SATU' }))
     expect(left()).toBe('400.000')
@@ -313,7 +313,7 @@ describe('the full-screen assign page', () => {
 
     // F-06 a leftover on "Decide later" keeps the bill Draft.
     await user.click(save())
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     expect(toast()).toBe('Saved. 400.000 is still unassigned, so the bill stays Draft.')
     const l = await loadLedger(db, 'bca')
     expect(l.payments.find((p) => p.id === 'p5')).toMatchObject({ allocations: [{ txId: 'a1', amount: 100_000 }], forOwnerIds: ['andi'] })
@@ -323,7 +323,7 @@ describe('the full-screen assign page', () => {
   it('P-18 an existing split payment opens with its people and amounts, and the edit is saved', async () => {
     const db = await seedAssign()
     await db.payments.put(pay('split', '2026-10-10', 200_000, { allocations: [{ txId: 'a4', amount: 80_000 }, { txId: 's1', amount: 90_000 }], depositOwnerId: 'sari' }))
-    const { user } = renderAt('/v2/payments/split', db)
+    const { user } = renderAt('/payments/split', db)
     expect(await screen.findByText('Who is this payment for? (several people)')).toBeTruthy()
     expect(screen.getByText('Recorded by hand')).toBeTruthy()
     expect((screen.getByLabelText('Amount') as HTMLInputElement).value).toBe('200.000')
@@ -334,7 +334,7 @@ describe('the full-screen assign page', () => {
     fireEvent.change(amountFor('SALON'), { target: { value: '50.000' } })
     expect(left()).toBe('70.000')
     await user.click(save())
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     const l = await loadLedger(db, 'bca')
     const p = l.payments.find((x) => x.id === 'split')!
     expect(p).toMatchObject({ allocations: [{ txId: 'a4', amount: 80_000 }, { txId: 's1', amount: 50_000 }], depositOwnerId: 'sari' })
@@ -345,17 +345,17 @@ describe('the full-screen assign page', () => {
 
   it('shows "no longer exists" for an unknown payment', async () => {
     const db = await seedAssign()
-    const { user } = renderAt('/v2/payments/nope', db)
+    const { user } = renderAt('/payments/nope', db)
     expect(await screen.findByText('This payment no longer exists.')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Back to Payments' }))
-    expect(where()).toBe('/v2/payments')
+    expect(where()).toBe('/payments')
   })
 })
 
 describe('recording a payment by hand', () => {
   it('P-13 18 Oct 2.000.000 for Andi is matched to the 20 Oct bank line (counted once); leftover to Andi\'s deposit', async () => {
     const db = await seedHousehold(freshNewDb())
-    const { user } = renderAt('/v2/payments', db)
+    const { user } = renderAt('/payments', db)
     await user.click(await screen.findByRole('link', { name: '+ Record a payment by hand' }))
     expect(await screen.findByRole('region', { name: 'Record a payment' })).toBeTruthy()
     expect(screen.getByText('Recorded by hand. When the statement prints the same amount within 5 days, the two are matched and counted once.')).toBeTruthy()
@@ -375,7 +375,7 @@ describe('recording a payment by hand', () => {
     await user.click(within(screen.getByRole('group', { name: 'Leftover' })).getByRole('button', { name: 'Andi' }))
     await user.click(save())
 
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     expect(toast()).toBe("Saved and matched to the bank line of 20 Oct 2026. It's counted once.")
     const l = await loadLedger(db, 'bca')
     const hand = l.payments.find((p) => p.source === 'manual')!
@@ -395,7 +395,7 @@ describe('recording a payment by hand', () => {
 
   it('on a second card the card can be picked; the page resets for it', async () => {
     const db = await seedAssign()
-    const { user } = renderAt('/v2/payments/new', db)
+    const { user } = renderAt('/payments/new', db)
     await user.click(await screen.findByRole('button', { name: /^Card:/ }))
     await user.click(within(screen.getByRole('listbox', { name: 'Card' })).getByRole('option', { name: /Mandiri Pribadi/ }))
     await waitFor(() => expect(screen.getByRole('button', { name: /^Card: Mandiri Pribadi/ })).toBeTruthy())
@@ -407,7 +407,7 @@ describe('recording a payment by hand', () => {
 describe('payment actions', () => {
   it('P-15 the 5 Sep Bima payment: Keep waiting → "Still waiting", no longer missing', async () => {
     const db = await seedHousehold(freshNewDb(), householdWithHand())
-    const { user } = renderAt('/v2/payments', db)
+    const { user } = renderAt('/payments', db)
     await user.click(await screen.findByRole('tab', { name: /^Not on a statement/ }))
     await user.click(within(panel()).getByRole('link', { name: 'Rp 300.000 5 Sep 2026' }))
     const bank = await screen.findByRole('region', { name: 'At the bank' })
@@ -417,7 +417,7 @@ describe('payment actions', () => {
     expect(within(bank).queryByRole('button', { name: 'Paid to another card' })).toBeNull()
     expect(draftIssues(await loadLedger(db, 'bca'), 'bca-2026-09').missingPayments).toEqual(['hand-0905'])
     await user.click(within(bank).getByRole('button', { name: 'Keep waiting' }))
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     expect(toast()).toBe("OK. It's checked again when the next statement arrives.")
     const l = await loadLedger(db, 'bca')
     expect(draftIssues(l, 'bca-2026-09').missingPayments).toEqual([])
@@ -427,7 +427,7 @@ describe('payment actions', () => {
 
   it('P-17 Transfer failed, delete: asks first, says what becomes unpaid, then deletes', async () => {
     const db = await seedHousehold(freshNewDb(), householdWithHand())
-    const { user } = renderAt('/v2/payments/hand-0905', db)
+    const { user } = renderAt('/payments/hand-0905', db)
     await user.click(await screen.findByRole('button', { name: 'Transfer failed, delete' }))
     const sheet = screen.getByRole('dialog', { name: 'Delete this payment?' })
     expect(within(sheet).getByText('5 Sep 2026 · Rp 300.000')).toBeTruthy()
@@ -436,7 +436,7 @@ describe('payment actions', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Delete payment' }))
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }))
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     expect(toast()).toBe('Payment deleted')
     expect(await db.payments.get('hand-0905')).toBeUndefined()
   })
@@ -451,7 +451,7 @@ describe('payment actions', () => {
     const before = await loadLedger(db, 'bca')
     expect(draftIssues(before, OCT.id).final).toBe(true)
     expect(deleteEffect(before, 'hand')).toMatchObject({ drafts: ['Oct 2026'], unpaid: [{ before: 0, after: 300_000 }] })
-    const { user } = renderAt('/v2/payments/hand', db)
+    const { user } = renderAt('/payments/hand', db)
     expect(await screen.findByText("Matched to the bank's payment line, so the amount and date can't be changed.")).toBeTruthy()
     expect(screen.queryByLabelText('Date you transferred')).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Delete payment' }))
@@ -461,7 +461,7 @@ describe('payment actions', () => {
     expect(within(sheet).getByText('The bank line of 6 Oct 2026 (Rp 300.000) goes back to To assign.')).toBeTruthy()
     expect(within(sheet).getByText('The Oct 2026 statement goes back to Draft until the payment is assigned again.')).toBeTruthy()
     await user.click(within(sheet).getByRole('button', { name: 'Delete' }))
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     const after = await loadLedger(db, 'bca')
     expect(ownerBill(after, 'andi', OCT.id, TODAY).mustPay).toBe(300_000)
     expect(draftIssues(after, OCT.id).blockingPayments).toEqual(['line'])
@@ -473,7 +473,7 @@ describe('payment actions', () => {
     await db.statements.put({ ...OCT, id: 'bca-nov', statementDate: '2026-11-12', dueDate: '2026-11-28' })
     await db.transactions.put(tx('t1', OCT.id, '2026-10-03', 'IKEA', 300_000, 'andi'))
     await db.payments.put(pay('h', '2026-10-15', 300_000, { allocations: [{ txId: 't1', amount: 300_000 }], forOwnerIds: ['andi'] }))
-    const { user } = renderAt('/v2/payments/h', db)
+    const { user } = renderAt('/payments/h', db)
     const bank = await screen.findByRole('region', { name: 'At the bank' })
     expect(within(bank).getByText('Not on Nov 2026 statement')).toBeTruthy()
     await user.click(within(bank).getByRole('button', { name: 'Paid to another card' }))
@@ -481,7 +481,7 @@ describe('payment actions', () => {
     expect(within(within(sheet).getByLabelText('Becomes unpaid')).getByText('3 Oct 2026 · IKEA')).toBeTruthy()
     expect(within(sheet).getByText('300.000 left')).toBeTruthy()
     await user.click(within(sheet).getByRole('button', { name: /Mandiri Pribadi/ }))
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     expect(toast()).toBe('Moved to Mandiri Pribadi. Assign it there.')
     expect(await db.payments.get('h')).toMatchObject({ cardId: 'mdr', allocations: [], forOwnerIds: ['mdr-andi'], waiting: true })
     expect(ownerBill(await loadLedger(db, 'bca'), 'andi', OCT.id, TODAY).mustPay).toBe(300_000)
@@ -497,7 +497,7 @@ describe('payment actions', () => {
       pay('line', '2026-10-06', 300_000, { source: 'statement', statementId: OCT.id, allocations: [{ txId: 't1', amount: 300_000 }] }),
       pay('hand', '2026-10-05', 300_000, { forOwnerIds: ['andi'] }),
     ])
-    const { user } = renderAt('/v2/payments', db)
+    const { user } = renderAt('/payments', db)
     await user.click(await screen.findByRole('tab', { name: /^Possible duplicates · 1$/ }))
     expect(within(panel()).getByText('Same amount as the 6 Oct 2026 bank line')).toBeTruthy()
     await user.click(within(panel()).getByRole('link', { name: 'Rp 300.000 5 Oct 2026' }))
@@ -513,7 +513,7 @@ describe('payment actions', () => {
     await user.click(within(sheet).getByRole('button', { name: 'Cancel' }))
     await user.click(within(bank).getByRole('button', { name: 'Different transfers, keep both' }))
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Keep both' }))
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     expect(toast()).toBe('Kept both. This one waits for its own bank line.')
     expect(draftIssues(await loadLedger(db, 'bca'), OCT.id).possibleDuplicatePayments).toEqual([])
     expect(tab(/^Possible duplicates$/)).toBeTruthy()
@@ -526,21 +526,21 @@ describe('payment actions', () => {
       pay('line', '2026-10-06', 300_000, { source: 'statement', statementId: OCT.id }),
       pay('hand', '2026-10-05', 300_000, { linkedStatementLine: 'line', allocations: [{ txId: 't1', amount: 300_000 }] }),
     ])
-    renderAt('/v2/payments/line', db)
-    await waitFor(() => expect(where()).toBe('/v2/payments/hand'))
+    renderAt('/payments/line', db)
+    await waitFor(() => expect(where()).toBe('/payments/hand'))
     expect(await screen.findByText('Matched to Oct 2026 statement ✓')).toBeTruthy()
   })
 
   it('a double tap on Save writes one payment', async () => {
     const db = await seedAssign()
-    const { user } = renderAt('/v2/payments/new', db)
+    const { user } = renderAt('/payments/new', db)
     await user.type(await screen.findByLabelText('Amount'), '100000')
     fireEvent.change(screen.getByLabelText('Date you transferred'), { target: { value: '2026-10-15' } })
     await user.click(who('Andi'))
     await user.click(screen.getByRole('button', { name: 'TOKO SATU' }))
     fireEvent.click(save())
     fireEvent.click(save())
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     expect((await db.payments.toArray()).filter((p) => p.source === 'manual')).toHaveLength(1)
   })
 
@@ -548,19 +548,19 @@ describe('payment actions', () => {
     const db = await seedCards(freshNewDb())
     await db.payments.put(pay('u', '2026-10-01', 50_000, { source: 'unbilled', statementId: UNB }))
     expect(draftIssues(await loadLedger(db, 'bca'), OCT.id).notOnStatementPayments).toEqual(['u'])
-    const { user } = renderAt('/v2/payments/u', db)
+    const { user } = renderAt('/payments/u', db)
     const bank = await screen.findByRole('region', { name: 'At the bank' })
     expect(within(bank).getByText('Not on the Oct 2026 statement')).toBeTruthy()
     await user.click(within(bank).getByRole('button', { name: 'Delete it' }))
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Keep it' }))
     await user.click(within(bank).getByRole('button', { name: 'Keep waiting' }))
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     expect(draftIssues(await loadLedger(db, 'bca'), OCT.id).notOnStatementPayments).toEqual([])
   })
 
   it('a failed write shows its reason on the page', async () => {
     const db = await seedAssign()
-    const { user } = renderAt('/v2/payments/p5', db)
+    const { user } = renderAt('/payments/p5', db)
     await user.click(await findWho('Andi'))
     await user.click(screen.getByRole('button', { name: 'TOKO SATU' }))
     await db.payments.delete('p5')
@@ -581,7 +581,7 @@ describe('deposits', () => {
     const l0 = await loadLedger(db, 'bca')
     // D-03 the 10 Oct deposit goes first: 300.000 on Grab; the 12 Oct one pays 20.000 of Grab and 100.000 of Apotek.
     expect(ownerDeposits(l0, 'bca', ['sari']).map((d) => d.payments.map((p) => [p.payment.id, p.used, p.left]))).toEqual([[['d1', 300_000, 0], ['d2', 120_000, 80_000]]])
-    const { user } = renderAt('/v2/payments', db)
+    const { user } = renderAt('/payments', db)
     await user.click(await screen.findByRole('tab', { name: /^Deposits · 1$/ }))
     const sari = within(panel()).getByRole('region', { name: "Sari's deposit" })
     expect(within(sari).getByText('Rp 80.000')).toBeTruthy()
@@ -597,7 +597,7 @@ describe('deposits', () => {
     expect(screen.getByText('Nothing unpaid for Sari up to the payment date.')).toBeTruthy()
     await user.click(within(screen.getByRole('group', { name: 'Leftover' })).getByRole('button', { name: 'Sari' }))
     await user.click(save())
-    await waitFor(() => expect(where()).toBe('/v2/payments'))
+    await waitFor(() => expect(where()).toBe('/payments'))
     const l1 = await loadLedger(db, 'bca')
     const s1 = computeMoney(l1)
     expect([paidOf(s1, 'c1'), paidOf(s1, 'c2'), ownerDepositLeft(s1, 'sari')]).toEqual([320_000, 100_000, 400_000])
@@ -617,12 +617,12 @@ describe('deposits', () => {
 describe('Transactions → Payments', () => {
   it('F-02 / F-07 the Draft panel\'s payment issues open that payment', async () => {
     const db = await seedHousehold(freshNewDb(), householdWithHand())
-    const { user } = renderAt('/v2/transactions', db)
+    const { user } = renderAt('/transactions', db)
     await user.click(await screen.findByRole('button', { name: /^Statement:/ }))
     await user.click(within(screen.getByRole('listbox', { name: 'Statement' })).getByRole('option', { name: /Sep 2026 statement/ }))
     const draft = await screen.findByLabelText('Draft or Final')
     await user.click(within(draft).getByRole('link', { name: /Isn't on a statement: 5 Sep 2026/ }))
-    expect(where()).toBe('/v2/payments/hand-0905')
+    expect(where()).toBe('/payments/hand-0905')
     expect(await screen.findByRole('region', { name: 'Assign payment' })).toBeTruthy()
   })
 })

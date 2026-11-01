@@ -40,10 +40,10 @@ afterEach(() => {
 })
 
 const ROUTES = {
-  '/v2/bill': <BillPage />,
-  '/v2/bill/person/:ownerId': <PersonPage />,
-  '/v2/transactions': <TransactionsPage />,
-  '/v2/payments/*': <PaymentsRoutes />,
+  '/bill': <BillPage />,
+  '/bill/person/:ownerId': <PersonPage />,
+  '/transactions': <TransactionsPage />,
+  '/payments/*': <PaymentsRoutes />,
 }
 
 async function household(): Promise<{ db: NewDb; cards: Seeded }> {
@@ -54,7 +54,7 @@ async function household(): Promise<{ db: NewDb; cards: Seeded }> {
 }
 
 /** Opens Bill on `card` (selected card pref) and waits for the hero. */
-async function openBill(db: NewDb, cardId: string, at = '/v2/bill') {
+async function openBill(db: NewDb, cardId: string, at = '/bill') {
   prefSet(PREF_KEYS.selectedCard, cardId)
   const r = renderRoutes(ROUTES, at, { db })
   await screen.findByLabelText('To pay')
@@ -220,7 +220,7 @@ describe('person detail', () => {
       const b = d.bill(name)
       await user.click(ownerRow(name))
       await screen.findByRole('heading', { name })
-      expect(location()).toBe(`/v2/bill/person/${cards.owners.bca[name]}?s=${d.s}`)
+      expect(location()).toBe(`/bill/person/${cards.owners.bca[name]}?s=${d.s}`)
       expect(big()).toBe(b.settled ? 'Paid ✓' : rp(b.mustPay))
       expect(num(heroLines()['Nov 2026 charges'])).toBe(b.charges)
       expect(num(heroLines()['Already paid'])).toBe(0 - b.alreadyPaid)
@@ -259,7 +259,7 @@ describe('person detail', () => {
     const plan = l.plans.find((p) => p.name.toLowerCase().includes('blibli') || p.monthly === 729_367)!
     expect(plan).toMatchObject({ monthly: 729_367, total: 6, ownerId: sari })
 
-    renderRoutes(ROUTES, `/v2/bill/person/${sari}?s=${oct.id}`, { db })
+    renderRoutes(ROUTES, `/bill/person/${sari}?s=${oct.id}`, { db })
     const box = await screen.findByLabelText('Installments still to come')
     expect(within(box).getByText(/5 months left × 729\.367/)).toBeTruthy()
     expect(within(box).getByText(fmt(5 * 729_367))).toBeTruthy()
@@ -267,7 +267,7 @@ describe('person detail', () => {
     expect(ownerBill(l, sari, oct.id, todayIso()).installmentsToCome.find((f) => f.planId === plan.id)!.amount).toBe(3_646_835)
     cleanup()
 
-    renderRoutes(ROUTES, `/v2/bill/person/${sari}?s=${nov.id}`, { db })
+    renderRoutes(ROUTES, `/bill/person/${sari}?s=${nov.id}`, { db })
     const box2 = await screen.findByLabelText('Installments still to come')
     expect(within(box2).getByText(/4 months left × 729\.367/)).toBeTruthy()
     expect(within(box2).getByText(fmt(4 * 729_367))).toBeTruthy()
@@ -286,7 +286,7 @@ describe('person detail', () => {
     // Live: the Oct bill (net of any carried credit) drops by what the late payment paid.
     expect(before.mustPay - before.credit - (after.mustPay - after.credit)).toBe(1_150_000)
 
-    renderRoutes(ROUTES, `/v2/bill/person/${medis}?s=${oct.id}`, { db })
+    renderRoutes(ROUTES, `/bill/person/${medis}?s=${oct.id}`, { db })
     await screen.findByRole('heading', { name: 'Medis' })
     expect(big()).toBe(after.settled ? 'Paid ✓' : rp(after.mustPay))
     const row = screen.getByLabelText('RS PONDOK INDAH 1.150.000')
@@ -296,14 +296,14 @@ describe('person detail', () => {
     expect(within(pays).getByText(/30 Oct 2026 · PEMBAYARAN/)).toBeTruthy()
     expect(within(pays).getByText('after due')).toBeTruthy()
     // Each payment opens its assign page (Slice 9).
-    expect(within(pays).getByRole('link', { name: /30 Oct 2026 · PEMBAYARAN/ }).getAttribute('href')).toBe(`/v2/payments/${late.id}`)
+    expect(within(pays).getByRole('link', { name: /30 Oct 2026 · PEMBAYARAN/ }).getAttribute('href')).toBe(`/payments/${late.id}`)
   })
 
   it('M-05 a refund lowers the owner\'s charges and shows as Refund; M-06 reversal and moved purchase count 0', async () => {
     const { db, cards } = await household()
     const m = await domain(db, cards, 'mandiri', (await loadLedger(db, cards.mandiri)).statements.find((s) => s.kind === 'billed' && s.statementDate === '2026-10-11')!.id)
     const rumah = cards.owners.mandiri.Rumah
-    renderRoutes(ROUTES, `/v2/bill/person/${rumah}?s=${m.s}`, { db })
+    renderRoutes(ROUTES, `/bill/person/${rumah}?s=${m.s}`, { db })
     await screen.findByRole('heading', { name: 'Rumah' })
     const refunds = screen.getByLabelText('Refunds')
     expect(within(refunds).getByText('Refund')).toBeTruthy()
@@ -315,7 +315,7 @@ describe('person detail', () => {
     // BCA Oct: the Blibli reversal is Sari's and not counted; Sep's moved purchase is not counted either.
     const b = await loadLedger(db, cards.bca)
     const [, , sep, oct] = billedOf(b, cards.bca)
-    renderRoutes(ROUTES, `/v2/bill/person/${cards.owners.bca.Sari}?s=${oct.id}`, { db })
+    renderRoutes(ROUTES, `/bill/person/${cards.owners.bca.Sari}?s=${oct.id}`, { db })
     await screen.findByRole('heading', { name: 'Sari' })
     const dead = screen.getByLabelText('Not counted')
     expect(within(dead).getAllByText('Not counted')).toHaveLength(2)
@@ -365,7 +365,7 @@ describe('person detail', () => {
     await db.payments.put({ ...line, depositOwnerId: sari })
     await db.transactions.put(tx(cards.bca, nov.id, 'dep1', '2026-11-03', 'WATSONS PIM', 320_000, sari))
 
-    renderRoutes(ROUTES, `/v2/bill/person/${sari}?s=${nov.id}`, { db })
+    renderRoutes(ROUTES, `/bill/person/${sari}?s=${nov.id}`, { db })
     await screen.findByRole('heading', { name: 'Sari' })
     expect(heroLines()['Deposit waiting for new charges']).toBe('1.180.000')
     const deposits = screen.getByLabelText('Deposits')
@@ -384,8 +384,8 @@ describe('person detail', () => {
   })
 
   it('person links encode the owner id; "No owner" uses a sentinel that cannot be a real id', async () => {
-    expect(personPath('own er/1?x', 's 1')).toBe('/v2/bill/person/own%20er%2F1%3Fx?s=s%201')
-    expect(personPath(null, 'oct')).toBe(`/v2/bill/person/${NO_OWNER}?s=oct`)
+    expect(personPath('own er/1?x', 's 1')).toBe('/bill/person/own%20er%2F1%3Fx?s=s%201')
+    expect(personPath(null, 'oct')).toBe(`/bill/person/${NO_OWNER}?s=oct`)
     expect(NO_OWNER).toBe('_none')
     const db = freshNewDb()
     const cardId = await saveCard(db, { name: 'Kartu Aneh', bank: 'BNI', last4: '0003', statementDay: '12', palette: 'blue', owners: [{ name: 'Andi', color: '#000' }], defaultIndex: 0 })
@@ -398,7 +398,7 @@ describe('person detail', () => {
     expect(big()).toBe(rp(5_000))
   })
 
-  it('an unknown person says so; "No owner" rows have their own detail; Open Payments links to /v2/payments', async () => {
+  it('an unknown person says so; "No owner" rows have their own detail; Open Payments links to /payments', async () => {
     const { db, cards } = await household()
     const l = await loadLedger(db, cards.bca)
     const nov = latestBilled(l, cards.bca)!
@@ -406,19 +406,19 @@ describe('person detail', () => {
     const { user } = await openBill(db, cards.bca)
     await user.click(ownerRow('No owner'))
     await screen.findByRole('heading', { name: 'No owner' })
-    expect(location()).toBe(`/v2/bill/person/_none?s=${nov.id}`)
+    expect(location()).toBe(`/bill/person/_none?s=${nov.id}`)
     expect(big()).toBe(rp(30_000))
     await user.click(screen.getByRole('link', { name: 'Open Payments' }))
-    expect(location()).toBe('/v2/payments')
+    expect(location()).toBe('/payments')
     cleanup()
 
-    const r = renderRoutes(ROUTES, `/v2/bill/person/${cards.owners.bca.Andi}?s=${nov.id}`, { db })
+    const r = renderRoutes(ROUTES, `/bill/person/${cards.owners.bca.Andi}?s=${nov.id}`, { db })
     await screen.findByRole('heading', { name: 'Andi' })
     await r.user.click(screen.getByRole('link', { name: 'Open Payments' }))
-    expect(location()).toBe('/v2/payments')
+    expect(location()).toBe('/payments')
     cleanup()
 
-    renderRoutes(ROUTES, `/v2/bill/person/nobody?s=${nov.id}`, { db })
+    renderRoutes(ROUTES, `/bill/person/nobody?s=${nov.id}`, { db })
     expect(await screen.findByText('This person is not on the BCA Keluarga card.')).toBeTruthy()
   })
 })
@@ -435,9 +435,9 @@ describe('Draft / Final on Bill', () => {
     expect(within(panel).getByText(`Draft · ${issues.count} to finish`)).toBeTruthy()
     expect(within(panel).getByText('1 row needs a check')).toBeTruthy()
     expect(within(panel).getByText('2 payments not assigned (Rp 3.500.000)')).toBeTruthy()
-    expect(within(panel).getByRole('link', { name: 'Assign' }).getAttribute('href')).toBe(`/v2/payments/${issues.blockingPayments[0]}`)
+    expect(within(panel).getByRole('link', { name: 'Assign' }).getAttribute('href')).toBe(`/payments/${issues.blockingPayments[0]}`)
     await user.click(within(panel).getByRole('link', { name: 'Review' }))
-    expect(location()).toBe(`/v2/transactions?statement=${d.s}&status=check`)
+    expect(location()).toBe(`/transactions?statement=${d.s}&status=check`)
     // Transactions opens on that statement with the Needs check filter.
     expect(await screen.findByRole('button', { name: 'Status: Needs check' })).toBeTruthy()
     expect(await screen.findByRole('button', { name: 'Statement: Nov 2026 statement' })).toBeTruthy()
@@ -469,7 +469,7 @@ describe('Draft / Final on Bill', () => {
     const { user } = await openBill(db, cards.bca)
     const panel = screen.getByLabelText('Draft or Final')
     expect(within(panel).getByText("1 payment you recorded isn't on a statement")).toBeTruthy()
-    expect(within(panel).getAllByRole('link', { name: 'Resolve' })[0].getAttribute('href')).toBe('/v2/payments/hand-bima')
+    expect(within(panel).getAllByRole('link', { name: 'Resolve' })[0].getAttribute('href')).toBe('/payments/hand-bima')
     // The Assign link opens that payment's full-screen assign page (Slice 9).
     const assign = within(panel).getByRole('link', { name: 'Assign' })
     const target = assign.getAttribute('href')!
@@ -490,7 +490,7 @@ describe('Draft / Final on Bill', () => {
     const panel = screen.getByLabelText('Draft or Final')
     expect(within(panel).getByText("1 unbilled charge didn't show up on the Nov 2026 statement")).toBeTruthy()
     await user.click(within(panel).getByRole('link', { name: 'Resolve' }))
-    expect(location()).toBe(`/v2/transactions?statement=${unb}&row=ghost`)
+    expect(location()).toBe(`/transactions?statement=${unb}&row=ghost`)
     // Transactions opens Unbilled with that row's sheet.
     expect(await screen.findByRole('dialog', { name: /GRAB\* A-1PENDING/ })).toBeTruthy()
   })
@@ -505,7 +505,7 @@ describe('Draft / Final on Bill', () => {
     await openBill(db, cards.bca)
     const panel = screen.getByLabelText('Draft or Final')
     expect(within(panel).getByText('Final, but totals differ from the bank by Rp 1')).toBeTruthy()
-    expect(within(panel).getByRole('link', { name: 'Open in Transactions' }).getAttribute('href')).toBe(`/v2/transactions?statement=${nov.id}`)
+    expect(within(panel).getByRole('link', { name: 'Open in Transactions' }).getAttribute('href')).toBe(`/transactions?statement=${nov.id}`)
     expect(screen.getByLabelText('Totals warning').textContent).toBe('Totals differ from the bank by Rp 1.')
   })
 
@@ -533,7 +533,7 @@ describe('Draft / Final on Bill', () => {
     const { user } = await openBill(db, cards.bca)
     const panel = screen.getByLabelText('Draft or Final')
     expect(within(panel).getByText('Negative fee: BIAYA ADM KARTU REBATE −15.000')).toBeTruthy()
-    expect(within(panel).getByRole('link', { name: 'Fix' }).getAttribute('href')).toBe(`/v2/transactions?statement=${nov.id}&row=rebate`)
+    expect(within(panel).getByRole('link', { name: 'Fix' }).getAttribute('href')).toBe(`/transactions?statement=${nov.id}&row=rebate`)
     await user.click(within(panel).getByRole('button', { name: 'Accept as rebate' }))
     await waitFor(() => expect(within(screen.getByLabelText('Draft or Final')).getByText('Final ✓')).toBeTruthy())
     expect(await screen.findByText('Accepted as a rebate')).toBeTruthy()
@@ -562,7 +562,7 @@ describe('Draft / Final on Bill', () => {
     const nov = latestBilled(await loadLedger(db, cards.bca), cards.bca)!
     await db.transactions.put(tx(cards.bca, nov.id, 'rebate', '2026-11-12', 'BUNGA KOREKSI', -2_500, cards.owners.bca.Keluarga, { kind: 'interest' }))
     prefSet(PREF_KEYS.selectedCard, cards.bca)
-    const { user } = renderRoutes(ROUTES, `/v2/transactions?statement=${nov.id}&row=rebate`, { db })
+    const { user } = renderRoutes(ROUTES, `/transactions?statement=${nov.id}&row=rebate`, { db })
     const sheet = await screen.findByRole('dialog', { name: /BUNGA KOREKSI/ })
     await user.click(within(sheet).getByText('Fix amount, date or description'))
     await user.click(within(sheet).getByRole('button', { name: /^Fix the sign/ }))
@@ -575,22 +575,22 @@ describe('Draft / Final on Bill', () => {
 
 describe('empty states and look', () => {
   it('no cards: asks to add one', async () => {
-    renderRoutes(ROUTES, '/v2/bill')
+    renderRoutes(ROUTES, '/bill')
     expect(await screen.findByText('No cards yet. Add your card, its owners and its palette first.')).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Add a card' }).getAttribute('href')).toBe('/v2/settings')
-    expect(screen.getByRole('link', { name: 'Settings' }).getAttribute('href')).toBe('/v2/settings')
+    expect(screen.getByRole('link', { name: 'Add a card' }).getAttribute('href')).toBe('/settings')
+    expect(screen.getByRole('link', { name: 'Settings' }).getAttribute('href')).toBe('/settings')
   })
 
   it('a card without statements: asks to import; its tile shows no total', async () => {
     const db = freshNewDb()
     await saveCard(db, { name: 'Kartu Baru', bank: 'BNI', last4: '0001', statementDay: '', palette: 'green', owners: [{ name: 'Andi', color: '#000' }], defaultIndex: 0 })
-    renderRoutes(ROUTES, '/v2/bill', { db })
+    renderRoutes(ROUTES, '/bill', { db })
     expect(await screen.findByText('No statements on this card yet.')).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Import the first one' }).getAttribute('href')).toBe('/v2/import')
+    expect(screen.getByRole('link', { name: 'Import the first one' }).getAttribute('href')).toBe('/import')
     const tile = screen.getByRole('button', { name: 'Kartu Baru' })
     expect(within(tile).getByText('No statement yet')).toBeTruthy()
     expect(within(tile).getByText('—')).toBeTruthy()
-    expect(screen.getByRole('link', { name: '+ Add card' }).getAttribute('href')).toBe('/v2/settings')
+    expect(screen.getByRole('link', { name: '+ Add card' }).getAttribute('href')).toBe('/settings')
   })
 
   it('M-11 all paid: the hero and each person say "Paid ✓", not 0', async () => {
@@ -601,7 +601,7 @@ describe('empty states and look', () => {
     await db.statements.put({ id: 'lunas-oct', cardId, kind: 'billed', statementDate: '2026-10-12', dueDate: '2026-10-28', printed: { prevBalance: 0, credits: 0, purchases: 90_000, feesInterest: 0, newBalance: 90_000 } })
     await db.transactions.put(tx(cardId, 'lunas-oct', 'k1', '2026-10-03', 'KOPI', 90_000, andi))
     await db.payments.put({ id: 'lunas-pay', cardId, source: 'manual', date: '2026-10-05', amount: 90_000, allocations: [{ txId: 'k1', amount: 90_000 }] })
-    renderRoutes(ROUTES, '/v2/bill', { db })
+    renderRoutes(ROUTES, '/bill', { db })
     await screen.findByLabelText('To pay')
     expect(big()).toBe('Paid ✓')
     expect(screen.getByText('Everything on this bill is paid.')).toBeTruthy()
@@ -616,7 +616,7 @@ describe('empty states and look', () => {
       prefSet(PREF_KEYS.look, look)
       await openBill(db, cards.bca)
       const tile = screen.getByRole('button', { name: /^BCA Keluarga / })
-      expect(tile.style.getPropertyValue('--c')).toBe('var(--tile)')
+      expect(tile.style.getPropertyValue('--fill')).toBe('var(--tile)')
       await waitFor(() => expect(token('--tile')).not.toBe(''))
       expect(token('--hero')).not.toBe(token('--tile'))
       cleanup()

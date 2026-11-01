@@ -11,7 +11,7 @@ import { BillPage, personPath } from '../bill/BillPage'
 import { PersonPage } from '../bill/PersonPage'
 import { localIsoDate } from '../data/today'
 
-const ROUTES = { '/v2/bill': <BillPage />, '/v2/bill/person/:ownerId': <PersonPage /> }
+const ROUTES = { '/bill': <BillPage />, '/bill/person/:ownerId': <PersonPage /> }
 const NOV = 'bca-2026-11'
 const ctx = () => ({ ledger: householdLedger(), card: { name: 'BCA Keluarga' }, owners: BCA_OWNERS.map((name) => ({ id: name, name })), statementId: NOV, today: localIsoDate() })
 const preview = () => screen.getByLabelText('Message preview').textContent
@@ -25,7 +25,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-async function open(at = '/v2/bill') {
+async function open(at = '/bill') {
   const db = await seedHousehold(freshNewDb())
   const r = renderRoutes(ROUTES, at, { db })
   return r

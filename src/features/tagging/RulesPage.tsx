@@ -1,7 +1,5 @@
 // Settings → Tagging rules (per card) + "Analyze my labels".
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { BackIcon } from '../../components/icons'
 import { Picker } from '../../components/Picker'
 import { useToast } from '../../components/Toast'
 import { describeMatch } from '../../domain/tagging/rules'
@@ -10,6 +8,8 @@ import { listRules } from '../../data/rules'
 import { useData } from '../data/DataContext'
 import { useDbQuery } from '../data/useDbQuery'
 import { useAppearance } from '../look/Appearance'
+import { PATHS } from '../shell/paths'
+import { TopBar } from '../shell/TopBar'
 import { AnalyzeSheet } from './AnalyzeSheet'
 import { RuleSheet } from './RuleSheet'
 
@@ -18,7 +18,6 @@ type Open = { kind: 'rule'; rule?: TagRule } | { kind: 'analyze' } | null
 export function RulesPage() {
   const { db } = useData()
   const toast = useToast()
-  const navigate = useNavigate()
   const { cards, selected, selectCard } = useAppearance()
   const [open, setOpen] = useState<Open>(null)
   const cardId = selected?.card.id
@@ -35,13 +34,7 @@ export function RulesPage() {
 
   return (
     <div className="screen">
-      <div className="top">
-        <button type="button" className="iconbtn" aria-label="Back" onClick={() => navigate('/v2/settings')}>
-          <BackIcon />
-        </button>
-        <h1>Tagging rules</h1>
-        <span style={{ width: 38 }} />
-      </div>
+      <TopBar title="Tagging rules" backTo={PATHS.settings} gear={false} />
 
       {cards === undefined ? (
         <div className="small muted">Loading…</div>

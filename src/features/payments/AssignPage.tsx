@@ -35,7 +35,7 @@ import { dayLabel, draftWarning, fmt, statementName } from '../transactions/view
 import { ownerLook, Pill } from './PaymentsPage'
 import { bankLabel, deleteEffect, typedRupiah, unbilledNotOnStatement } from './view'
 
-const LIST = '/v2/payments'
+const LIST = '/payments'
 const today = () => new Date().toISOString().slice(0, 10)
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e))
 

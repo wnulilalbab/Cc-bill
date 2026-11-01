@@ -1,5 +1,5 @@
-// /v2/share: a small screen to reach the share sheet until the Bill screen (Slice 10) carries the Share buttons.
-// Card and statement pickers, one row per person with what they must pay (ownerBill), "Share" on each row and
+// /share: every person's bill of one statement, ready to share (the Bill and person screens also carry Share).
+// Card bar and statement picker, one row per person with what they must pay (ownerBill), "Share" on each row and
 // "Share all".
 import { useMemo, useState } from 'react'
 import { Picker } from '../../components/Picker'
@@ -10,8 +10,12 @@ import { loadLedger } from '../../data/repo'
 import { useData } from '../data/DataContext'
 import { localIsoDate } from '../data/today'
 import { useDbQuery } from '../data/useDbQuery'
+import { CardBar } from '../cards/CardBar'
+import { plainTiles } from '../cards/CardCarousel'
 import { useAppearance } from '../look/Appearance'
 import { rp } from '../settings/format'
+import { PATHS } from '../shell/paths'
+import { TopBar } from '../shell/TopBar'
 import { dayLabel, defaultStatementId, statementName, statementsForPicker } from '../transactions/view'
 import { ShareSheet } from './ShareSheet'
 
@@ -33,9 +37,7 @@ export function SharePage({ today = localIsoDate() }: { today?: string }) {
   if (!selected || !cardId) {
     return (
       <div className="screen">
-        <div className="top">
-          <h1>Share</h1>
-        </div>
+        <TopBar title="Share" backTo={PATHS.bill} />
         <div className="box empty">Add a card in Settings first.</div>
       </div>
     )
@@ -44,16 +46,8 @@ export function SharePage({ today = localIsoDate() }: { today?: string }) {
 
   return (
     <div className="screen">
-      <div className="top">
-        <h1>Share</h1>
-      </div>
-      <Picker
-        title="Card"
-        value={cardId}
-        options={cards.map((c) => ({ value: c.card.id, label: c.card.name, sub: c.card.bank }))}
-        onChange={selectCard}
-        field
-      />
+      <TopBar title="Share" backTo={PATHS.bill} />
+      <CardBar tiles={plainTiles(cards)} selectedId={cardId} onSelect={selectCard} />
       {!ledger ? (
         <div className="small muted">Loading…</div>
       ) : !statementId || !bill ? (

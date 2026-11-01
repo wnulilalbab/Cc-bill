@@ -35,8 +35,8 @@ export function Picker({ title, value, options, onChange, field }: PickerProps) 
   return (
     <>
       <button type="button" className={`pick${field ? ' field-pick' : ''}`} aria-label={`${title}: ${current?.label ?? 'Choose'}`} aria-haspopup="listbox" onClick={() => setOpen(true)}>
+        {/* The chevron is drawn by CSS (.pick::after), as in the prototype. */}
         <span>{current?.label ?? 'Choose'}</span>
-        <span aria-hidden="true">▾</span>
       </button>
       {open && (
         <Sheet title={title} onClose={() => setOpen(false)} layer="picker">

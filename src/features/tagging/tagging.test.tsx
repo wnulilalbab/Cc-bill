@@ -153,8 +153,8 @@ describe('Settings → Tagging rules', () => {
     const { user } = renderScreen(
       <Routes>
         <Route path="/" element={<SettingsPage />} />
-        <Route path="/v2/settings" element={<SettingsPage />} />
-        <Route path="/v2/rules" element={<RulesPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/rules" element={<RulesPage />} />
       </Routes>,
       { db },
     )

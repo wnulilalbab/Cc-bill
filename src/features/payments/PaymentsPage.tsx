@@ -1,19 +1,21 @@
-// Payments (docs/intent/phase-1.md §7; layout and wording from the prototype): card picker, the tabs To assign /
+// Payments (docs/intent/phase-1.md §7; layout and wording from the prototype): card bar, the tabs To assign /
 // Assigned / Not on a statement / Possible duplicates / Deposits, each payment opening the full-screen assign page,
 // and "+ Record a payment by hand".
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Picker } from '../../components/Picker'
 import { computeMoney } from '../../domain/amounts'
 import type { Ledger, Payment } from '../../domain/types'
 import type { OwnerRecord } from '../../data/cards'
 import { loadLedger } from '../../data/repo'
 import { useData } from '../data/DataContext'
 import { useDbQuery } from '../data/useDbQuery'
+import { CardBar } from '../cards/CardBar'
+import { plainTiles } from '../cards/CardCarousel'
 import { useAppearance } from '../look/Appearance'
 import { ownerColor } from '../look/palettes'
 import { OwnerChip } from '../settings/SettingsPage'
 import { rp } from '../settings/format'
+import { TopBar } from '../shell/TopBar'
 import { dayLabel, fmt } from '../transactions/view'
 import { allocLabel, bankLabel, ownerDeposits, paymentLists, paymentOwners, sourceLine, TAB_LABEL, toAssignTotal, type Label, type ListTab, type PaymentsTab } from './view'
 
@@ -63,13 +65,7 @@ export function PaymentsPage() {
   return (
     <div className="screen">
       <Header />
-      <Picker
-        title="Card"
-        value={cardId}
-        options={cards.map((c) => ({ value: c.card.id, label: c.card.name, sub: `${c.card.bank}${c.card.last4 ? ` •••• ${c.card.last4}` : ''}` }))}
-        onChange={selectCard}
-        field
-      />
+      <CardBar tiles={plainTiles(cards)} selectedId={cardId} onSelect={selectCard} />
       <div className="note">
         Payments come in by themselves from statements and unbilled screenshots. Tell the app what each one paid for. You only record one by hand if you can&apos;t
         wait for the bank.
@@ -99,7 +95,7 @@ export function PaymentsPage() {
         </div>
       )}
 
-      <Link className="btn ghost" to="/v2/payments/new">
+      <Link className="btn ghost" to="/payments/new">
         + Record a payment by hand
       </Link>
     </div>
@@ -107,16 +103,7 @@ export function PaymentsPage() {
 }
 
 function Header() {
-  return (
-    <>
-      <div className="top">
-        <h1>Payments</h1>
-      </div>
-      <Link className="note" to="/payments">
-        Old payments screen
-      </Link>
-    </>
-  )
+  return <TopBar title="Payments" />
 }
 
 function Who({ ledger, payment, owners }: { ledger: Ledger; payment: Payment; owners: readonly OwnerRecord[] }) {
@@ -136,7 +123,7 @@ function Who({ ledger, payment, owners }: { ledger: Ledger; payment: Payment; ow
 
 function PaymentRow({ payment: p, ledger, owners, state }: { payment: Payment; ledger: Ledger; owners: readonly OwnerRecord[]; state: ReturnType<typeof computeMoney> }) {
   return (
-    <Link className="orow" to={`/v2/payments/${encodeURIComponent(p.id)}`} aria-label={`${rp(p.amount)} ${dayLabel(p.date)}`}>
+    <Link className="orow" to={`/payments/${encodeURIComponent(p.id)}`} aria-label={`${rp(p.amount)} ${dayLabel(p.date)}`}>
       <div className="row">
         <span className="amt num b">{rp(p.amount)}</span>
         <span className="xs muted">{dayLabel(p.date)}</span>
@@ -164,7 +151,7 @@ function DepositCard({ deposit: d, owners }: { deposit: ReturnType<typeof ownerD
         </span>
       </div>
       {d.payments.map(({ payment, kept, used, left }) => (
-        <Link key={payment.id} className="row small" to={`/v2/payments/${encodeURIComponent(payment.id)}`}>
+        <Link key={payment.id} className="row small" to={`/payments/${encodeURIComponent(payment.id)}`}>
           <span>
             {dayLabel(payment.date)} · kept {fmt(kept)}
           </span>

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Share sheet and /v2/share (docs/test-plan.md S-01..S-06). Synthetic household (fictional), see test/payments/household.ts.
+// Share sheet and /share (docs/test-plan.md S-01..S-06). Synthetic household (fictional), see test/payments/household.ts.
 import 'fake-indexeddb/auto'
 import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import type { UserEvent } from '@testing-library/user-event'
@@ -57,7 +57,7 @@ async function choose(user: UserEvent, title: string, option: string) {
   await user.click(match)
 }
 
-describe('/v2/share', () => {
+describe('/share', () => {
   it('S-01 lists what each person must pay (= ownerBill) and opens one person in Bahasa', async () => {
     const { user } = await openPage()
     const rows = within(screen.getByLabelText('By person'))
