@@ -41,5 +41,7 @@ describe('money helpers', () => {
     expect(canAcceptSign('interest', 1)).toBe(false)
     for (const kind of ['purchase', 'installment', 'refund', 'reversal', 'payment']) expect(canAcceptSign(kind, -1)).toBe(false)
     expect(signContradicts('fee', -1)).toBe(true)
+    expect(signContradicts('fee', 0)).toBe(false)
+    expect(signContradicts('refund', 0)).toBe(false)
   })
 })
