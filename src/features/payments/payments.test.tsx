@@ -59,8 +59,6 @@ const left = () => screen.getByLabelText('Left to assign').textContent
 const save = () => screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement
 const tab = (name: RegExp) => screen.getByRole('tab', { name })
 const panel = () => screen.getByRole('tabpanel')
-/** A card in the card carousel. */
-const cardTile = (name: string) => within(screen.getByRole('group', { name: 'Cards' })).getByRole('button', { name })
 const amountFor = (title: string) => screen.getByRole('textbox', { name: `Amount for ${title}` }) as HTMLInputElement
 /** Owner chips of "Who is this payment for?" (the leftover's deposit chips carry the same names). */
 const whoGroup = () => screen.getByRole('group', { name: 'Who is this payment for?' })
@@ -488,8 +486,7 @@ describe('payment actions', () => {
     expect(await db.payments.get('h')).toMatchObject({ cardId: 'mdr', allocations: [], forOwnerIds: ['mdr-andi'], waiting: true })
     expect(ownerBill(await loadLedger(db, 'bca'), 'andi', OCT.id, TODAY).mustPay).toBe(300_000)
     // The list now shows Mandiri, where it waits to be assigned.
-    await waitFor(() => expect(cardTile('Mandiri Pribadi').getAttribute('aria-pressed')).toBe('true'))
-    expect(cardTile('BCA Keluarga').getAttribute('aria-pressed')).toBe('false')
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Card: Mandiri Pribadi/ })).toBeTruthy())
     expect(await within(panel()).findByRole('link', { name: 'Rp 300.000 15 Oct 2026' })).toBeTruthy()
   })
 

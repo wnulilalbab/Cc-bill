@@ -1,4 +1,4 @@
-// Payments (docs/intent/phase-1.md §7; layout and wording from the prototype): card carousel, the tabs To assign /
+// Payments (docs/intent/phase-1.md §7; layout and wording from the prototype): card bar, the tabs To assign /
 // Assigned / Not on a statement / Possible duplicates / Deposits, each payment opening the full-screen assign page,
 // and "+ Record a payment by hand".
 import { useMemo, useState } from 'react'
@@ -9,7 +9,8 @@ import type { OwnerRecord } from '../../data/cards'
 import { loadLedger } from '../../data/repo'
 import { useData } from '../data/DataContext'
 import { useDbQuery } from '../data/useDbQuery'
-import { CardCarousel, plainTiles } from '../cards/CardCarousel'
+import { CardBar } from '../cards/CardBar'
+import { plainTiles } from '../cards/CardCarousel'
 import { useAppearance } from '../look/Appearance'
 import { ownerColor } from '../look/palettes'
 import { OwnerChip } from '../settings/SettingsPage'
@@ -64,7 +65,7 @@ export function PaymentsPage() {
   return (
     <div className="screen">
       <Header />
-      <CardCarousel tiles={plainTiles(cards)} selectedId={cardId} onSelect={selectCard} />
+      <CardBar tiles={plainTiles(cards)} selectedId={cardId} onSelect={selectCard} />
       <div className="note">
         Payments come in by themselves from statements and unbilled screenshots. Tell the app what each one paid for. You only record one by hand if you can&apos;t
         wait for the bank.

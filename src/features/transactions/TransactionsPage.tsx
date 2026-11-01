@@ -1,4 +1,4 @@
-// Transactions (docs/intent/phase-1.md §6; layout and wording from the prototype): card carousel, statement picker,
+// Transactions (docs/intent/phase-1.md §6; layout and wording from the prototype): card bar, statement picker,
 // search, filters, rows grouped by day with owner / Check / status, totals for what is shown, Draft/Final with jump
 // links, the row sheet, bulk "Set owner" / "Mark reviewed", and "+ Add a missing transaction".
 import { useMemo, useState, type ReactNode } from 'react'
@@ -19,7 +19,8 @@ import { useAppearance } from '../look/Appearance'
 import { ownerColor } from '../look/palettes'
 import { OwnerChip } from '../settings/SettingsPage'
 import { rp } from '../settings/format'
-import { CardCarousel, plainTiles } from '../cards/CardCarousel'
+import { CardBar } from '../cards/CardBar'
+import { plainTiles } from '../cards/CardCarousel'
 import { TopBar } from '../shell/TopBar'
 import { TagSheet } from '../tagging/TagSheet'
 import { AddRowSheet } from './AddRowSheet'
@@ -122,7 +123,7 @@ export function TransactionsPage() {
         </button>
       </Header>
 
-      <CardCarousel
+      <CardBar
         tiles={plainTiles(cards)}
         selectedId={cardId}
         onSelect={(id) => {

@@ -9,8 +9,7 @@ import { saveCard } from '../../data/cards'
 import { freshNewDb } from '../../../test/data/oldDb'
 import { renderScreen } from '../../test-utils/ui'
 import { PREF_KEYS, prefGet } from '../look/prefs'
-import { PaymentsPage } from '../payments/PaymentsPage'
-import { TransactionsPage } from '../transactions/TransactionsPage'
+import { BillPage } from '../bill/BillPage'
 import { CardCarousel, plainTiles, SETTLE_MS, type CardTile } from './CardCarousel'
 import { keyTarget, nearestIndex, scrollLeftFor, snapIndex, swipeTarget, SWIPE_PX } from './carousel'
 
@@ -316,20 +315,12 @@ describe('CardCarousel', () => {
   })
 })
 
-describe('the carousel on the screens', () => {
-  async function twoCards() {
+describe('the carousel on Bill', () => {
+  it('the selected card persists in the env-prefixed prefs and drives the palette', async () => {
     const db = freshNewDb()
-    const bca = await saveCard(db, { name: 'BCA Keluarga', bank: 'BCA', last4: '1234', statementDay: '12', palette: 'blue', owners: [{ name: 'Andi', color: '#2563eb' }], defaultIndex: 0 })
+    await saveCard(db, { name: 'BCA Keluarga', bank: 'BCA', last4: '1234', statementDay: '12', palette: 'blue', owners: [{ name: 'Andi', color: '#2563eb' }], defaultIndex: 0 })
     const mdr = await saveCard(db, { name: 'Mandiri Pribadi', bank: 'Mandiri', last4: '9876', statementDay: '11', palette: 'gold', owners: [{ name: 'Andi', color: '#2563eb' }], defaultIndex: 0 })
-    return { db, bca, mdr }
-  }
-
-  it.each([
-    ['Transactions', <TransactionsPage key="t" />],
-    ['Payments', <PaymentsPage key="p" />],
-  ])('%s: the selected card persists in the env-prefixed prefs and drives the palette', async (_name, page) => {
-    const { db, mdr } = await twoCards()
-    const { user } = renderScreen(page, { db })
+    const { user } = renderScreen(<BillPage />, { db })
     const cards = await screen.findByRole('group', { name: 'Cards' })
     await waitFor(() => expect(within(cards).getByRole('button', { name: 'BCA Keluarga' }).getAttribute('aria-pressed')).toBe('true'))
     expect(within(cards).getByRole('button', { name: 'BCA Keluarga' }).textContent).toContain('BCA · •••• 1234')

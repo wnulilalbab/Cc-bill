@@ -237,6 +237,19 @@
 .ccb .dots i { width: 6px; height: 6px; border-radius: 3px; background: var(--line); display: block; transition: width 0.3s, background 0.3s; }
 .ccb .dots i.on { width: 18px; background: var(--ink); }
 
+/* ---------- slim card bar (Transactions, Payments) ---------- */
+.ccb .cbar { display: flex; align-items: center; gap: 10px; width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 9px 14px; text-align: left; font-size: 13px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.ccb .cbar::after { content: ''; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg) translateY(-2px); flex: none; }
+.ccb .cbar .cdot { width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px var(--acc-soft); flex: none; }
+.ccb .cbar .cname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ccb .cbar .cmeta { margin-left: auto; flex: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .ccb .cbar.slide-next { animation: ccb-slidenext 0.34s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .ccb .cbar.slide-prev { animation: ccb-slideprev 0.34s cubic-bezier(0.2, 0.8, 0.2, 1); }
+}
+@keyframes ccb-slidenext { from { transform: translateX(48px); opacity: 0.25; } to { transform: none; opacity: 1; } }
+@keyframes ccb-slideprev { from { transform: translateX(-48px); opacity: 0.25; } to { transform: none; opacity: 1; } }
+
 /* ---------- Bill ---------- */
 .ccb .hero { background: var(--hero); color: var(--hero-ink); border: 2px solid var(--hero-line); border-radius: var(--r, 18px); padding: 16px; display: flex; flex-direction: column; gap: 9px; position: relative; overflow: hidden; }
 .ccb .hero .big { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
