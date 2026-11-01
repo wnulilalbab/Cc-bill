@@ -48,6 +48,8 @@ export interface LabelledRow {
   cardId?: string
   /** Still waiting for a check: not a confirmed label. */
   check?: boolean
+  /** Only `manual` (or unset: reviewed before tag sources existed) counts as a confirmed label. */
+  tagSource?: TagSource
 }
 
 export interface Suggestion {

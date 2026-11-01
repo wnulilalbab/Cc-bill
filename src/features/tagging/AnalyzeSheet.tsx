@@ -29,6 +29,8 @@ export function AnalyzeSheet({ cardId, cardName, owners, onClose }: AnalyzeSheet
   const [items, setItems] = useState<Item[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [applying, setApplying] = useState<TagRule | null>(null)
+  /** Key of the suggestion being saved or dismissed: its buttons are disabled meanwhile. */
+  const [busy, setBusy] = useState<string | null>(null)
   const nameOf = (id: string) => owners.find((o) => o.id === id)?.name ?? 'Unknown'
   // One analysis per opening: later changes to the owner list (e.g. a rule saved here) don't re-run it.
   const ownersAtOpen = useRef(owners)
@@ -52,6 +54,8 @@ export function AnalyzeSheet({ cardId, cardName, owners, onClose }: AnalyzeSheet
   const drop = (key: string) => setItems((xs) => xs!.filter((x) => x.key !== key))
 
   async function accept(it: Item) {
+    if (busy) return
+    setBusy(it.key)
     try {
       const rule = await saveRule(db, { cardId, match: it.match, pattern: it.pattern, ownerId: it.ownerId }, { origin: 'analyze' })
       drop(it.key)
@@ -60,11 +64,19 @@ export function AnalyzeSheet({ cardId, cardName, owners, onClose }: AnalyzeSheet
     } catch (e) {
       setError(e instanceof RuleError ? e.message : `Could not add the rule: ${String(e)}`)
     }
+    setBusy(null)
   }
 
   async function dismiss(it: Item) {
-    await dismissSuggestion(db, cardId, { match: it.match, pattern: it.pattern, ownerId: it.ownerId, comment: it.comment, at: new Date().toISOString() })
-    drop(it.key)
+    if (busy) return
+    setBusy(it.key)
+    try {
+      await dismissSuggestion(db, cardId, { match: it.match, pattern: it.pattern, ownerId: it.ownerId, comment: it.comment, at: new Date().toISOString() })
+      drop(it.key)
+    } catch (e) {
+      setError(`Could not dismiss the suggestion: ${String(e)}`)
+    }
+    setBusy(null)
   }
 
   /** Applies an edit now; the evidence is recounted for it and shown if the suggestion still reads the same. */
@@ -113,7 +125,7 @@ export function AnalyzeSheet({ cardId, cardName, owners, onClose }: AnalyzeSheet
             {it.reason && <div className="xs muted">{it.reason}</div>}
             <input className="inp xs" placeholder="Comment for the next analysis (optional)" aria-label="Comment" value={it.comment} onChange={(e) => patch(it.key, { comment: e.target.value })} />
             <div className="btns">
-              <button type="button" className="btn sm ghost" onClick={() => dismiss(it)}>
+              <button type="button" className="btn sm ghost" disabled={busy !== null} onClick={() => dismiss(it)}>
                 Dismiss
               </button>
               {!it.editing && (
@@ -121,7 +133,7 @@ export function AnalyzeSheet({ cardId, cardName, owners, onClose }: AnalyzeSheet
                   Edit
                 </button>
               )}
-              <button type="button" className="btn sm acc" onClick={() => accept(it)}>
+              <button type="button" className="btn sm acc" disabled={busy !== null} onClick={() => accept(it)}>
                 Accept
               </button>
             </div>

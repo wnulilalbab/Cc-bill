@@ -40,13 +40,20 @@ export function ApplyRuleStep({ rule, ownerName, except, onDone }: ApplyRuleStep
 
   const n = preview.unsure.length + (includeOwned ? preview.owned.length : 0)
   const title = `${describeMatch(rule)} → ${ownerName}`
+  const kept = (
+    <>
+      {preview.manual > 0 && <div className="small muted">{rows(preview.manual)} set by you — not changed.</div>}
+      {preview.paid > 0 && <div className="small muted">{rows(preview.paid)} with a payment left as they are; change them one by one.</div>}
+    </>
+  )
   if (!preview.unsure.length && !preview.owned.length) {
     return (
       <div className="box tight" aria-label="Apply rule">
         <div className="small">
           <b>{title}</b>
         </div>
-        <div className="small muted">No other rows match this rule.</div>
+        <div className="small muted">No other rows to change.</div>
+        {kept}
         <button type="button" className="btn acc" onClick={() => onDone(0)}>
           Done
         </button>
@@ -75,9 +82,9 @@ export function ApplyRuleStep({ rule, ownerName, except, onDone }: ApplyRuleStep
       {preview.owned.length > 0 && (
         <label className="small">
           <input type="checkbox" checked={includeOwned} onChange={(e) => setIncludeOwned(e.target.checked)} /> Also change {rows(preview.owned.length)} that already have another owner
-          {preview.ownedManual > 0 && ` (${preview.ownedManual} set by you)`}
         </label>
       )}
+      {kept}
       <div className="btns">
         <button type="button" className="btn ghost" disabled={busy} onClick={() => onDone(0)}>
           Not now

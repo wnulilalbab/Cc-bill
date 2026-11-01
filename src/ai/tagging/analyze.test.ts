@@ -4,7 +4,7 @@ import type { LabelledRow, TagRule } from '../../domain/tagging/types'
 import type { Owner } from '../../domain/types'
 import { freshNewDb } from '../../../test/data/oldDb'
 import { clearAiCache } from '../../data/aiCache'
-import { ANALYZE_CACHE_PREFIX, AnalyzeError, analyzeLabels, buildPayload, buildRequest, MESSAGES_URL, parseRules, readAnswer, type AnalyzeInput } from './analyze'
+import { ANALYZE_CACHE_PREFIX, AnalyzeError, MAX_CACHED, analyzeLabels, buildPayload, buildRequest, MESSAGES_URL, parseRules, readAnswer, type AnalyzeInput } from './analyze'
 
 // Synthetic card "A": Andi, Sari, Bima (archived). Fake key: never a real one.
 const KEY = 'sk-ant-test-0000000000000000'
@@ -112,6 +112,31 @@ describe('T-08 Analyze my labels (AI)', () => {
     await analyzeLabels(input, opts)
     expect(fetch).toHaveBeenCalledTimes(3)
     expect(await clearAiCache(db)).toBe(2)
+  })
+
+  it('keeps only the newest cached answers', async () => {
+    const db = freshNewDb()
+    await db.meta.bulkPut([
+      ...Array.from({ length: MAX_CACHED }, (_, i) => ({ key: `${ANALYZE_CACHE_PREFIX}old-${String(i).padStart(3, '0')}`, value: { rules: [], at: i + 1 } })),
+      { key: `${ANALYZE_CACHE_PREFIX}no-time`, value: null },
+      { key: 'ai-cache:import:keep', value: { other: true } },
+    ])
+    await analyzeLabels(input, { apiKey: KEY, model: 'm', fetch: okFetch(answer([])), db })
+    const keys = (await db.meta.toArray()).map((m) => m.key)
+    expect(keys.filter((k) => k.startsWith(ANALYZE_CACHE_PREFIX))).toHaveLength(MAX_CACHED)
+    expect(keys).not.toContain(`${ANALYZE_CACHE_PREFIX}no-time`)
+    expect(keys).not.toContain(`${ANALYZE_CACHE_PREFIX}old-000`)
+    expect(keys).toContain(`${ANALYZE_CACHE_PREFIX}old-199`)
+    expect(keys).toContain('ai-cache:import:keep') // other AI caches are not touched
+  })
+
+  it('owners sharing a name (any case) are left out, so an answer can never pick the wrong one', async () => {
+    const twins: Owner[] = [...owners, { id: 'a-sari2', cardId: 'A', name: ' sari ' }]
+    const p = buildPayload({ ...input, owners: twins })
+    expect(p.owners).toEqual(['Andi'])
+    expect(p.merchants.map((m) => m.merchant)).toEqual(['GRAB'])
+    const out = await analyzeLabels({ ...input, owners: twins }, { apiKey: KEY, model: 'm', fetch: okFetch(answer([{ match: 'contains', pattern: 'GRAMEDIA', owner: 'Sari', reason: '' }])) })
+    expect(out).toEqual([])
   })
 
   it('no request when there is nothing to analyse; no key → clear message', async () => {

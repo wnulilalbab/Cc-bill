@@ -40,7 +40,15 @@ export function parseNewBackup(json: string): NewData {
       seen.add(r.id)
     })
   }
-  return obj.data as unknown as NewData
+  const data = obj.data as unknown as NewData
+  // Rules must point to a card and an owner of that card that the backup holds (the same rule as saving one).
+  const cards = new Set(data.cards.map((c) => c.id))
+  const owners = new Map(data.owners.map((o) => [o.id, o.cardId]))
+  data.rules.forEach((r, i) => {
+    if (!cards.has(r.cardId)) throw new MigrationError(`rules[${i}] is invalid: card "${r.cardId}" is not in the backup.`)
+    if (owners.get(r.ownerId) !== r.cardId) throw new MigrationError(`rules[${i}] is invalid: owner "${r.ownerId}" is not an owner of card "${r.cardId}".`)
+  })
+  return data
 }
 
 /** Replaces every record of the new database with the backup's, in one transaction. */

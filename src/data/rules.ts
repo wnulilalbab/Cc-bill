@@ -51,18 +51,26 @@ export async function deleteRule(db: NewDb, id: string): Promise<void> {
   await db.rules.delete(id)
 }
 
+/** Ids of the card's rows that a payment covers. */
+async function paidIds(db: NewDb, cardId: string): Promise<Set<string>> {
+  const payments = await db.payments.where('cardId').equals(cardId).toArray()
+  return new Set(payments.flatMap((p) => p.allocations.filter((a) => a.amount > 0).map((a) => a.txId)))
+}
+
 /** How many rows of the card the rule would change (`except`: the row the rule was made from). */
 export async function previewRuleOnCard(db: NewDb, rule: TagRule, except?: string): Promise<RulePreview> {
-  return previewRule(rule, await db.transactions.where('cardId').equals(rule.cardId).toArray(), except)
+  const [rows, paid] = await Promise.all([db.transactions.where('cardId').equals(rule.cardId).toArray(), paidIds(db, rule.cardId)])
+  return previewRule(rule, rows, except, paid)
 }
 
 /**
  * Applies the rule to the card's rows: rows that need a check or have no owner, plus rows that already have another
- * owner when `includeOwned`. Re-reads the rows, so it changes exactly what a preview made now would show. Returns the
- * number of rows changed.
+ * owner when `includeOwned`. Rows tagged by hand and rows a payment covers are never changed here. Re-reads rows and
+ * payments in the same transaction, so it changes exactly what a preview made now would show. Returns the number of
+ * rows changed.
  */
 export async function applyRuleOnCard(db: NewDb, rule: TagRule, { includeOwned = false, except }: { includeOwned?: boolean; except?: string } = {}): Promise<number> {
-  return db.transaction('rw', db.transactions, async () => {
+  return db.transaction('rw', [db.transactions, db.payments], async () => {
     const changed = applyRule(rule, await previewRuleOnCard(db, rule, except), { includeOwned })
     changed.forEach((t) => checkRecord('transactions', t))
     await db.transactions.bulkPut(changed)
@@ -70,7 +78,11 @@ export async function applyRuleOnCard(db: NewDb, rule: TagRule, { includeOwned =
   })
 }
 
-/** The user picks the owner of one row (source You, Check cleared). `null` = nobody yet. */
+/**
+ * The user picks the owner of one row (source You, Check cleared). `null` = nobody yet.
+ * TODO(Slice 8, X-05/X-06): on a row a payment covers, ask "Keep the payment on it" / "Unassign the payment". Until
+ * then the payment's assignments are left as they are (the payment keeps covering the row).
+ */
 export async function setOwner(db: NewDb, txId: string, ownerId: string | null): Promise<Transaction> {
   return db.transaction('rw', [db.transactions, db.owners], async () => {
     const t = await db.transactions.get(txId)

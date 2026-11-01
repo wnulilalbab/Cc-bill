@@ -67,8 +67,8 @@ describe('tag sheet', () => {
 
     const step = await screen.findByLabelText('Apply rule')
     expect(within(step).getByText('2 rows that need a check or have no owner will change.')).toBeTruthy()
-    expect(within(step).getByText(/Also change 1 row that already have another owner/)).toBeTruthy()
-    expect(within(step).getByText(/1 set by you/)).toBeTruthy()
+    expect(within(step).getByText('1 row set by you — not changed.')).toBeTruthy()
+    expect(within(step).queryByRole('checkbox')).toBeNull()
     await user.click(within(step).getByRole('button', { name: 'Apply to 2 rows' }))
 
     await screen.findByText('Rule saved and applied to 2 more rows')
@@ -98,17 +98,21 @@ describe('tag sheet', () => {
     expect(await db.transactions.get('t2')).toMatchObject({ ownerId: 'bca-sari', tagSource: 'rule' })
   })
 
-  it('no other rows match → rule saved, Done', async () => {
+  it('no other rows to change → rule saved, Done; paid rows are left as they are', async () => {
     const db = await seed()
-    await db.transactions.put(tx('t1', 'RS PONDOK INDAH', 'bca-andi'))
+    await db.transactions.bulkPut([tx('t1', 'RS PONDOK INDAH', 'bca-andi'), tx('t2', 'RS PONDOK INDAH', null)])
+    await db.payments.put({ id: 'p1', cardId: 'bca', source: 'manual', date: '2026-10-02', amount: 9000, allocations: [{ txId: 't2', amount: 9000 }] })
     const onClose = vi.fn()
     const { user } = renderScreen(<TagSheet tx={(await db.transactions.get('t1'))!} cardName="BCA Keluarga" owners={await ownersOf(db, 'bca')} onClose={onClose} />, { db })
     await user.click(screen.getByRole('button', { name: 'Sari' }))
     await user.click(screen.getByRole('checkbox'))
     await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(await screen.findByText('1 row with a payment left as they are; change them one by one.')).toBeTruthy()
+    expect(screen.getByText('No other rows to change.')).toBeTruthy()
     await user.click(await screen.findByRole('button', { name: 'Done' }))
     await screen.findByText('Rule saved')
     expect(onClose).toHaveBeenCalled()
+    expect((await db.transactions.get('t2'))?.ownerId).toBeNull()
   })
 
   it('T-07 marketplace owner change: no rule offered; Check cleared because the user looked', async () => {
@@ -205,6 +209,11 @@ describe('Settings → Tagging rules', () => {
 
     await user.click(screen.getByRole('button', { name: 'Edit rule Starts with GRAMEDIA' }))
     await user.click(screen.getByRole('button', { name: 'Delete rule' }))
+    await user.click(screen.getByRole('button', { name: 'Keep it' }))
+    expect(await listRules(db, 'bca')).toHaveLength(1)
+    await user.click(screen.getByRole('button', { name: 'Delete rule' }))
+    expect(screen.getByText('Delete this rule? Rows it already tagged keep their owner.')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Delete' }))
     await screen.findByText('Rule deleted')
     await screen.findByText('No rules yet.')
   })

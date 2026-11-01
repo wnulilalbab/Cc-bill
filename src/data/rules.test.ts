@@ -82,7 +82,7 @@ describe('tagging rules (data)', () => {
     expect((await listRules(db, 'A')).map((r) => `${r.match} ${r.pattern}`)).toEqual(['contains GRAB', 'contains KCI', 'startsWith KCI'])
   })
 
-  it('T-06 preview counts, then confirm: only Check or unowned rows change unless the user opts in; T-09 other cards untouched', async () => {
+  it('T-06 preview counts, then confirm: only Check or unowned rows change unless the user opts in; manual tags never; T-09 other cards untouched', async () => {
     const db = await seed()
     await db.transactions.bulkPut([
       tx('t1', 'GRAB* A-1', 'a-andi', { check: true }),
@@ -90,21 +90,49 @@ describe('tagging rules (data)', () => {
       tx('t3', 'GRAB* A-3', 'a-andi', { tagSource: 'manual' }),
       tx('t4', 'GRAB* A-4', 'a-sari'),
       tx('t5', 'GRAB* A-5', null),
+      tx('t6', 'GRAB* A-6', 'a-andi', { tagSource: 'default' }),
       tx('b1', 'GRAB* B-1', null, { cardId: 'B' }),
     ])
     const rule = await saveRule(db, { cardId: 'A', match: 'startsWith', pattern: 'GRAB*', ownerId: 'a-sari' })
     const p = await previewRuleOnCard(db, rule, 't5')
-    expect({ unsure: p.unsure.map((t) => t.id), owned: p.owned.map((t) => t.id), ownedManual: p.ownedManual }).toEqual({ unsure: ['t1', 't2'], owned: ['t3'], ownedManual: 1 })
+    expect({ unsure: p.unsure.map((t) => t.id), owned: p.owned.map((t) => t.id), manual: p.manual, paid: p.paid }).toEqual({ unsure: ['t1', 't2'], owned: ['t6'], manual: 1, paid: 0 })
 
     expect(await applyRuleOnCard(db, rule, { except: 't5' })).toBe(2)
     expect(await db.transactions.get('t1')).toEqual(tx('t1', 'GRAB* A-1', 'a-sari', { tagSource: 'rule' }))
-    expect((await db.transactions.get('t3'))?.ownerId).toBe('a-andi')
+    expect((await db.transactions.get('t6'))?.ownerId).toBe('a-andi')
     expect((await db.transactions.get('t5'))?.ownerId).toBeNull()
     expect((await db.transactions.get('b1'))?.ownerId).toBeNull()
 
-    expect(await applyRuleOnCard(db, rule, { includeOwned: true })).toBe(2) // t3 (opted in) and t5
-    expect(await db.transactions.get('t3')).toMatchObject({ ownerId: 'a-sari', tagSource: 'rule' })
-    expect(await applyRuleOnCard(db, rule)).toBe(0)
+    expect(await applyRuleOnCard(db, rule, { includeOwned: true })).toBe(2) // t6 (opted in) and t5
+    expect(await db.transactions.get('t6')).toMatchObject({ ownerId: 'a-sari', tagSource: 'rule' })
+    // A tag set by hand is never overwritten, even when opting in.
+    expect(await db.transactions.get('t3')).toEqual(tx('t3', 'GRAB* A-3', 'a-andi', { tagSource: 'manual' }))
+    expect(await applyRuleOnCard(db, rule, { includeOwned: true })).toBe(0)
+  })
+
+  it('bulk apply skips rows a payment covers (counted as "paid", changed one by one)', async () => {
+    const db = await seed()
+    await db.transactions.bulkPut([tx('t1', 'KCI 1', null), tx('t2', 'KCI 2', 'a-andi'), tx('t3', 'KCI 3', null)])
+    await db.payments.bulkPut([
+      { id: 'p1', cardId: 'A', source: 'statement', date: '2026-10-05', amount: 20000, statementId: 's', allocations: [{ txId: 't1', amount: 9000 }, { txId: 't2', amount: 9000 }, { txId: 't3', amount: 0 }] },
+      { id: 'p2', cardId: 'B', source: 'manual', date: '2026-10-05', amount: 9000, allocations: [{ txId: 't3', amount: 9000 }] },
+    ])
+    const rule = await saveRule(db, { cardId: 'A', match: 'contains', pattern: 'KCI', ownerId: 'a-sari' })
+    expect(await previewRuleOnCard(db, rule)).toMatchObject({ unsure: [expect.objectContaining({ id: 't3' })], owned: [], paid: 2 })
+    expect(await applyRuleOnCard(db, rule, { includeOwned: true })).toBe(1)
+    expect((await db.transactions.get('t1'))?.ownerId).toBeNull()
+    expect((await db.transactions.get('t2'))?.ownerId).toBe('a-andi')
+    expect((await db.transactions.get('t3'))?.ownerId).toBe('a-sari')
+  })
+
+  it('setOwner on a paid row keeps the payment assignment for now (Slice 8 asks Keep / Unassign, X-05/X-06)', async () => {
+    const db = await seed()
+    await db.transactions.put(tx('t1', 'KCI 1', 'a-andi'))
+    const payment = { id: 'p1', cardId: 'A', source: 'manual' as const, date: '2026-10-05', amount: 9000, allocations: [{ txId: 't1', amount: 9000 }] }
+    await db.payments.put(payment)
+    await setOwner(db, 't1', 'a-sari')
+    expect(await db.transactions.get('t1')).toMatchObject({ ownerId: 'a-sari', tagSource: 'manual' })
+    expect(await db.payments.get('p1')).toEqual(payment)
   })
 
   it('T-06 the tag sheet sets one owner by hand: source You, Check cleared; refuses bad owners', async () => {
@@ -140,7 +168,11 @@ describe('rules in the database schema', () => {
   it('checkRecord validates rules and the tag source of transactions', () => {
     expect(() => checkRecord('rules', rule)).not.toThrow()
     expect(() => checkRecord('rules', { ...rule, match: 'equals' as never })).toThrow('rule r1 match must be one of startsWith, contains')
-    expect(() => checkRecord('rules', { ...rule, pattern: '   ' })).toThrow('rule r1 pattern must be a non-empty text')
+    expect(() => checkRecord('rules', { ...rule, pattern: '   ' })).toThrow('rule r1 pattern must have at least 2 letters')
+    expect(() => checkRecord('rules', { ...rule, pattern: ' g ' })).toThrow('rule r1 pattern must have at least 2 letters')
+    expect(() => checkRecord('rules', { ...rule, pattern: 7 as never })).toThrow('rule r1 pattern must have at least 2 letters')
+    expect(() => checkRecord('rules', { ...rule, origin: 'analyze' })).not.toThrow()
+    expect(() => checkRecord('rules', { ...rule, origin: 'robot' as never })).toThrow('rule r1 origin must be "you" or "analyze"')
     expect(() => checkRecord('rules', { ...rule, ownerId: '' })).toThrow('rule r1 ownerId must be a non-empty text')
     expect(() => checkRecord('rules', { ...rule, updatedAt: undefined as never })).toThrow(RecordError)
     expect(() => checkRecord('rules', { ...rule, cardId: '' })).toThrow('rule r1 cardId must be a non-empty text')
@@ -172,11 +204,25 @@ describe('rules in the database schema', () => {
     expect(parseNewBackup(JSON.stringify(old)).rules).toEqual([])
   })
 
-  it('deleting an unused card deletes its rules', async () => {
+  it('G-06 backup import refuses rules whose card or owner is not in the backup (same rule as saving one)', async () => {
+    const db = await seed()
+    const data = JSON.parse(await exportNewBackup(db, NOW))
+    const withRule = (r: TagRule) => JSON.stringify({ ...data, data: { ...data.data, rules: [r] } })
+    expect(() => parseNewBackup(withRule({ ...rule, cardId: 'Z' }))).toThrow('rules[0] is invalid: card "Z" is not in the backup.')
+    expect(() => parseNewBackup(withRule({ ...rule, ownerId: 'b-andi' }))).toThrow('rules[0] is invalid: owner "b-andi" is not an owner of card "A".')
+    expect(() => parseNewBackup(withRule({ ...rule, ownerId: 'nobody' }))).toThrow('owner "nobody" is not an owner of card "A"')
+    expect(() => parseNewBackup(withRule({ ...rule, pattern: 'x' }))).toThrow('rules[0] is invalid: rule r1 pattern must have at least 2 letters.')
+    expect(parseNewBackup(withRule(rule)).rules).toEqual([rule])
+  })
+
+  it('deleting an unused card deletes its rules and its dismissed suggestions', async () => {
     const db = await seed()
     await db.rules.bulkPut([rule, { ...rule, id: 'r2', cardId: 'B', ownerId: 'b-andi' }])
+    await dismissSuggestion(db, 'A', { match: 'contains', pattern: 'KCI', ownerId: 'a-sari', at: NOW })
+    await dismissSuggestion(db, 'B', { match: 'contains', pattern: 'KCI', ownerId: 'b-andi', at: NOW })
     await deleteCard(db, 'A')
     expect((await db.rules.toArray()).map((r) => r.id)).toEqual(['r2'])
+    expect((await db.meta.toArray()).map((m) => m.key)).toEqual([DISMISSED_PREFIX + 'B'])
   })
 
   it('a migration record written before rules existed is still handled (re-run and delete-old checks)', async () => {

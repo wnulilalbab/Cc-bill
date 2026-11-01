@@ -1,6 +1,7 @@
 // Cards and their owners (Settings → Cards). Each card has its own owner list and its own Unbilled bucket.
 import type { Card, Owner, UnbilledStatement } from '../domain/types'
 import type { NewDb } from './db'
+import { DISMISSED_PREFIX } from './rules'
 
 /** A card as stored: the domain card plus its look. */
 export interface CardRecord extends Card {
@@ -148,10 +149,11 @@ export async function saveCard(db: NewDb, d: CardDraft): Promise<string> {
 
 /** Deletes a card that has no history, with its owners and its (empty) statements. */
 export async function deleteCard(db: NewDb, cardId: string): Promise<void> {
-  await db.transaction('rw', [db.cards, db.owners, db.statements, db.transactions, db.plans, db.payments, db.rules], async () => {
+  await db.transaction('rw', [db.cards, db.owners, db.statements, db.transactions, db.plans, db.payments, db.rules, db.meta], async () => {
     if (await cardHasHistory(db, cardId)) throw new CardError('This card has transactions or payments, so it cannot be deleted.')
     await db.owners.where('cardId').equals(cardId).delete()
     await db.rules.where('cardId').equals(cardId).delete()
+    await db.meta.delete(DISMISSED_PREFIX + cardId)
     await db.statements.where('cardId').equals(cardId).delete()
     await db.cards.delete(cardId)
   })

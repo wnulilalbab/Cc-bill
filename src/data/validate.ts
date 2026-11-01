@@ -2,6 +2,7 @@
 // so nothing reaches the database that the money core would reject.
 import { allocatedOf } from '../domain/amounts'
 import { assertRupiah } from '../domain/money'
+import { cleanPattern } from '../domain/tagging/rules'
 import { RULE_MATCHES, type TagRule } from '../domain/tagging/types'
 import type { InstallmentPlan, Payment, Statement, Transaction } from '../domain/types'
 import type { DataRecords, DataTable } from './db'
@@ -58,7 +59,8 @@ function checkPlan(p: InstallmentPlan, what: string): void {
 
 function checkRule(r: TagRule, what: string): void {
   need(RULE_MATCHES.includes(r.match), `${what} match must be one of ${RULE_MATCHES.join(', ')}`)
-  need(isText(r.pattern) && r.pattern.trim().length > 0, `${what} pattern must be a non-empty text`)
+  need(typeof r.pattern === 'string' && cleanPattern(r.pattern).length >= 2, `${what} pattern must have at least 2 letters`)
+  need(r.origin === undefined || r.origin === 'you' || r.origin === 'analyze', `${what} origin must be "you" or "analyze"`)
   need(isText(r.ownerId), `${what} ownerId must be a non-empty text`)
   need(isText(r.updatedAt), `${what} updatedAt must be a timestamp`)
 }

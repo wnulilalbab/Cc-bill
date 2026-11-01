@@ -14,6 +14,8 @@ export const ANALYZE_CACHE_PREFIX = `${AI_CACHE_PREFIX}analyze-labels:`
 export const MESSAGES_URL = 'https://api.anthropic.com/v1/messages'
 /** At most this many merchants go into one request (most-labelled first). */
 export const MAX_GROUPS = 150
+/** Only the newest answers are kept in the cache. */
+export const MAX_CACHED = 200
 
 export class AnalyzeError extends Error {
   constructor(message: string) {
@@ -84,9 +86,20 @@ const ownerSchema = (names: string[]) => ({
   },
 })
 
+/**
+ * The card's active owners whose name is unique on the card (case-insensitive). Owners sharing a name can't be told
+ * apart in the answer, so they are left out of the analysis.
+ */
+function activeOwners(input: Pick<AnalyzeInput, 'cardId' | 'owners'>): Owner[] {
+  const active = input.owners.filter((o) => o.cardId === input.cardId && !o.archived)
+  const count = new Map<string, number>()
+  for (const o of active) count.set(o.name.trim().toLowerCase(), (count.get(o.name.trim().toLowerCase()) ?? 0) + 1)
+  return active.filter((o) => count.get(o.name.trim().toLowerCase()) === 1)
+}
+
 /** What is sent: merchants with at least 2 confirmed labels, by owner name. Marketplaces are left out. */
 export function buildPayload(input: AnalyzeInput): AnalyzePayload {
-  const active = input.owners.filter((o) => o.cardId === input.cardId && !o.archived)
+  const active = activeOwners(input)
   const name = new Map(input.owners.map((o) => [o.id, o.name]))
   const activeIds = new Set(active.map((o) => o.id))
   const groups = new Map<string, MerchantGroup & { n: number }>()
@@ -216,7 +229,16 @@ async function ask(payload: AnalyzePayload, opts: AnalyzeOptions): Promise<RawRu
     throw new AnalyzeError(BAD_ANSWER)
   }
   const rules = readAnswer(body)
-  if (opts.db && key) await opts.db.meta.put({ key, value: { rules } })
+  if (opts.db && key) {
+    const db = opts.db
+    await db.transaction('rw', db.meta, async () => {
+      await db.meta.put({ key, value: { rules, at: Date.now() } })
+      const entries = await db.meta.where('key').startsWith(ANALYZE_CACHE_PREFIX).toArray()
+      const at = (v: unknown) => Number((v as { at?: unknown } | null)?.at) || 0
+      const old = entries.sort((a, b) => at(b.value) - at(a.value) || a.key.localeCompare(b.key)).slice(MAX_CACHED)
+      await db.meta.bulkDelete(old.map((e) => e.key))
+    })
+  }
   return rules
 }
 
@@ -229,7 +251,7 @@ export async function analyzeLabels(input: AnalyzeInput, opts: AnalyzeOptions): 
   const payload = buildPayload(input)
   if (!payload.merchants.length) return []
   const raw = await ask(payload, opts)
-  const byName = new Map(input.owners.filter((o) => o.cardId === input.cardId && !o.archived).map((o) => [o.name.toLowerCase(), o.id]))
+  const byName = new Map(activeOwners(input).map((o) => [o.name.trim().toLowerCase(), o.id]))
   const proposals: Proposal[] = raw.flatMap((r) => {
     const ownerId = byName.get(r.owner.trim().toLowerCase())
     return ownerId ? [{ match: r.match, pattern: r.pattern, ownerId, reason: r.reason.trim().slice(0, 200) }] : []

@@ -85,8 +85,10 @@ describe('rules', () => {
     const conflict = pickRule([rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB', 'a-andi', { updatedAt: '2026-10-05T00:00:00.000Z' })], 'A', 'GRAB', usable)
     expect(conflict.rule?.id).toBe('y')
     expect(conflict.conflict?.id).toBe('x')
-    expect(pickRule([rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB FOOD', 'a-andi')], 'A', 'GRAB FOOD', usable).conflict).toBeUndefined()
-    expect(pickRule([rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB', 'a-andi', { match: 'startsWith' })], 'A', 'GRAB', usable).conflict).toBeUndefined()
+    // Rules of different specificity that disagree are still a conflict: the most specific decides, Check stays.
+    const specific = pickRule([rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB FOOD', 'a-andi')], 'A', 'GRAB FOOD', usable)
+    expect([specific.rule?.id, specific.conflict?.id]).toEqual(['y', 'x'])
+    expect(pickRule([rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB', 'a-andi', { match: 'startsWith' })], 'A', 'GRAB', usable).conflict?.id).toBe('x')
     expect(pickRule([rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB', 'a-sari', { match: 'startsWith' })], 'A', 'GRAB', usable).conflict).toBeUndefined()
     expect(pickRule([rule('x', 'GRAB', 'a-bima')], 'A', 'GRAB', usable)).toEqual({ unusable: expect.objectContaining({ id: 'x' }) })
     expect(pickRule([rule('x', 'GRAB', 'a-bima'), rule('y', 'GRAB', 'a-sari')], 'A', 'GRAB', usable)).toEqual({ rule: expect.objectContaining({ id: 'y' }) })
@@ -168,7 +170,10 @@ describe('owner suggestions', () => {
 
   it('conflicting rules: newest wins, Check on, both named', () => {
     const s = one(row('GRAB'), [], [rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB', 'a-andi', { updatedAt: '2026-10-09T00:00:00.000Z' })])
-    expect(s).toMatchObject({ ownerId: 'a-andi', check: true, ruleId: 'y', reason: 'Rule: Contains GRAB. Another rule says Sari' })
+    expect(s).toMatchObject({ ownerId: 'a-andi', check: true, ruleId: 'y', reason: 'Rule: Contains GRAB. Rules disagree: "Contains GRAB" says Sari' })
+    const nested = one(row('GRAB FOOD 12'), [], [rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB FOOD', 'a-andi')])
+    expect(nested).toMatchObject({ ownerId: 'a-andi', check: true, ruleId: 'y', reason: 'Rule: Contains GRAB FOOD. Rules disagree: "Contains GRAB" says Sari' })
+    expect(one(row('GRAB FOOD 12'), [], [rule('x', 'GRAB', 'a-andi'), rule('y', 'GRAB FOOD', 'a-andi')])).toMatchObject({ check: false })
   })
 
   it('T-09 a rule of card A never applies on card B', () => {
@@ -205,6 +210,13 @@ describe('owner suggestions', () => {
     expect(one(row('X'), tie)).toMatchObject({ ownerId: 'a-andi', check: true, reason: 'Past labels disagree' })
   })
 
+  it('history counts only labels the user confirmed (by hand, or reviewed before tag sources), not default / rule / AI / auto tags', () => {
+    const echo = (['default', 'rule', 'ai', 'auto', 'plan'] as const).flatMap((tagSource) => [past('X', 'a-sari', { tagSource }), past('X', 'a-sari', { tagSource })])
+    expect(one(row('X'), echo)).toMatchObject({ source: 'default' })
+    expect(one(row('X'), [past('X', 'a-sari', { tagSource: 'manual' }), past('X', 'a-sari')])).toMatchObject({ ownerId: 'a-sari', source: 'auto', check: false })
+    expect(ruleEvidence(rule('r', 'X', 'a-sari'), echo)).toEqual({ agree: 0, total: 0 })
+  })
+
   it('history ignores rows still waiting for a check, other cards, and other kinds', () => {
     const h = [past('X', 'a-sari', { check: true }), past('X', 'a-sari', { check: true }), past('X', 'b-andi', { cardId: 'B' }), past('X', 'a-sari', { kind: 'refund', amount: -1 })]
     expect(one(row('X'), h)).toMatchObject({ source: 'default', check: false })
@@ -231,20 +243,35 @@ describe('owner suggestions', () => {
     expect(one(row('BUNGA', { kind: 'interest' }), [], [], cardNone)).toMatchObject({ ownerId: null, check: true })
   })
 
-  it('refund follows the purchase in the same batch, including its Check; else a past purchase', () => {
-    const rows = [row('SHOPEE A', { amount: 500, date: '2026-10-01' }), row('SHOPEE A', { amount: 700, date: '2026-10-02' }), row('REFUND SHOPEE A', { kind: 'refund', amount: -700, date: '2026-10-05' })]
+  it('refund follows the purchase (merchant + exact amount) in the same batch, including its Check; else a past purchase', () => {
+    const rows = [
+      row('TOKO A', { amount: 500, date: '2026-10-01', aiGuess: { ownerId: 'a-sari', confidence: 0.3 } }),
+      row('TOKO A', { amount: 700, date: '2026-10-02', aiGuess: { ownerId: 'a-sari', confidence: 0.3 } }),
+      row('REFUND TOKO A', { kind: 'refund', amount: -700, date: '2026-10-05' }),
+    ]
     const out = suggestOwners(cardA, rows, [], { owners, rules: [] })
-    expect(out[2]).toMatchObject({ ownerId: 'a-andi', check: true, follows: 1, source: 'auto', reason: 'Same owner as the refunded purchase', marketplace: true })
-    const reviewed = suggestOwners(cardA, [rows[0], { ...rows[1], manualOwnerId: 'a-sari' }, rows[2]], [], { owners, rules: [] })
-    expect(reviewed[2]).toMatchObject({ ownerId: 'a-sari', check: false, follows: 1 })
-    expect(one(row('REFUND SHOPEE A', { kind: 'refund', amount: -700 }), [past('SHOPEE A', 'a-sari', { amount: 700 }), past('SHOPEE A', 'a-andi', { amount: 500 })])).toMatchObject({
+    expect(out[2]).toMatchObject({ ownerId: 'a-sari', check: true, follows: 1, source: 'auto', reason: 'Same owner as the refunded purchase', marketplace: false })
+    const reviewed = suggestOwners(cardA, [rows[0], { ...rows[1], manualOwnerId: 'a-andi' }, rows[2]], [], { owners, rules: [] })
+    expect(reviewed[2]).toMatchObject({ ownerId: 'a-andi', check: false, follows: 1 })
+    expect(one(row('REFUND TOKO A', { kind: 'refund', amount: -700 }), [past('TOKO A', 'a-sari', { amount: 700 }), past('TOKO A', 'a-andi', { amount: 500 })])).toMatchObject({
       ownerId: 'a-sari', check: false, confidence: 0.9,
     })
   })
 
-  it('refund: a later purchase in the batch is used when no earlier one matches; none → normal tagging', () => {
+  it('marketplace refunds keep their own Check even when they follow a confirmed purchase', () => {
+    const rows = [row('SHOPEE A', { amount: 700, date: '2026-10-02', manualOwnerId: 'a-sari' }), row('REFUND SHOPEE A', { kind: 'refund', amount: -700, date: '2026-10-05' })]
+    const s = suggestOwners(cardA, rows, [], { owners, rules: [] })[1]
+    expect(s).toMatchObject({ ownerId: 'a-sari', check: true, follows: 0, marketplace: true })
+    expect(s.reason).toBe("Same owner as the refunded purchase. Marketplace: the statement doesn't say who ordered")
+    expect(one(row('REFUND SHOPEE A', { kind: 'refund', amount: -700 }), [past('SHOPEE A', 'a-sari', { amount: 700 })])).toMatchObject({ ownerId: 'a-sari', check: true })
+  })
+
+  it('refund: never follows a later purchase, nor one with another amount; none → normal tagging', () => {
     const rows = [row('REFUND X', { kind: 'refund', amount: -500, date: '2026-10-01' }), row('X', { amount: 500, date: '2026-10-03', manualOwnerId: 'a-sari' })]
-    expect(suggestOwners(cardA, rows, [], { owners, rules: [] })[0]).toMatchObject({ ownerId: 'a-sari', follows: 1 })
+    expect(suggestOwners(cardA, rows, [], { owners, rules: [] })[0]).toMatchObject({ ownerId: 'a-andi', source: 'default' })
+    const other = one(row('REFUND X', { kind: 'refund', amount: -499 }), [past('X', 'a-sari', { amount: 500 })])
+    expect(other).toMatchObject({ reason: 'Tagged Sari once before', check: true })
+    expect(other.follows).toBeUndefined()
     expect(one(row('REFUND TOKOPEDIA', { kind: 'refund', amount: -1 }))).toMatchObject({ source: 'default', check: true, marketplace: true })
   })
 
@@ -294,7 +321,7 @@ describe('applying tags to stored rows', () => {
     expect(withManualOwner(t, 'a-andi')).toEqual({ ...tx('t', 'X', 'a-andi'), tagSource: 'manual' })
   })
 
-  it('T-06 preview: only Check or unowned rows change by default; owned rows only on opt-in; other cards never', () => {
+  it('T-06 preview: only Check or unowned rows change by default; owned rows only on opt-in; manual and paid rows never; other cards never', () => {
     const r = rule('r', 'GRAB', 'a-sari')
     const rows = [
       tx('check', 'GRAB 1', 'a-andi', { check: true }),
@@ -305,16 +332,22 @@ describe('applying tags to stored rows', () => {
       tx('other', 'NETFLIX', null),
       tx('cardB', 'GRAB 6', null, { cardId: 'B' }),
       tx('self', 'GRAB 7', null),
+      tx('mineNone', 'GRAB 8', null, { tagSource: 'manual' }),
+      tx('mineSame', 'GRAB 9', 'a-sari', { tagSource: 'manual' }),
+      tx('paid', 'GRAB 10', null),
+      tx('paidOwned', 'GRAB 11', 'a-andi'),
     ]
-    const p = previewRule(r, rows, 'self')
+    const p = previewRule(r, rows, 'self', new Set(['paid', 'paidOwned', 'same']))
     expect(p.unsure.map((t) => t.id)).toEqual(['check', 'none'])
-    expect(p.owned.map((t) => t.id)).toEqual(['owned', 'mine'])
-    expect(p.ownedManual).toBe(1)
+    expect(p.owned.map((t) => t.id)).toEqual(['owned'])
+    expect(p.manual).toBe(2)
+    expect(p.paid).toBe(2)
     expect(applyRule(r, p)).toEqual([
       { ...rows[0], ownerId: 'a-sari', tagSource: 'rule', check: undefined },
       { ...rows[1], ownerId: 'a-sari', tagSource: 'rule' },
     ].map(({ check: _c, ...t }) => t))
-    expect(applyRule(r, p, { includeOwned: true }).map((t) => t.id)).toEqual(['check', 'none', 'owned', 'mine'])
+    expect(applyRule(r, p, { includeOwned: true }).map((t) => t.id)).toEqual(['check', 'none', 'owned'])
+    expect(previewRule(r, rows, 'self')).toMatchObject({ manual: 2, paid: 0 })
   })
 
   it('T-02 marketplace rows: the rule sets the owner but Check stays; already that owner → unchanged', () => {

@@ -57,9 +57,12 @@ export function normalizeMerchant(description: string): string {
   return kept.join(' ') || canonical(description)
 }
 
-const MARKETPLACE = /\b(SHOPEE\w*|TOKOPEDIA|TOKPED|LAZADA|TIKTOK ?SHOP|BUKALAPAK)\b/
+const MARKETPLACE = /\b(SHOPEE\w*|TOKOPEDIA|LAZADA|TIKTOK ?SHOP|BUKALAPAK)\b/
 
-/** Marketplaces: the statement line doesn't say who ordered (phase-1 §5: Shopee, Tokopedia, Lazada, TikTok Shop). */
+/**
+ * Marketplaces: the statement line doesn't say who ordered. Phase-1 §5's four (Shopee incl. ShopeePay/ShopeeFood,
+ * Tokopedia, Lazada, TikTok Shop) plus Bukalapak. Blibli is not one (Lead decision; the fixtures tag it without Check).
+ */
 export function isMarketplace(description: string): boolean {
   return MARKETPLACE.test(canonical(description))
 }

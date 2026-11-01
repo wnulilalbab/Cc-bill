@@ -34,6 +34,7 @@ export function RuleSheet({ cardId, owners, rule, onClose }: RuleSheetProps) {
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState<TagRule | null>(null)
   const [busy, setBusy] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   async function save() {
     const draft = { id: rule?.id, cardId, match, pattern, ownerId }
@@ -49,8 +50,14 @@ export function RuleSheet({ cardId, owners, rule, onClose }: RuleSheetProps) {
   }
 
   async function remove() {
-    await deleteRule(db, rule!.id)
-    onClose('Rule deleted')
+    setBusy(true)
+    try {
+      await deleteRule(db, rule!.id)
+      onClose('Rule deleted')
+    } catch (e) {
+      setError(`Could not delete the rule: ${String(e)}`)
+      setBusy(false)
+    }
   }
 
   const nameOf = (id: string) => owners.find((o) => o.id === id)?.name ?? 'Unknown'
@@ -81,11 +88,24 @@ export function RuleSheet({ cardId, owners, rule, onClose }: RuleSheetProps) {
               Save rule
             </button>
           </div>
-          {rule && (
-            <button type="button" className="link" style={{ color: 'var(--bad)', alignSelf: 'center' }} onClick={remove}>
-              Delete rule
-            </button>
-          )}
+          {rule &&
+            (confirmDelete ? (
+              <div className="status draft">
+                <div className="small">Delete this rule? Rows it already tagged keep their owner.</div>
+                <div className="btns">
+                  <button type="button" className="btn ghost" disabled={busy} onClick={() => setConfirmDelete(false)}>
+                    Keep it
+                  </button>
+                  <button type="button" className="btn danger" disabled={busy} onClick={remove}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button type="button" className="link" style={{ color: 'var(--bad)', alignSelf: 'center' }} onClick={() => setConfirmDelete(true)}>
+                Delete rule
+              </button>
+            ))}
         </>
       )}
     </Sheet>

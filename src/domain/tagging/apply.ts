@@ -21,25 +21,35 @@ export function withManualOwner(t: Transaction, ownerId: string | null): Transac
 export interface RulePreview {
   /** Matching rows that need a check or have no owner: changed by default. */
   unsure: Transaction[]
-  /** Matching rows that already have another owner: changed only when the user opts in. */
+  /** Matching rows that already have another owner (not set by hand): changed only when the user opts in. */
   owned: Transaction[]
-  /** How many of `owned` the user tagged by hand. */
-  ownedManual: number
+  /** Matching rows the user tagged by hand with another owner: never changed by a rule. */
+  manual: number
+  /** Matching rows a payment already covers: never changed in bulk (changed one by one, see the row sheet). */
+  paid: number
 }
 
-/** Which rows of the rule's card a rule would change (`except`: the row the rule was made from). */
-export function previewRule(rule: TagRule, transactions: readonly Transaction[], except?: string): RulePreview {
+/**
+ * Which rows of the rule's card a rule would change. `except`: the row the rule was made from; `paidIds`: rows a
+ * payment covers.
+ */
+export function previewRule(rule: TagRule, transactions: readonly Transaction[], except?: string, paidIds: ReadonlySet<string> = new Set()): RulePreview {
   const unsure: Transaction[] = []
   const owned: Transaction[] = []
+  let manual = 0
+  let paid = 0
   for (const t of transactions) {
     if (t.cardId !== rule.cardId || t.id === except || !ruleMatches(rule, t.description)) continue
     const sameOwner = t.ownerId === rule.ownerId
-    if (t.check || t.ownerId === null) {
-      // A marketplace row keeps its Check, so it changes only when the owner does.
-      if (!(sameOwner && keepsCheck(t))) unsure.push(t)
-    } else if (!sameOwner) owned.push(t)
+    const unsureRow = !!t.check || t.ownerId === null
+    // A marketplace row keeps its Check, so it changes only when the owner does.
+    const changes = unsureRow ? !(sameOwner && keepsCheck(t)) : !sameOwner
+    if (!changes) continue
+    if (t.tagSource === 'manual') manual++
+    else if (paidIds.has(t.id)) paid++
+    else (unsureRow ? unsure : owned).push(t)
   }
-  return { unsure, owned, ownedManual: owned.filter((t) => t.tagSource === 'manual').length }
+  return { unsure, owned, manual, paid }
 }
 
 /** The changed rows: owner from the rule, source Rule, Check cleared (kept on marketplace rows). */

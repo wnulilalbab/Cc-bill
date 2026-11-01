@@ -24,7 +24,7 @@ export function bySpecificity(a: TagRule, b: TagRule): number {
 
 export interface RulePick {
   rule?: TagRule
-  /** The two most specific matching rules point to different owners. */
+  /** Another matching rule (of any specificity) points to a different owner. */
   conflict?: TagRule
   /** A matching rule whose owner is archived or not on the card (ignored). */
   unusable?: TagRule
@@ -35,9 +35,8 @@ export function pickRule(rules: readonly TagRule[], cardId: string, description:
   const matching = rules.filter((r) => r.cardId === cardId && ruleMatches(r, description)).sort(bySpecificity)
   const ok = matching.filter((r) => usable(r.ownerId))
   const unusable = matching.find((r) => !usable(r.ownerId))
-  const [rule, next] = ok
-  const conflict =
-    rule && next && next.ownerId !== rule.ownerId && cleanPattern(next.pattern).length === cleanPattern(rule.pattern).length && next.match === rule.match ? next : undefined
+  const rule = ok[0]
+  const conflict = rule && ok.find((r) => r.ownerId !== rule.ownerId)
   return { ...(rule && { rule }), ...(conflict && { conflict }), ...(!rule && unusable ? { unusable } : {}) }
 }
 
@@ -67,9 +66,15 @@ export const sameRule = (a: Pick<TagRule, 'cardId' | 'match' | 'pattern'>, b: Pi
 /** "Starts with GRAB*" */
 export const describeMatch = (r: Pick<TagRule, 'match' | 'pattern'>) => `${r.match === 'startsWith' ? 'Starts with' : 'Contains'} ${cleanPattern(r.pattern)}`
 
-/** Past confirmed labels on the card: rows that still need a check or have no owner are not evidence. */
+/**
+ * Past labels the user confirmed on the card: tagged by hand, or reviewed rows without a tag source (e.g. labelled in
+ * the old app). Rows tagged by the card default, a rule, history or the AI are not evidence (they would only echo
+ * the engine), nor are rows that still need a check or have no owner.
+ */
 export function confirmedLabels(history: readonly LabelledRow[], cardId: string): LabelledRow[] {
-  return history.filter((h) => (h.cardId === undefined || h.cardId === cardId) && !h.check && h.ownerId !== null)
+  return history.filter(
+    (h) => (h.cardId === undefined || h.cardId === cardId) && !h.check && h.ownerId !== null && (h.tagSource === undefined || h.tagSource === 'manual'),
+  )
 }
 
 export interface Evidence {

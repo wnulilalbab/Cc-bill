@@ -52,7 +52,8 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
   function linked(i: number, kinds: readonly TxKind[], same: (description: string, amount: number) => boolean): { batch?: number; past?: LabelledRow } {
     const row = rows[i]
     const batch = newestFirst(rows.map((r, j) => ({ ...r, j })).filter((r) => r.j !== i && !busy.has(r.j) && kinds.includes(r.kind) && same(r.description, r.amount)))
-    const inBatch = batch.find((r) => r.date <= row.date) ?? batch[0]
+    // Never a later row: a refund or reversal can only follow something already bought.
+    const inBatch = batch.find((r) => r.date <= row.date)
     if (inBatch) return { batch: inBatch.j }
     const past = newestFirst(labels.filter((h) => kinds.includes(h.kind) && same(h.description, h.amount)))[0]
     return past ? { past } : {}
@@ -123,8 +124,8 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
       return { ownerId: row.manualOwnerId, check: false, source: 'manual', confidence: 1, reason: 'Set by you', marketplace }
     }
     const followed = follow(i)
-    // A linked row inherits the Check of the row it follows, so a reviewed purchase also settles its refund.
-    if (followed) return { ...followed, marketplace }
+    // A linked row inherits the Check of the row it follows. A marketplace refund always keeps its own Check.
+    if (followed) return marketplace ? { ...followed, check: true, reason: `${followed.reason}. ${MARKETPLACE_NOTE}`, marketplace } : { ...followed, marketplace }
 
     const finish = (d: Draft): Suggestion =>
       marketplace ? { ...d, check: true, confidence: Math.min(d.confidence, 0.5), reason: `${d.reason}. ${MARKETPLACE_NOTE}`, marketplace } : { ...d, marketplace }
@@ -142,7 +143,7 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
       const reason = `Rule: ${describeMatch(pick.rule)}`
       return finish(
         pick.conflict
-          ? { ownerId: pick.rule.ownerId, check: true, source: 'rule', confidence: 0.5, reason: `${reason}. Another rule says ${nameOf(pick.conflict.ownerId)}`, ruleId: pick.rule.id }
+          ? { ownerId: pick.rule.ownerId, check: true, source: 'rule', confidence: 0.5, reason: `${reason}. Rules disagree: "${describeMatch(pick.conflict)}" says ${nameOf(pick.conflict.ownerId)}`, ruleId: pick.rule.id }
           : { ownerId: pick.rule.ownerId, check: false, source: 'rule', confidence: 0.95, reason, ruleId: pick.rule.id },
       )
     }
