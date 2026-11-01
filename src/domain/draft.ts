@@ -1,13 +1,16 @@
 import { countedPayments } from './amounts'
-import { MoneyError, signContradicts } from './money'
+import { canAcceptSign, MoneyError, signContradicts } from './money'
 import { bankStatus, blocks } from './payments'
 import { latestBilled, statementById } from './statements'
-import type { Ledger } from './types'
+import type { Ledger, Transaction } from './types'
 
 export interface DraftIssues {
   /** 1. Rows on the statement with Check. */
   checkRows: string[]
-  /** 1b. Rows on the statement whose sign contradicts their kind (e.g. a positive refund): must be checked and fixed. */
+  /**
+   * 1b. Rows on the statement whose sign contradicts their kind (e.g. a positive refund): must be checked and fixed,
+   * or, for a negative fee or interest (a rebate), accepted (`acceptSign`).
+   */
   wrongSignRows: string[]
   /** 2. Payments that block the statement (not fully assigned, no deposit). */
   blockingPayments: string[]
@@ -22,6 +25,17 @@ export interface DraftIssues {
   final: boolean
 }
 
+/** The row is a rebate whose sign the user accepted. */
+export function signIsAccepted(t: Transaction): boolean {
+  return t.signAccepted === true && canAcceptSign(t.kind, t.amount)
+}
+
+/** "Accept as a rebate": a negative fee or interest row stays as it is and no longer keeps its statement Draft. */
+export function acceptSign(t: Transaction): Transaction {
+  if (!canAcceptSign(t.kind, t.amount)) throw new MoneyError(`transaction ${t.id} is not a negative fee or interest row`)
+  return { ...t, signAccepted: true }
+}
+
 /** Draft vs Final for a statement (or the Unbilled bucket). Final when there is nothing to resolve. */
 export function draftIssues(ledger: Ledger, statementId: string): DraftIssues {
   const s = statementById(ledger, statementId)
@@ -30,7 +44,7 @@ export function draftIssues(ledger: Ledger, statementId: string): DraftIssues {
 
   const rows = ledger.transactions.filter((t) => t.statementId === s.id)
   const checkRows = rows.filter((t) => t.check).map((t) => t.id)
-  const wrongSignRows = rows.filter((t) => signContradicts(t.kind, t.amount)).map((t) => t.id)
+  const wrongSignRows = rows.filter((t) => signContradicts(t.kind, t.amount) && !signIsAccepted(t)).map((t) => t.id)
   // A missing payment matters to bills due on or after it, not to older (e.g. back-filled) statements.
   const inScope = payments.filter((p) => s.kind === 'unbilled' || s.dueDate >= p.date)
   const withStatus = (kind: string) => inScope.filter((p) => bankStatus(ledger, p).kind === kind).map((p) => p.id)

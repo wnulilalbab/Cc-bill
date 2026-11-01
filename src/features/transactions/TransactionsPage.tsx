@@ -2,7 +2,7 @@
 // search, filters, rows grouped by day with owner / Check / status, totals for what is shown, Draft/Final with jump
 // links, the row sheet, bulk "Set owner" / "Mark reviewed", and "+ Add a missing transaction".
 import { useMemo, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Picker } from '../../components/Picker'
 import { useToast } from '../../components/Toast'
 import { computeMoney, unassignedOf } from '../../domain/amounts'
@@ -13,6 +13,7 @@ import type { OwnerRecord } from '../../data/cards'
 import { loadLedger } from '../../data/repo'
 import { markReviewed } from '../../data/transactions'
 import { useData } from '../data/DataContext'
+import { localIsoDate } from '../data/today'
 import { useDbQuery } from '../data/useDbQuery'
 import { useAppearance } from '../look/Appearance'
 import { ownerColor } from '../look/palettes'
@@ -47,7 +48,7 @@ import {
 type Open = { kind: 'row'; id: string } | { kind: 'tag'; id: string; ownerId: string } | { kind: 'bulk' } | { kind: 'add' } | null
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => localIsoDate()
 
 export function TransactionsPage() {
   const { db } = useData()
@@ -56,9 +57,14 @@ export function TransactionsPage() {
   const cardId = selected?.card.id
   const loaded = useDbQuery(async () => (cardId ? { cardId, ledger: await loadLedger(db, cardId) } : null), [db, cardId])
   const ledger = loaded && loaded.cardId === cardId ? loaded.ledger : undefined
+  // Jump links from Bill: ?statement=<id>, ?status=check, ?row=<txId> (opens that row's sheet).
+  const [params] = useSearchParams()
   const [stmtByCard, setStmtByCard] = useState<Record<string, string>>({})
-  const [filters, setFilters] = useState<Filters>(NO_FILTERS)
-  const [open, setOpen] = useState<Open>(null)
+  const [filters, setFilters] = useState<Filters>(() => {
+    const status = params.get('status')
+    return STATUS_OPTIONS.some((o) => o.value === status) ? { ...NO_FILTERS, status: status as StatusFilter } : NO_FILTERS
+  })
+  const [open, setOpen] = useState<Open>(() => (params.get('row') ? { kind: 'row', id: params.get('row')! } : null))
   const [selecting, setSelecting] = useState(false)
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [reviewing, setReviewing] = useState(false)
@@ -66,7 +72,7 @@ export function TransactionsPage() {
   const owners: OwnerRecord[] = useMemo(() => selected?.owners ?? [], [selected])
   const ownerName = (id: string | null) => (id ? (owners.find((o) => o.id === id)?.name ?? 'Unknown') : '')
   const state = useMemo(() => (ledger ? computeMoney(ledger) : undefined), [ledger])
-  const chosen = cardId ? stmtByCard[cardId] : undefined
+  const chosen = cardId ? (stmtByCard[cardId] ?? params.get('statement') ?? undefined) : undefined
   const statementId = ledger && (ledger.statements.some((s) => s.id === chosen) ? chosen : defaultStatementId(ledger, cardId!))
   const statement = ledger?.statements.find((s) => s.id === statementId)
   const all = useMemo(() => (ledger && statementId && state ? rowViews(ledger, statementId, state) : []), [ledger, statementId, state])

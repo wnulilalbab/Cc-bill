@@ -14,6 +14,8 @@ const ok: [DataTable, unknown][] = [
   ['statements', BILLED],
   ['statements', { id: 'u', cardId: 'c', kind: 'unbilled' }],
   ['transactions', TX],
+  ['transactions', { ...TX, amount: -15000, kind: 'fee', signAccepted: true }],
+  ['transactions', { ...TX, amount: -1, kind: 'interest', signAccepted: true }],
   ['payments', PAY],
   ['plans', PLAN],
 ]
@@ -33,6 +35,9 @@ const bad: [string, DataTable, unknown, string][] = [
   ['tx date', 'transactions', { ...TX, date: '2026-8-1' }, 'transaction t1 date must be a date (YYYY-MM-DD)'],
   ['tx owner', 'transactions', { ...TX, ownerId: undefined }, 'transaction t1 ownerId must be a text or null'],
   ['tx Infinity', 'transactions', { ...TX, amount: Infinity }, 'transaction t1 amount must be an integer number of rupiah, got Infinity'],
+  ['F-10 signAccepted on a refund', 'transactions', { ...TX, signAccepted: true }, 'transaction t1 signAccepted is only for a fee or interest row with a negative amount'],
+  ['F-10 signAccepted on a positive fee', 'transactions', { ...TX, amount: 15000, kind: 'fee', signAccepted: true }, 'transaction t1 signAccepted is only for a fee or interest row with a negative amount'],
+  ['F-10 signAccepted false', 'transactions', { ...TX, amount: -15000, kind: 'fee', signAccepted: false }, 'transaction t1 signAccepted is only for a fee or interest row with a negative amount'],
   ['payment source', 'payments', { ...PAY, source: 'cash' }, 'payment p1 source must be one of statement, unbilled, manual'],
   ['payment date', 'payments', { ...PAY, date: null }, 'payment p1 date must be a date (YYYY-MM-DD)'],
   ['allocation without txId', 'payments', { ...PAY, allocations: [{ amount: 1 }] }, 'payment p1 has an allocation without a txId'],

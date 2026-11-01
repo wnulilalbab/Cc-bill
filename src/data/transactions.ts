@@ -1,5 +1,6 @@
 // Row edits on the Transactions screen (docs/intent/phase-1.md §6): review, bulk owner, fix, add, delete, convert.
 // Money rules live in src/domain; each function here reads and writes in one transaction, every write checked.
+import { acceptSign } from '../domain/draft'
 import { convertToInstallment, type ConversionError, type ConversionResult } from '../domain/installments'
 import { sum } from '../domain/money'
 import { deleteTransaction, keepWaitingRow } from '../domain/payments'
@@ -171,6 +172,25 @@ export async function updateRow(db: NewDb, txId: string, patch: RowPatch): Promi
       const l = patch.label.trim()
       if (l) next.label = l.slice(0, 60)
       else delete next.label
+    }
+    // An accepted rebate is accepted as it was: fixing its amount or kind asks again.
+    if (next.amount !== t.amount || next.kind !== t.kind) delete next.signAccepted
+    checkRecord('transactions', next)
+    await db.transactions.put(next)
+    return next
+  })
+}
+
+/** "Accept as a rebate" on a negative fee or interest row: kept as it is, no longer a Draft issue (F-10). */
+export async function acceptRebate(db: NewDb, txId: string): Promise<Transaction> {
+  return db.transaction('rw', db.transactions, async () => {
+    const t = await rowOrThrow(db, txId)
+    if (t.signAccepted) return t
+    let next: Transaction
+    try {
+      next = acceptSign(t)
+    } catch {
+      throw new RowError('Only a fee or interest with a negative amount can be accepted as a rebate.')
     }
     checkRecord('transactions', next)
     await db.transactions.put(next)

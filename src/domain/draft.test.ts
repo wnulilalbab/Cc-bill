@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { billed, ledger, months, pay, tx, unbilled } from '../../test/domain/builders'
-import { draftIssues } from './draft'
+import { MoneyError } from './money'
+import { acceptSign, draftIssues, signIsAccepted } from './draft'
 import { keepWaiting, keepWaitingRow } from './payments'
 
 const base = () => ledger({ statements: [...months(), unbilled('m-unb', 'm')] })
@@ -128,6 +129,39 @@ describe('Draft / Final', () => {
   it('M-D-42 a row whose sign contradicts its kind keeps the statement Draft', () => {
     const l = { ...base(), transactions: [tx('posRefund', 'oct', '2026-10-01', 44631, 'a', { kind: 'refund' }), tx('negBuy', 'oct', '2026-10-02', -9000, 'a', { kind: 'purchase' }), tx('ok', 'oct', '2026-10-02', -5, 'a')] }
     expect(draftIssues(l, 'oct')).toMatchObject({ wrongSignRows: ['posRefund', 'negBuy'], count: 2, final: false })
+  })
+
+  it('F-10 a negative fee or interest (a rebate) accepted as valid no longer keeps the statement Draft', () => {
+    const fee = tx('rebate', 'oct', '2026-10-12', -15000, 'a', { kind: 'fee' })
+    const interest = tx('bunga', 'oct', '2026-10-12', -1, 'a', { kind: 'interest' })
+    const l = { ...base(), transactions: [fee, interest] }
+    expect(draftIssues(l, 'oct')).toMatchObject({ wrongSignRows: ['rebate', 'bunga'], count: 2, final: false })
+    const accepted = { ...l, transactions: [acceptSign(fee), acceptSign(interest)] }
+    expect(accepted.transactions).toEqual([{ ...fee, signAccepted: true }, { ...interest, signAccepted: true }])
+    expect(draftIssues(accepted, 'oct')).toMatchObject({ wrongSignRows: [], count: 0, final: true })
+    // The original row is not changed.
+    expect(fee.signAccepted).toBeUndefined()
+  })
+
+  it('F-10 only a negative fee or interest can be accepted; a stale or false flag does not hide a wrong sign', () => {
+    for (const t of [
+      tx('posFee', 'oct', '2026-10-12', 15000, 'a', { kind: 'fee' }),
+      tx('zeroFee', 'oct', '2026-10-12', 0, 'a', { kind: 'interest' }),
+      tx('negBuy', 'oct', '2026-10-12', -9000, 'a', { kind: 'purchase' }),
+      tx('posRefund', 'oct', '2026-10-12', 9000, 'a', { kind: 'refund' }),
+      tx('negInst', 'oct', '2026-10-12', -9000, 'a', { kind: 'installment' }),
+    ]) {
+      expect(() => acceptSign(t)).toThrow(MoneyError)
+      expect(() => acceptSign(t)).toThrow(`transaction ${t.id} is not a negative fee or interest row`)
+      expect(signIsAccepted({ ...t, signAccepted: true })).toBe(false)
+    }
+    const stale = [
+      tx('negBuy', 'oct', '2026-10-12', -9000, 'a', { kind: 'purchase', signAccepted: true }),
+      tx('notYet', 'oct', '2026-10-12', -500, 'a', { kind: 'fee', signAccepted: false }),
+    ]
+    expect(draftIssues({ ...base(), transactions: stale }, 'oct').wrongSignRows).toEqual(['negBuy', 'notYet'])
+    expect(signIsAccepted(stale[1])).toBe(false)
+    expect(signIsAccepted({ ...stale[1], signAccepted: true })).toBe(true)
   })
 
   it('M-D-43 a possible duplicate hand payment is listed (not as blocking) on statements due on/after it', () => {

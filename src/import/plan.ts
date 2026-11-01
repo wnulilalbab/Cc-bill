@@ -167,6 +167,8 @@ export function planImport({ ledger, card, owners, rules, draft, newId, acceptDi
   const asRead = (t: Transaction, r: DraftRow, statementId: string): Transaction => {
     const next: Transaction = { ...t, statementId, date: r.date, description: r.description, amount: r.amount, kind: r.kind as TxKind }
     if (r.installment) next.installment = r.installment
+    // An accepted rebate stays accepted only as it was (same rule as updateRow): a new amount or kind asks again.
+    if (next.amount !== t.amount || next.kind !== t.kind) delete next.signAccepted
     return next
   }
 
