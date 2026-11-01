@@ -76,15 +76,7 @@ export function MigrateSheet({ old, initialDefaultOwnerId = null, onClose, onMig
   const data = 'plan' in planned ? planned.plan.data : null
 
   return (
-    <Sheet title="Migration preview" onClose={onClose}>
-      {data && (
-        <div className="box tight">
-          <Row label="Transactions" value={data.transactions.length} />
-          <Row label="Owners" value={data.owners.length} />
-          <Row label="Installment plans" value={data.plans.length} />
-          <Row label="Payment assignments" value={data.payments.reduce((n, p) => n + p.allocations.length, 0)} />
-        </div>
-      )}
+    <Sheet title="Migration preview" onClose={onClose} locked={running}>
       <div className="field">
         <span className="fl">Default owner of {MIGRATED_CARD.name}</span>
         <Picker title="Default owner" field value={defaultOwnerId ?? ''} options={ownerOptions} onChange={(v) => setDefaultOwnerId(v || null)} />
@@ -94,6 +86,14 @@ export function MigrateSheet({ old, initialDefaultOwnerId = null, onClose, onMig
         <label htmlFor="mDay">Statement day (optional)</label>
         <input className="inp" id="mDay" inputMode="numeric" maxLength={2} placeholder="Blank = the last row date of each statement" value={statementDay} onChange={(e) => setStatementDay(e.target.value.replace(/\D/g, ''))} />
       </div>
+      {data && (
+        <div className="box tight">
+          <Row label="Transactions" value={data.transactions.length} />
+          <Row label="Owners" value={data.owners.length} />
+          <Row label="Installment plans" value={data.plans.length} />
+          <Row label="Payment assignments" value={data.payments.reduce((n, p) => n + p.allocations.length, 0)} />
+        </div>
+      )}
       {'error' in planned ? (
         <div className="err" role="alert">
           {planned.error}
@@ -116,7 +116,7 @@ export function MigrateSheet({ old, initialDefaultOwnerId = null, onClose, onMig
         </div>
       )}
       <div className="btns">
-        <button type="button" className="btn ghost" onClick={onClose}>
+        <button type="button" className="btn ghost" disabled={running} onClick={onClose}>
           Cancel
         </button>
         <button type="button" className="btn acc" disabled={!data || running} onClick={confirm}>

@@ -53,7 +53,13 @@ describe('Settings → Testing', () => {
     await screen.findByText(/Old data found/)
     await testingOn(user)
 
+    // Load demo data asks first and says what is lost; Cancel does nothing.
     await user.click(screen.getByRole('button', { name: 'Load demo data' }))
+    expect(screen.getByText(/is erased and replaced by the synthetic demo household/)).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(await db.cards.count()).toBe(0)
+    await user.click(screen.getByRole('button', { name: 'Load demo data' }))
+    await user.click(within(screen.getByText('Load demo data?').closest('.status') as HTMLElement).getByRole('button', { name: 'Load demo data' }))
     await screen.findByText('Demo data loaded: verified ✓')
     expect(await db.cards.get(MIGRATED_CARD.id)).toBeTruthy()
     await screen.findByText('BCA Shared')
@@ -69,6 +75,11 @@ describe('Settings → Testing', () => {
     await screen.findByText(/No cards yet/)
 
     await user.click(screen.getByRole('button', { name: 'Re-run migration' }))
+    expect(screen.getByText(/every change you made to them .* is lost/)).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(await db.cards.count()).toBe(0)
+    await user.click(screen.getByRole('button', { name: 'Re-run migration' }))
+    await user.click(screen.getByRole('button', { name: 'Re-run' }))
     await screen.findByText('Migration re-run: verified ✓')
     expect(await db.cards.get(MIGRATED_CARD.id)).toBeTruthy()
     await screen.findByText('Old data migrated ✓ and kept as a backup.')
@@ -80,6 +91,7 @@ describe('Settings → Testing', () => {
     await screen.findByText('No old data on this phone.')
     await testingOn(user)
     await user.click(screen.getByRole('button', { name: 'Re-run migration' }))
+    await user.click(screen.getByRole('button', { name: 'Re-run' }))
     await screen.findByText('There is no old data to migrate.')
   })
 
@@ -126,6 +138,14 @@ describe('Settings → Testing', () => {
     await user.type(screen.getByLabelText('Record id'), cardId)
     await user.click(screen.getByRole('button', { name: 'Inspect' }))
     expect(screen.getByLabelText('Record').textContent).toContain('"name": "Synthetic"')
+
+    // A read error is shown, not thrown.
+    vi.spyOn(db, 'table').mockImplementationOnce(() => {
+      throw new Error('synthetic read failure')
+    })
+    await user.click(screen.getByRole('button', { name: 'Inspect' }))
+    expect((await screen.findByRole('alert')).textContent).toBe('Could not read the record: synthetic read failure')
+    expect(screen.queryByLabelText('Record')).toBeNull()
   })
 })
 

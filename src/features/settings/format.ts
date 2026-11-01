@@ -12,3 +12,10 @@ export function downloadText(fileName: string, text: string, type = 'application
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+
+/** True when this browser can hand a file to the phone's share sheet (e.g. "Save to Files" on iOS). */
+export function canShareFile(file: File): boolean {
+  return typeof navigator !== 'undefined' && typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })
+}
+
+export const jsonFile = (fileName: string, text: string) => new File([text], fileName, { type: 'application/json' })

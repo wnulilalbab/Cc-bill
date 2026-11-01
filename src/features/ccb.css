@@ -86,7 +86,8 @@
 .ccb .ccb-layer-picker .sheet { z-index: 71; max-height: 70vh; gap: 4px; }
 .ccb .sheet h2 { font-size: 17px; margin: 0; font-weight: 800; }
 .ccb .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 4px auto 2px; flex: none; }
-.ccb .opt { border: 0; background: none; text-align: left; padding: 12px 10px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 600; }
+.ccb .opts { display: flex; flex-direction: column; gap: 4px; }
+.ccb .opt { width: 100%; border: 0; background: none; text-align: left; padding: 12px 10px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 600; }
 .ccb .opt[aria-selected='true'] { background: var(--acc-soft); }
 .ccb .opt[aria-selected='true']::after { content: '✓'; font-weight: 800; }
 .ccb .opt .s { display: block; font-size: 11.5px; color: var(--muted); font-weight: 500; }
