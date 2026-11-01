@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assertRupiah, daysBetween, MoneyError, monthIndex, sum } from './money'
+import { assertRupiah, canAcceptSign, daysBetween, MoneyError, monthIndex, signContradicts, sum } from './money'
 
 describe('money helpers', () => {
   it('M-D-01 accepts integer rupiah and rejects floats, NaN and unsafe integers', () => {
@@ -32,5 +32,14 @@ describe('money helpers', () => {
     expect(monthIndex('2026-10')).toBe(2026 * 12 + 10)
     expect(monthIndex('2026-11-12') - monthIndex('2026-10')).toBe(1)
     expect(monthIndex('2027-01-12') - monthIndex('2026-12-12')).toBe(1)
+  })
+
+  it('F-10 a rebate is a fee or interest with a negative amount; its sign contradicts its kind', () => {
+    expect(canAcceptSign('fee', -1)).toBe(true)
+    expect(canAcceptSign('interest', -15000)).toBe(true)
+    expect(canAcceptSign('fee', 0)).toBe(false)
+    expect(canAcceptSign('interest', 1)).toBe(false)
+    for (const kind of ['purchase', 'installment', 'refund', 'reversal', 'payment']) expect(canAcceptSign(kind, -1)).toBe(false)
+    expect(signContradicts('fee', -1)).toBe(true)
   })
 })

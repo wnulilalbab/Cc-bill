@@ -47,6 +47,7 @@ Additional rules:
 | F-07 | Hand-recorded payment missing from next statement | Blocks, item "isn't on a statement" |
 | F-08 | Unbilled row dated before latest statement, not matched | Blocks latest statement only |
 | F-09 | All resolved | Final ✓ |
+| F-10 | Fee/interest row with a negative amount (rebate) → Accept | Stored on the row (`signAccepted`); no longer a Draft issue; fixing amount/kind clears it |
 
 ## Payments (P)
 

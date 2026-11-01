@@ -40,6 +40,20 @@ describe('routing', () => {
     expect(window.location.hash).toBe('#/transactions')
   })
 
+  it('Bill is the home screen: "/" opens it, the Bill tab leads back to it, and the old dashboard stays reachable', async () => {
+    window.location.hash = '#/'
+    const { default: App } = await import('../App')
+    const user = userEvent.setup()
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Bill' })).toBeTruthy()
+    expect(window.location.hash).toBe('#/v2/bill')
+    await user.click(screen.getByRole('link', { name: 'Old dashboard' }))
+    expect(window.location.hash).toBe('#/dashboard')
+    await user.click(screen.getByRole('link', { name: 'Bill' }))
+    expect(window.location.hash).toBe('#/v2/bill')
+    expect(await screen.findByRole('heading', { name: 'Bill' })).toBeTruthy()
+  })
+
   it('Import opens the new Import screen; the old import stays reachable', async () => {
     window.location.hash = '#/'
     const { default: App } = await import('../App')

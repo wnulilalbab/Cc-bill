@@ -7,7 +7,7 @@ import { computeMoney, depositPaidOf } from '../../domain/amounts'
 import { coverageOf, ownerBill, type OwnerBill } from '../../domain/bill'
 import { deleteTransaction } from '../../domain/payments'
 import { parseInstallmentReversal, type ConversionError, type ConversionResult } from '../../domain/installments'
-import { sum } from '../../domain/money'
+import { canAcceptSign, sum } from '../../domain/money'
 import { isMarketplace } from '../../domain/tagging/merchant'
 import type { Ledger, Payment, Transaction, TxKind } from '../../domain/types'
 import type { OwnerRecord } from '../../data/cards'
@@ -24,6 +24,7 @@ import {
   RowError,
   UNDO_CONVERSION,
   updateRow,
+  acceptRebate,
   type RowPatch,
 } from '../../data/transactions'
 import { useData } from '../data/DataContext'
@@ -174,6 +175,17 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
             Keep as {KIND_NAME[t.kind]}, flip the sign
           </button>
         </div>
+        {canAcceptSign(t.kind, t.amount) && (
+          <div className="box tight small" aria-label="Accept as rebate">
+            <b>
+              It&apos;s a rebate: keep it as a {KIND_NAME[t.kind]} of {rp(t.amount)}
+            </b>
+            <span className="xs muted">{line(now)}. The statement no longer waits on this row.</span>
+            <button type="button" className="btn ghost sm" disabled={busy} onClick={() => run(async () => (await acceptRebate(db, t.id), 'Accepted as a rebate'))}>
+              Accept as rebate
+            </button>
+          </div>
+        )}
         {options.map((k) => (
           <div key={k} className="box tight small" aria-label={`Change to ${k}`}>
             <b>
@@ -320,7 +332,8 @@ export function RowSheet({ row, ledger, owners, onClose, onPickOwner }: RowSheet
           </div>
           {t.kind === 'installment' && <div className="xs muted">{INSTALLMENT_AMOUNT}</div>}
           {dateWarning && <div className="xs warn-text">{dateWarning}</div>}
-          {signedFor(t.kind, Math.abs(t.amount)) !== t.amount && (
+          {t.signAccepted && <div className="xs muted">Accepted as a rebate.</div>}
+          {signedFor(t.kind, Math.abs(t.amount)) !== t.amount && !t.signAccepted && (
             <button
               type="button"
               className="btn ghost sm"
