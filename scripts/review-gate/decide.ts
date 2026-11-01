@@ -20,7 +20,7 @@ export interface GateResult {
 /** Reviewers act through the owner's account; anyone else (e.g. a drive-by commenter) cannot approve. */
 export const TRUSTED_ASSOCIATIONS: ReadonlySet<string> = new Set(['OWNER', 'MEMBER', 'COLLABORATOR'])
 
-const RISKY_PREFIXES = ['src/import/', 'src/ai/', 'src/data/', '.github/workflows/']
+const RISKY_PREFIXES = ['src/import/', 'src/ai/', 'src/data/', '.github/workflows/', 'scripts/review-gate/', 'scripts/release/', '.claude/']
 const RISKY_EXACT = ['vite.config.ts', 'package.json', 'package-lock.json']
 
 export function isRiskyPath(path: string): boolean {

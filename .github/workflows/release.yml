@@ -23,6 +23,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -115,9 +116,9 @@ jobs:
       - name: Tag and create GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           RELEASE_VERSION: ${{ steps.ver.outputs.next }}
           RELEASE_SHA: ${{ steps.ver.outputs.sha }}
         run: |
-          git tag "v$RELEASE_VERSION" "$RELEASE_SHA"
-          git push origin "v$RELEASE_VERSION"
-          gh release create "v$RELEASE_VERSION" --generate-notes --title "v$RELEASE_VERSION"
+          # Creates the tag on RELEASE_SHA through the API, so the checkout needs no stored credentials.
+          gh release create "v$RELEASE_VERSION" --target "$RELEASE_SHA" --generate-notes --title "v$RELEASE_VERSION"

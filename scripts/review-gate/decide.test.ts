@@ -15,11 +15,12 @@ describe('isRiskyPath / needsSecurityReview', () => {
     'src/import/a.ts', 'src/ai/prompt.ts', 'src/data/db.ts', '.github/workflows/ci.yml',
     'vite.config.ts', 'package.json', 'package-lock.json',
     'src/lib/passwordStore.ts', 'src/lib/Crypto.ts', 'docs/crypto-notes.md',
+    'scripts/review-gate/run.ts', 'scripts/release/api-check.ts', '.claude/settings.json',
   ])('%s is risky', (p) => expect(isRiskyPath(p)).toBe(true))
 
   it.each([
     'src/domain/money.ts', 'src/pages/Dashboard.tsx', 'README.md', 'src/importer.ts',
-    'docs/package.json.md', 'test/vite.config.ts',
+    'docs/package.json.md', 'test/vite.config.ts', 'scripts/fixtures/data.ts',
   ])('%s is not risky', (p) => expect(isRiskyPath(p)).toBe(false))
 
   it('flags a diff when any file is risky', () => {

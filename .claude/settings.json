@@ -1,16 +1,25 @@
 {
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/bump-version.sh",
-            "timeout": 10,
-            "statusMessage": "Checking version…"
-          }
-        ]
-      }
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Agent",
+      "Skill",
+      "ToolSearch",
+      "WebFetch",
+      "WebSearch",
+      "Artifact",
+      "ArtifactData",
+      "ArtifactComments",
+      "ReadNotifications",
+      "SendMessage",
+      "SendUserFile",
+      "mcp__github",
+      "mcp__Claude_Code_Remote"
     ]
   }
 }
