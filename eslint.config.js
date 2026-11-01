@@ -18,5 +18,7 @@ export default tseslint.config(
   {
     files: scope,
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    // Destructuring a field away (`const { x: _x, ...rest } = obj`) is how the domain code drops keys immutably.
+    rules: { '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }] },
   },
 )
