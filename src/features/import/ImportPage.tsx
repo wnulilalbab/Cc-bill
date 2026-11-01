@@ -14,7 +14,10 @@ import {
   setPrinted,
   setRowAmount,
   setTypedTotal,
+  confirmTotalsChecked,
+  conflictMessage,
   totalsConflicts,
+  totalsVerified,
   type ImportDraft,
   type ImportTarget,
 } from '../../import/draft'
@@ -325,20 +328,31 @@ function Review({ draft, onChange, onSave, onCancel, saving, error }: { draft: I
       {conflicts.length > 0 && (
         <div className="status bad">
           <h3>Totals can&apos;t be confirmed</h3>
-          {conflicts.map((c) => (
-            <div key={c.field} className="small">
-              The AI read the {c.field === 'newBalance' ? 'new balance' : 'previous balance'} as {c.ai === null ? 'nothing' : rp(c.ai)}, but the statement prints {rp(c.printed)}.{' '}
-              <button type="button" className="link" onClick={() => onChange(setPrinted(draft, { [c.field]: c.printed }))}>
-                Use the printed figure
-              </button>
-            </div>
-          ))}
+          {conflicts.map((c) =>
+            c.reason === 'differs' ? (
+              <div key={c.field} className="small">
+                The AI read the {c.field === 'newBalance' ? 'new balance' : 'previous balance'} as {c.ai === null ? 'nothing' : rp(c.ai)}, but the statement prints {rp(c.printed!)}.{' '}
+                <button type="button" className="link" onClick={() => onChange(setPrinted(draft, { [c.field]: c.printed }))}>
+                  Use the printed figure
+                </button>
+              </div>
+            ) : (
+              <div key={c.field} className="small">
+                {conflictMessage(c)} The AI read {c.ai === null ? 'nothing' : rp(c.ai)}.
+              </div>
+            ),
+          )}
+          {conflicts.some((c) => c.reason !== 'differs') && (
+            <button type="button" className="btn sm" onClick={() => onChange(confirmTotalsChecked(draft))}>
+              I checked these against the statement
+            </button>
+          )}
         </div>
       )}
       {check && conflicts.length === 0 && (
         <div className="box tight" aria-label="Totals check">
           <div className="row">
-            <b>{check.ok ? 'Totals match the bank ✓' : `Totals differ by ${rp(Math.abs(check.difference))}`}</b>
+            <b>{check.ok ? (totalsVerified(draft) ? 'Totals match the bank ✓' : 'Totals match the figures you checked') : `Totals differ by ${rp(Math.abs(check.difference))}`}</b>
             <span className={`pill${check.ok ? ' ok' : ''}`}>{rp(check.computed.newBalance)}</span>
           </div>
           <div className="row small">

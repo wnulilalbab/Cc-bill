@@ -12,9 +12,11 @@ const MONTH = '(?:JAN|FEB|MAR|APR|MAY|MEI|JUN|JUL|AUG|AGU|AGS|SEP|OCT|OKT|NOV|DE
 const DATE = String.raw`\d{1,2}(?:[-/ ]${MONTH}|[-/]\d{1,2})(?:[-/ ]\d{2,4})?`
 /** An amount as banks print it: thousands separators (or at most 3 digits), optional cents. */
 const AMOUNT = String.raw`(?:\d{1,3}(?:[.,]\d{3})+|\d{1,3})(?:[.,]\d{2})?`
+/** The amount ending a transaction line: thousands separators or cents ("17 AGUSTUS RAYA NO 5" is an address, not a row). */
+const LINE_AMOUNT = String.raw`(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?|\d{1,3}[.,]\d{2})`
 const DATED_VALUE = String.raw`\d{1,2}[ -]${MONTH}[ -]\d{2,4}|\d{1,2}/\d{1,2}/\d{2,4}`
 
-const TX_LINE = new RegExp(`^${DATE}\\s+(?:${DATE}\\s+)?\\S.*\\s(?:RP\\.?\\s*)?-?${AMOUNT}(?:\\s*CR)?$`, 'i')
+const TX_LINE = new RegExp(`^${DATE}\\s+(?:${DATE}\\s+)?\\S.*\\s(?:RP\\.?\\s*)?-?${LINE_AMOUNT}(?:\\s*CR)?$`, 'i')
 const LABELS = [
   'TANGGAL REKENING',
   'TANGGAL JATUH TEMPO',
@@ -36,16 +38,25 @@ const NUMBERS_LINE = /^(?:(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?|0)(?:\s*CR)?\s*
 const CARD_NUMBER = /(?<![\w*•.,-])(?:[\dXx*•]{4}(?:[ .-][\dXx*•]{4,6}){2,3}|[\dXx*•]{13,19})(?![\w*•]|[.,-]\d)/g
 
 /** Words of a name: never these header words. */
-const NOT_NAME = new Set('LEMBAR TAGIHAN KARTU KREDIT CREDIT CARD STATEMENT REKENING BAPAK IBU SDR SDRI MR MRS MS NONA TUAN PT BANK'.split(' '))
+const NOT_NAME = new Set(
+  [
+    'LEMBAR TAGIHAN KARTU KREDIT CREDIT CARD STATEMENT REKENING BILLING E-STATEMENT ESTATEMENT INFORMASI',
+    'BAPAK IBU SDR SDRI MR MRS MS MISS NONA TUAN YTH KEPADA',
+    'PT TBK PERSERO BANK CENTRAL ASIA MANDIRI BCA BNI BRI CIMB NIAGA DANAMON PERMATA MEGA OCBC NISP UOB HSBC PANIN MAYBANK',
+    'CABANG KANTOR PUSAT INDONESIA NASIONAL NEGARA RAKYAT SYARIAH TABUNGAN GIRO NASABAH CUSTOMER SERVICE HALO',
+  ]
+    .join(' ')
+    .split(' '),
+)
 
 export interface RedactOptions {
   /** Last 4 digits of the card (from the card record). */
   last4?: string
-  /** Extra names to block (e.g. the holder name, when known). */
-  names?: string[]
+  /** The holder's name from the card record. When given, the first-page guess is not used. */
+  holderName?: string
 }
 
-/** The holder's name as printed at the top of the first page: digit-free words in the first lines, minus header words. */
+/** Fallback when the card has no holder name: digit-free words in the first lines of page 1, minus bank and header words. */
 export function holderNameWords(firstPage: readonly string[]): string[] {
   const words = firstPage
     .slice(0, 3)
@@ -61,7 +72,7 @@ function keep(line: string): string | null {
   const balance = BALANCE_LINE.exec(l)
   if (balance) return `${balance[1]} ${balance[2]}${balance[3] ?? ''}`
   const labelled = [...l.matchAll(LABELLED)].map((m) => `${m[1]}: ${m[2]}`)
-  if (labelled.length) return labelled.join(' | ')
+  if (labelled.length) return labelled.join('\n') // one per line: printedBalances() anchors on the line start
   if (NUMBERS_LINE.test(l)) return l
   const words = l.split(' ')
   if (words.length > 1 && words.every((w) => SUMMARY_WORDS.has(w.toUpperCase()))) return l
@@ -72,7 +83,9 @@ const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 /** The text sent to the AI: kept lines of every page, each page under a "--- PAGE n ---" marker (0-based). */
 export function redactStatement(pages: readonly (readonly string[])[], opts: RedactOptions = {}): string {
-  const names = [...holderNameWords(pages[0] ?? []), ...(opts.names ?? []).flatMap((n) => n.toUpperCase().split(/[^A-Z]+/)).filter((w) => w.length >= 3)]
+  const names = opts.holderName?.trim()
+    ? opts.holderName.toUpperCase().split(/[^A-Z]+/).filter((w) => w.length >= 3)
+    : holderNameWords(pages[0] ?? [])
   const blocked = names.length ? new RegExp(`\\b(?:${names.map(escape).join('|')})\\b`, 'gi') : null
   const last4 = opts.last4 && /^\d{4}$/.test(opts.last4) ? new RegExp(`(?<![\\d.,])${opts.last4}(?![\\d.,])`, 'g') : null
   return pages
@@ -90,14 +103,20 @@ export function redactStatement(pages: readonly (readonly string[])[], opts: Red
     .join('\n')
 }
 
-/** Previous and new balance as printed, read on the device from the redacted text (to cross-check the AI). */
-export function printedBalances(text: string): { prevBalance: number | null; newBalance: number | null } {
-  const amount = (re: RegExp) => {
-    const m = re.exec(text)
-    return m ? Number(m[1].replace(/[.,]\d{2}$/, '').replace(/[.,]/g, '')) : null
+export type PrintedBalance = number | null | 'ambiguous'
+
+/**
+ * Previous and new balance as printed, read on the device from the redacted text (to cross-check the AI).
+ * Only lines that start with the label count (a transaction line always starts with a date, so a merchant name can't
+ * pose as a total). null = not found; 'ambiguous' = printed with different values.
+ */
+export function printedBalances(text: string): { prevBalance: PrintedBalance; newBalance: PrintedBalance } {
+  const read = (re: RegExp): PrintedBalance => {
+    const values = new Set([...text.matchAll(re)].map((m) => Number(m[1].replace(/[.,]\d{2}$/, '').replace(/[.,]/g, ''))))
+    return values.size === 0 ? null : values.size > 1 ? 'ambiguous' : [...values][0]
   }
   return {
-    prevBalance: amount(new RegExp(`^(?:SALDO SEBELUMNYA|TAGIHAN BULAN LALU) (?:RP\\.?\\s*)?(${AMOUNT})$`, 'im')),
-    newBalance: amount(new RegExp(`(?:TAGIHAN BARU|Total Balance \\(IDR\\)): (?:RP\\.?\\s*)?(${AMOUNT})`, 'i')),
+    prevBalance: read(new RegExp(`^(?:SALDO SEBELUMNYA|TAGIHAN BULAN LALU) (?:RP\\.?\\s*)?(${AMOUNT})$`, 'gim')),
+    newBalance: read(new RegExp(`^(?:TAGIHAN BARU|Total Balance \\(IDR\\)): (?:RP\\.?\\s*)?(${AMOUNT})$`, 'gim')),
   }
 }

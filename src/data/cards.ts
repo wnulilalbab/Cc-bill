@@ -7,6 +7,8 @@ import { pdfPasswordKey } from './deviceSecrets'
 export interface CardRecord extends Card {
   /** Palette id (see src/features/look/palettes.ts). Unset = the first palette. */
   palette?: string
+  /** Card holder's name as printed on statements: removed from the text before it goes to the AI. */
+  holderName?: string
 }
 
 /** An owner as stored: the domain owner plus its chip colour. */
@@ -37,6 +39,8 @@ export interface CardDraft {
   name: string
   bank: string
   last4: string
+  /** Card holder's name as printed on statements (optional; unset = keep the current one when absent from the draft). */
+  holderName?: string
   /** Empty = not set. */
   statementDay: string
   palette: string
@@ -136,6 +140,8 @@ export async function saveCard(db: NewDb, d: CardDraft): Promise<string> {
       palette: d.palette,
     }
     if (d.last4) card.last4 = d.last4
+    const holder = d.holderName === undefined ? (existing as CardRecord | undefined)?.holderName : d.holderName.trim()
+    if (holder) card.holderName = holder
     if (d.statementDay) card.statementDay = Number(d.statementDay)
     await db.cards.put(card)
 

@@ -97,7 +97,7 @@ describe('the review draft', () => {
     const noNew = setPrinted(draft, { newBalance: null, prevBalance: null })
     expect(printedOf(noNew)).toBeNull()
     expect(checkTotals(noNew)).toBeNull()
-    expect(problems({ ...noNew, deviceTotals: undefined })).toEqual(["Type the statement's new balance.", "Type the statement's previous balance."])
+    expect(problems({ ...noNew, userCheckedTotals: true, deviceTotals: undefined })).toEqual(["Type the statement's new balance.", "Type the statement's previous balance."])
     const partial = setPrinted(draft, { credits: null, minPayment: null })
     expect(printedOf(partial)).toEqual({ ...e.printed, minPayment: undefined, credits: e.printed!.credits })
     expect(problems(setDates(draft, { dueDate: null }))).toEqual(['Pick the due date.'])

@@ -3,6 +3,7 @@
 import type { AiConfig } from '../ai/client'
 import { extractStatement, hashFiles, toBase64 } from '../ai/extract'
 import type { AiInput, ImageMediaType } from '../ai/prompt'
+import type { CardRecord } from '../data/cards'
 import type { NewDb } from '../data/db'
 import { billedOf } from '../domain/statements'
 import { ImportError, mergeOverlaps, type DuplicateQuestion, type ImportDraft, type ImportTarget } from './draft'
@@ -66,7 +67,7 @@ export async function readImport(deps: ImportDeps, req: ReadRequest): Promise<Im
   let deviceTotals: ImportDraft['deviceTotals']
   if (pdf) {
     if (!deps.pdfjs) throw new ImportError('The PDF reader is not available.')
-    const text = redactStatement(await readPdfPages(deps.pdfjs, req.files[0].bytes, req.password), { last4: card.last4 })
+    const text = redactStatement(await readPdfPages(deps.pdfjs, req.files[0].bytes, req.password), { last4: card.last4, holderName: (card as CardRecord).holderName })
     if (text.length > LIMITS.textChars) throw new ImportError('This PDF holds far more text than a card statement. Check the file.')
     input = { kind: 'text', text }
     deviceTotals = printedBalances(text)

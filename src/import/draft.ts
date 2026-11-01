@@ -4,6 +4,7 @@ import type { AiTotals } from '../ai/schema'
 import { reconcile, type Reconciliation } from '../domain/reconcile'
 import type { PrintedTotals } from '../domain/types'
 import { rowIdentity, statementRows, type DraftRow } from './normalize'
+import type { PrintedBalance } from './redact'
 
 export type ImportTarget = 'statement' | 'unbilled'
 export type ImportFormat = 'pdf' | 'screenshots'
@@ -39,7 +40,9 @@ export interface ImportDraft {
   /** This exact file was imported before. */
   alreadyImported?: { at: string; statementId: string }
   /** PDFs: previous and new balance read on the device from the printed text, to cross-check the AI (prompt injection guard). */
-  deviceTotals?: { prevBalance: number | null; newBalance: number | null }
+  deviceTotals?: { prevBalance: PrintedBalance; newBalance: PrintedBalance }
+  /** The user checked the printed totals by eye because the device could not read them (not found or ambiguous). */
+  userCheckedTotals?: boolean
   /** Things worth a look that do not block saving (e.g. the file name and the printed month disagree). */
   warnings: string[]
   /** Statement imports: a statement for the same month already exists and will be replaced. */
@@ -82,12 +85,41 @@ export function printedOf(d: ImportDraft): PrintedTotals | null {
  * Printed figures the AI reported differently from what the device read in the same text. While any is open the
  * totals check is never shown as matching, and the import cannot be saved.
  */
-export function totalsConflicts(d: ImportDraft): { field: 'prevBalance' | 'newBalance'; ai: number | null; printed: number }[] {
-  if (d.target !== 'statement' || !d.deviceTotals) return []
-  return (['prevBalance', 'newBalance'] as const).flatMap((field) => {
-    const printed = d.deviceTotals![field]
-    return printed !== null && d.printed[field] !== printed ? [{ field, ai: d.printed[field], printed }] : []
+export interface TotalsConflict {
+  field: 'prevBalance' | 'newBalance'
+  /** differs: printed figure read, AI says otherwise; notFound: no printed figure read; ambiguous: printed twice, differently. */
+  reason: 'differs' | 'notFound' | 'ambiguous'
+  ai: number | null
+  printed: number | null
+}
+
+export function totalsConflicts(d: ImportDraft): TotalsConflict[] {
+  if (d.target !== 'statement' || d.format !== 'pdf') return []
+  return (['prevBalance', 'newBalance'] as const).flatMap((field): TotalsConflict[] => {
+    const read = d.deviceTotals?.[field] ?? null
+    const ai = d.printed[field]
+    if (typeof read === 'number') return read === ai ? [] : [{ field, reason: 'differs', ai, printed: read }]
+    if (d.userCheckedTotals) return []
+    return [{ field, reason: read === null ? 'notFound' : 'ambiguous', ai, printed: null }]
   })
+}
+
+/** "Totals match the bank ✓" only when the device itself read both printed balances and they agree with the AI. */
+export function totalsVerified(d: ImportDraft): boolean {
+  if (d.format !== 'pdf') return true // screenshot totals are typed by the user
+  return (['prevBalance', 'newBalance'] as const).every((f) => typeof d.deviceTotals?.[f] === 'number' && d.deviceTotals[f] === d.printed[f])
+}
+
+/** The user compared the totals with the statement by eye (the device could not read them). */
+export function confirmTotalsChecked(d: ImportDraft): ImportDraft {
+  return { ...d, userCheckedTotals: true }
+}
+
+export const conflictMessage = (c: TotalsConflict): string => {
+  const name = c.field === 'newBalance' ? 'new balance' : 'previous balance'
+  if (c.reason === 'notFound') return `Totals can't be confirmed (printed ${name} not found). Check it against the statement.`
+  if (c.reason === 'ambiguous') return `Totals can't be confirmed (the statement shows more than one ${name}). Check it against the statement.`
+  return `The ${name} read by the AI (${c.ai ?? 'none'}) is not the one printed on the statement (${c.printed}). Use the printed figure.`
 }
 
 /** The totals check (statements only): previous − credits + charges = printed new balance. */
@@ -106,8 +138,7 @@ export function problems(d: ImportDraft): string[] {
     else if (d.printed.newBalance === null && d.format === 'pdf') out.push("Type the statement's new balance.")
     if (d.printed.prevBalance === null) out.push("Type the statement's previous balance.")
   } else if (d.rows.length === 0) out.push('No transactions were found on these screenshots.')
-  for (const c of totalsConflicts(d))
-    out.push(`The ${c.field === 'newBalance' ? 'new balance' : 'previous balance'} read by the AI (${c.ai ?? 'none'}) is not the one printed on the statement (${c.printed}). Use the printed figure.`)
+  for (const c of totalsConflicts(d)) out.push(conflictMessage(c))
   const unknown = d.rows.filter((r) => r.kind === 'unknownCredit').length
   if (unknown) out.push(`Say what ${unknown === 1 ? '1 credit line is' : `${unknown} credit lines are`}: a payment or a refund.`)
   const open = d.duplicates.filter((q) => !q.decision).length

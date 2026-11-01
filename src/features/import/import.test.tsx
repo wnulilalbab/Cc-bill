@@ -163,6 +163,28 @@ describe('Import screen', () => {
     expect((screen.getByRole('button', { name: 'Save statement' }) as HTMLButtonElement).disabled).toBe(false)
   })
 
+  it('a PDF without readable printed totals never shows "match"; checking by eye unlocks Save', async () => {
+    const at = (str: string, y: number) => ({ str, transform: [1, 0, 0, 1, 10, y] })
+    const page = { getTextContent: async () => ({ items: [at('02-OKT 03-OKT GRAMEDIA MATRAMAN 245.000', 700)] }) }
+    const bare = { getDocument: () => ({ promise: Promise.resolve({ numPages: 1, getPage: async () => page }) }) }
+    const answer = { statementDate: '2026-10-12', dueDate: '2026-10-28', totals: { prevBalance: 0, credits: 0, purchases: 245000, feesInterest: 0, newBalance: 245000, minPayment: null }, rows: [{ page: 0, date: '2026-10-02', postDate: '2026-10-03', description: 'GRAMEDIA MATRAMAN', amount: 245000, credit: false }] }
+    const db = freshNewDb()
+    await seedCards(db)
+    const { user } = renderScreen(<ImportPage pdfjs={async () => bare as never} fetch={mockFetch(answer)} />, { db })
+    await screen.findByRole('button', { name: /^Card: / })
+    choose(asFile('statements/bca-2026-10.pdf', 'scan.pdf'))
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Read statement' }) as HTMLButtonElement).disabled).toBe(false))
+    await user.click(screen.getByRole('button', { name: 'Read statement' }))
+    expect(await screen.findByText("Totals can't be confirmed")).toBeTruthy()
+    expect(screen.getAllByText(/printed new balance not found/).length).toBeGreaterThan(0)
+    expect(screen.queryByText('Totals match the bank ✓')).toBeNull()
+    expect((screen.getByRole('button', { name: 'Save statement' }) as HTMLButtonElement).disabled).toBe(true)
+    await user.click(screen.getByRole('button', { name: 'I checked these against the statement' }))
+    expect(await screen.findByText('Totals match the figures you checked')).toBeTruthy()
+    expect(screen.queryByText('Totals match the bank ✓')).toBeNull()
+    expect((screen.getByRole('button', { name: 'Save statement' }) as HTMLButtonElement).disabled).toBe(false)
+  })
+
   it('I-13 screenshot statement: Save waits for the typed total', async () => {
     const { user } = await setup(mockFetch(aiAnswerFor(expected('screenshots/mandiri-2026-08'))))
     await pickCard(user, 'Mandiri Pribadi')

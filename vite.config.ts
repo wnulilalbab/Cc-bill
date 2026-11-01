@@ -45,7 +45,8 @@ export default defineConfig({
         navigateFallbackDenylist: isStaging ? [] : [/\/staging\//],
         runtimeCaching: [
           {
-            urlPattern: /\/assets\/pdf\.worker[^/]*\.m?js$/,
+            // Each environment caches only its own worker: production never matches /staging/ URLs.
+            urlPattern: isStaging ? /\/staging\/assets\/pdf\.worker[^/]*\.m?js$/ : /^(?!.*\/staging\/).*\/assets\/pdf\.worker[^/]*\.m?js$/,
             handler: 'CacheFirst',
             options: {
               cacheName: isStaging ? 'pdf-worker-staging' : 'pdf-worker',
