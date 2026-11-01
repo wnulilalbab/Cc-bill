@@ -8,6 +8,7 @@ import { loadLedger } from '../data/repo'
 import { draftIssues } from '../domain/draft'
 import { monthsLeft } from '../domain/installments'
 import type { Payment } from '../domain/types'
+import { acceptRebate, updateRow } from '../data/transactions'
 import { commitImport, previewImport, resolveNotOnStatement } from './commit'
 import { decideDuplicate, ImportError, problems } from './draft'
 import { readImport } from './read'
@@ -235,6 +236,38 @@ describe('re-import and duplicates', () => {
     expect(l.statements.filter((s) => s.kind === 'billed')).toHaveLength(1)
     expect(l.transactions.find((t) => t.id === netflix.id)).toMatchObject({ ownerId: cards.owners.bca.Keluarga, check: false })
     expect(l.payments.find((p) => p.id === line.id)!.allocations).toEqual([{ txId: netflix.id, amount: 186000 }])
+  })
+
+  it('I-12 F-10 re-importing a statement whose row was accepted as a rebate: the row takes the read kind and the acceptance is dropped', async () => {
+    const db = freshNewDb()
+    const cards = await seedCards(db)
+    for (const m of ['07', '08']) await importFixture(db, cards.bca, `statements/bca-2026-${m}.pdf`)
+    const [refund] = await byDesc(db, cards.bca, 'REFUND SHOPEE')
+    expect(refund).toMatchObject({ amount: -381327, kind: 'refund' })
+    await updateRow(db, refund.id, { kind: 'fee' })
+    expect((await acceptRebate(db, refund.id)).signAccepted).toBe(true)
+
+    const { report } = await importFixture(db, cards.bca, 'statements/bca-2026-08.pdf')
+    expect(report.kept).toBeGreaterThan(0)
+    const after = (await loadLedger(db, cards.bca)).transactions.find((t) => t.id === refund.id)!
+    expect(after).toMatchObject({ amount: -381327, kind: 'refund' })
+    expect(after.signAccepted).toBeUndefined()
+  })
+
+  it('I-08 F-10 an Unbilled row accepted as a rebate moves into the statement with the read kind; the acceptance is dropped', async () => {
+    const db = freshNewDb()
+    const cards = await seedCards(db)
+    for (const m of ['08', '09']) await importFixture(db, cards.mandiri, `screenshots/mandiri-2026-${m}-p1.png`, { target: 'statement' })
+    const unb = (await loadLedger(db, cards.mandiri)).statements.find((s) => s.kind === 'unbilled')!
+    await db.transactions.put({
+      id: 'unb-rebate', cardId: cards.mandiri, statementId: unb.id, date: '2026-10-08', description: 'REFUND SHOPEE Jakarta SelatID',
+      amount: -44631, kind: 'fee', ownerId: cards.owners.mandiri.Rumah, tagSource: 'manual', signAccepted: true,
+    })
+    const { report } = await importFixture(db, cards.mandiri, 'statements/mandiri-2026-10.pdf')
+    expect(report.moved.map((r) => r.description)).toContain('REFUND SHOPEE Jakarta SelatID')
+    const moved = (await loadLedger(db, cards.mandiri)).transactions.find((t) => t.id === 'unb-rebate')!
+    expect(moved).toMatchObject({ statementId: report.statementId, kind: 'refund', amount: -44631, ownerId: cards.owners.mandiri.Rumah })
+    expect(moved.signAccepted).toBeUndefined()
   })
 
   it('I-12 replacing with a different file lists the differences; payments on removed rows go back to To assign', async () => {

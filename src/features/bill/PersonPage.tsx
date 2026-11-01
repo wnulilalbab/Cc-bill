@@ -10,7 +10,7 @@ import type { OwnerRecord } from '../../data/cards'
 import { rp } from '../settings/format'
 import { StatusPill } from '../transactions/RowSheet'
 import { dayLabel, fmt, MONTHS, statementName, TAG_SOURCE_LABEL } from '../transactions/view'
-import { HeroBox, ownerLabel, payPath, txPath } from './BillPage'
+import { HeroBox, NO_OWNER, ownerLabel, payPath, txPath } from './BillPage'
 import { todayIso, useBill } from './useBill'
 import { groupByKind, KIND_GROUP_LABEL, monthName, personPayments, type Hero } from './view'
 
@@ -19,7 +19,7 @@ const payLine = (p: Payment) => p.description ?? (p.source === 'manual' ? 'Recor
 export function PersonPage() {
   const { ownerId: param } = useParams()
   const { selected, ledger, statement } = useBill()
-  const ownerId = param === 'none' ? null : (param ?? null)
+  const ownerId = param === NO_OWNER ? null : (param ?? null)
 
   if (!selected || !ledger || !statement) return <div className="screen small muted">Loading…</div>
   const known = ownerId === null || selected.owners.some((o) => o.id === ownerId)
@@ -232,7 +232,6 @@ function LineRow({ line: l, ledger }: { line: BillLine; ledger: Ledger }) {
           )}
           {t.cancelled && <span className="pill acc">Moved to installment</span>}
           {t.kind === 'reversal' && <span className="pill acc">Reversal</span>}
-          {t.signAccepted && <span className="pill">Rebate</span>}
           {t.check ? <span className="pill warn">● Check</span> : t.tagSource && <span className="pill">{TAG_SOURCE_LABEL[t.tagSource]}</span>}
         </div>
         {c && (c.payments.length > 0 || c.fromDeposit > 0) && (

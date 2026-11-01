@@ -28,7 +28,10 @@ export const signed = (n: number) => `${n < 0 ? '−' : '+'} ${fmt(Math.abs(n))}
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 const shortDay = (iso: string) => dayLabel(iso).slice(0, -5)
 
-export const personPath = (ownerId: string | null, statementId: string) => `/v2/bill/person/${ownerId ?? 'none'}?s=${encodeURIComponent(statementId)}`
+/** Path segment for rows without an owner. Real owner ids are generated ("owner-…"), so this can't collide. */
+export const NO_OWNER = '_none'
+export const personPath = (ownerId: string | null, statementId: string) =>
+  `/v2/bill/person/${encodeURIComponent(ownerId ?? NO_OWNER)}?s=${encodeURIComponent(statementId)}`
 export const txPath = (statementId: string, extra: Record<string, string> = {}) => `/v2/transactions?${new URLSearchParams({ statement: statementId, ...extra })}`
 /** The Payments list, or one payment's full-screen assign page (Slice 9 routes). */
 export const payPath = (paymentId?: string) => (paymentId ? `/v2/payments/${encodeURIComponent(paymentId)}` : '/v2/payments')
@@ -107,6 +110,7 @@ function Bill({ ledger, statement, owners, bank, onStatement }: { ledger: Ledger
   const view = billView(ledger, owners.map((o) => o.id), statement.id, today)
   const un = statement.kind === 'unbilled'
   const name = monthName(statement)
+  const totals = statement.kind === 'billed' ? reconcileStatement(ledger, statement.id) : null
   return (
     <>
       <div className="row">
@@ -125,7 +129,14 @@ function Bill({ ledger, statement, owners, bank, onStatement }: { ledger: Ledger
 
       <DraftPanel ledger={ledger} statement={statement} />
 
-      <HeroBox view={view} bank={bank} label={un ? 'Open now, incl. older bills' : `To pay for the ${name} bill`} chargesLabel={un ? 'Unbilled charges' : `${name} charges`} />
+      <HeroBox
+        view={view}
+        bank={bank}
+        label={un ? 'Open now, incl. older bills' : `To pay for the ${name} bill`}
+        chargesLabel={un ? 'Unbilled charges' : `${name} charges`}
+        totalsDifference={totals && !totals.ok ? totals.difference : undefined}
+        creditHint
+      />
       <div className="note">
         As of {dayLabel(today)}. Paid amounts are live, so a payment made later still reduces this bill. Installments still to come are counted as of this statement.
       </div>
@@ -150,7 +161,23 @@ function Bill({ ledger, statement, owners, bank, onStatement }: { ledger: Ledger
   )
 }
 
-export function HeroBox({ view, bank, label, chargesLabel }: { view: Pick<BillView, 'hero'>; bank?: string; label: string; chargesLabel: string }) {
+export function HeroBox({
+  view,
+  bank,
+  label,
+  chargesLabel,
+  totalsDifference,
+  creditHint,
+}: {
+  view: Pick<BillView, 'hero'>
+  bank?: string
+  label: string
+  chargesLabel: string
+  /** The statement's totals check difference (printed vs rows), when not 0. */
+  totalsDifference?: number
+  /** Card hero: explain why a credit makes the total higher than the bank balance. */
+  creditHint?: boolean
+}) {
   const h = view.hero
   return (
     <div className="hero" aria-label="To pay">
@@ -166,6 +193,16 @@ export function HeroBox({ view, bank, label, chargesLabel }: { view: Pick<BillVi
       {h.credit > 0 && <Line label="Credit carried forward (refunds larger than charges)" value={`+ ${fmt(h.credit)}`} strong />}
       {h.depositWaiting > 0 && <Line label="Deposit waiting for new charges" value={fmt(h.depositWaiting)} />}
       {h.installmentsToCome > 0 && <Line label="Installments still to come (not due)" value={fmt(h.installmentsToCome)} />}
+      {creditHint && h.credit > 0 && (
+        <div className="xs" aria-label="Credit hint">
+          This total is {rp(h.credit)} above what the bank shows: that is a refund credit kept for its owner, not taken off anyone else&apos;s bill.
+        </div>
+      )}
+      {totalsDifference !== undefined && (
+        <div className="xs warn-text" aria-label="Totals warning">
+          Totals differ from the bank by {rp(Math.abs(totalsDifference))}.
+        </div>
+      )}
     </div>
   )
 }
@@ -242,13 +279,22 @@ function DraftPanel({ ledger, statement }: { ledger: Ledger; statement: Statemen
   const issues = draftIssues(ledger, statement.id)
   const totals = statement.kind === 'billed' ? reconcileStatement(ledger, statement.id) : null
   if (issues.final) {
+    // A difference the user confirmed at import does not block Final, but it stays visible.
+    if (totals && !totals.ok) {
+      return (
+        <div className="status draft" aria-label="Draft or Final">
+          <h3>Final, but totals differ from the bank by {rp(Math.abs(totals.difference))}</h3>
+          <div className="xs">Every row checked and every payment assigned. Fix or add rows in Transactions if the bank&apos;s figure is right.</div>
+          <Link className="link" to={txPath(statement.id)}>
+            Open in Transactions
+          </Link>
+        </div>
+      )
+    }
     return (
       <div className="status final" aria-label="Draft or Final">
         <h3>Final ✓</h3>
-        <div className="xs">
-          Every row checked and every payment assigned
-          {totals ? (totals.ok ? '. Totals match the bank.' : `. Totals check: off by ${rp(totals.difference)}.`) : '.'}
-        </div>
+        <div className="xs">Every row checked and every payment assigned{totals ? '. Totals match the bank.' : '.'}</div>
       </div>
     )
   }

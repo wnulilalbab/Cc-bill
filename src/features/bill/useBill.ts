@@ -6,11 +6,13 @@ import type { CardWithOwners } from '../../data/cards'
 import { loadLedger } from '../../data/repo'
 import type { Ledger, Statement } from '../../domain/types'
 import { useData } from '../data/DataContext'
+import { localIsoDate } from '../data/today'
 import { useDbQuery } from '../data/useDbQuery'
 import { useAppearance } from '../look/Appearance'
 import { defaultStatementId } from '../transactions/view'
 
-export const todayIso = () => new Date().toISOString().slice(0, 10)
+/** The device's local date ("As of", installments snapshot). */
+export const todayIso = () => localIsoDate()
 
 export interface BillData {
   cards: CardWithOwners[] | undefined

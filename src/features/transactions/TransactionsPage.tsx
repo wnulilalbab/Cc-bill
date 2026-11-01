@@ -13,6 +13,7 @@ import type { OwnerRecord } from '../../data/cards'
 import { loadLedger } from '../../data/repo'
 import { markReviewed } from '../../data/transactions'
 import { useData } from '../data/DataContext'
+import { localIsoDate } from '../data/today'
 import { useDbQuery } from '../data/useDbQuery'
 import { useAppearance } from '../look/Appearance'
 import { ownerColor } from '../look/palettes'
@@ -47,7 +48,7 @@ import {
 type Open = { kind: 'row'; id: string } | { kind: 'tag'; id: string; ownerId: string } | { kind: 'bulk' } | { kind: 'add' } | null
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => localIsoDate()
 
 export function TransactionsPage() {
   const { db } = useData()

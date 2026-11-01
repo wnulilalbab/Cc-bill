@@ -22,7 +22,7 @@ import { rp } from '../settings/format'
 import { PaymentsRoutes } from '../payments/PaymentsRoutes'
 import { TransactionsPage } from '../transactions/TransactionsPage'
 import { fmt } from '../transactions/view'
-import { BillPage } from './BillPage'
+import { BillPage, NO_OWNER, personPath } from './BillPage'
 import { PersonPage } from './PersonPage'
 import { todayIso } from './useBill'
 import { groupByKind, hasSomething, monthName, personPayments } from './view'
@@ -342,6 +342,11 @@ describe('person detail', () => {
     expectOwnerRows(d.cb, cards, 'mandiri')
     expect(within(ownerRow('Kantor')).getByText('Paid ✓')).toBeTruthy()
     expect(rowKv('Kantor').Credit).toBe(fmt(k.credit))
+    // M-09: the card total is above the bank balance by the credit; the hero says why.
+    expect(d.cb.total - k.credit).toBe(sum(d.cb.owners.map((o) => o.mustPay - o.credit)))
+    expect(screen.getByLabelText('Credit hint').textContent).toBe(
+      `This total is ${rp(k.credit)} above what the bank shows: that is a refund credit kept for its owner, not taken off anyone else's bill.`,
+    )
     // The card total is the others' bills; Kantor's credit does not lower them.
     expect(d.cb.total).toBe(sum(d.cb.owners.filter((o) => o.ownerId !== kantor).map((o) => o.mustPay)))
 
@@ -378,6 +383,21 @@ describe('person detail', () => {
     expect(num(heroLines()['Already paid'])).toBe(0 - b.alreadyPaid)
   })
 
+  it('person links encode the owner id; "No owner" uses a sentinel that cannot be a real id', async () => {
+    expect(personPath('own er/1?x', 's 1')).toBe('/v2/bill/person/own%20er%2F1%3Fx?s=s%201')
+    expect(personPath(null, 'oct')).toBe(`/v2/bill/person/${NO_OWNER}?s=oct`)
+    expect(NO_OWNER).toBe('_none')
+    const db = freshNewDb()
+    const cardId = await saveCard(db, { name: 'Kartu Aneh', bank: 'BNI', last4: '0003', statementDay: '12', palette: 'blue', owners: [{ name: 'Andi', color: '#000' }], defaultIndex: 0 })
+    await db.owners.put({ id: 'odd/id?#1', cardId, name: 'Odd' })
+    await db.statements.put({ id: 'odd-oct', cardId, kind: 'billed', statementDate: '2026-10-12', dueDate: '2026-10-28', printed: { prevBalance: 0, credits: 0, purchases: 5_000, feesInterest: 0, newBalance: 5_000 } })
+    await db.transactions.put(tx(cardId, 'odd-oct', 'o1', '2026-10-03', 'KOPI', 5_000, 'odd/id?#1'))
+    const { user } = await openBill(db, cardId)
+    await user.click(ownerRow('Odd'))
+    expect(await screen.findByRole('heading', { name: 'Odd' })).toBeTruthy()
+    expect(big()).toBe(rp(5_000))
+  })
+
   it('an unknown person says so; "No owner" rows have their own detail; Open Payments links to /v2/payments', async () => {
     const { db, cards } = await household()
     const l = await loadLedger(db, cards.bca)
@@ -386,7 +406,7 @@ describe('person detail', () => {
     const { user } = await openBill(db, cards.bca)
     await user.click(ownerRow('No owner'))
     await screen.findByRole('heading', { name: 'No owner' })
-    expect(location()).toBe(`/v2/bill/person/none?s=${nov.id}`)
+    expect(location()).toBe(`/v2/bill/person/_none?s=${nov.id}`)
     expect(big()).toBe(rp(30_000))
     await user.click(screen.getByRole('link', { name: 'Open Payments' }))
     expect(location()).toBe('/v2/payments')
@@ -475,6 +495,20 @@ describe('Draft / Final on Bill', () => {
     expect(await screen.findByRole('dialog', { name: /GRAB\* A-1PENDING/ })).toBeTruthy()
   })
 
+  it('F-09 a totals difference does not block Final but stays visible on the Final panel and the hero', async () => {
+    const { db, cards } = await household()
+    await assignAll(db, cards.bca)
+    await markReviewed(db, (await loadLedger(db, cards.bca)).transactions.map((t) => t.id))
+    const nov = latestBilled(await loadLedger(db, cards.bca), cards.bca)!
+    await db.statements.put({ ...nov, printed: { ...nov.printed, purchases: nov.printed.purchases + 1, newBalance: nov.printed.newBalance + 1 } })
+    expect(draftIssues(await loadLedger(db, cards.bca), nov.id).final).toBe(true)
+    await openBill(db, cards.bca)
+    const panel = screen.getByLabelText('Draft or Final')
+    expect(within(panel).getByText('Final, but totals differ from the bank by Rp 1')).toBeTruthy()
+    expect(within(panel).getByRole('link', { name: 'Open in Transactions' }).getAttribute('href')).toBe(`/v2/transactions?statement=${nov.id}`)
+    expect(screen.getByLabelText('Totals warning').textContent).toBe('Totals differ from the bank by Rp 1.')
+  })
+
   it('F-09 with every row checked and every payment assigned the bill is Final; totals match the bank', async () => {
     const { db, cards } = await household()
     await assignAll(db, cards.bca)
@@ -485,6 +519,7 @@ describe('Draft / Final on Bill', () => {
     const panel = screen.getByLabelText('Draft or Final')
     expect(within(panel).getByText('Final ✓')).toBeTruthy()
     expect(within(panel).getByText('Every row checked and every payment assigned. Totals match the bank.')).toBeTruthy()
+    expect(screen.queryByLabelText('Totals warning')).toBeNull()
   })
 
   it('F-10 a negative fee (a rebate) is accepted from Bill: stored on the row; the statement turns Final', async () => {
@@ -493,6 +528,8 @@ describe('Draft / Final on Bill', () => {
     await markReviewed(db, (await loadLedger(db, cards.bca)).transactions.map((t) => t.id))
     const nov = latestBilled(await loadLedger(db, cards.bca), cards.bca)!
     await db.transactions.put(tx(cards.bca, nov.id, 'rebate', '2026-11-12', 'BIAYA ADM KARTU REBATE', -15_000, cards.owners.bca.Keluarga, { kind: 'fee' }))
+    // The bank printed the rebate too, so the totals still match.
+    await db.statements.put({ ...nov, printed: { ...nov.printed, feesInterest: nov.printed.feesInterest - 15_000, newBalance: nov.printed.newBalance - 15_000 } })
     const { user } = await openBill(db, cards.bca)
     const panel = screen.getByLabelText('Draft or Final')
     expect(within(panel).getByText('Negative fee: BIAYA ADM KARTU REBATE −15.000')).toBeTruthy()
@@ -502,6 +539,12 @@ describe('Draft / Final on Bill', () => {
     expect(await screen.findByText('Accepted as a rebate')).toBeTruthy()
     expect((await db.transactions.get('rebate'))!.signAccepted).toBe(true)
     expect(draftIssues(await loadLedger(db, cards.bca), nov.id).wrongSignRows).toEqual([])
+    // The rebate shows as "Rebate", not "Refund", in the person's fees.
+    await user.click(ownerRow('Keluarga'))
+    const fees = await screen.findByLabelText('Fees and interest')
+    const row = within(fees).getByLabelText('BIAYA ADM KARTU REBATE −15.000')
+    expect(within(row).getByText('Rebate')).toBeTruthy()
+    expect(within(row).queryByText('Refund')).toBeNull()
   })
 
   it('F-10 a wrong sign that is not a rebate only offers Fix', async () => {
