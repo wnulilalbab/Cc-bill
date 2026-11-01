@@ -10,6 +10,7 @@ import { Shell } from './features/Shell'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { RulesPage } from './features/tagging/RulesPage'
 import { ImportPage } from './features/import/ImportPage'
+import { TransactionsPage } from './features/transactions/TransactionsPage'
 
 function BottomNav() {
   const location = useLocation()
@@ -17,7 +18,7 @@ function BottomNav() {
   const links = [
     { to: '/', label: 'Dashboard', icon: IconHome },
     { to: '/v2/import', label: 'Import', icon: IconUpload },
-    { to: '/transactions', label: 'Transaksi', icon: IconList },
+    { to: '/v2/transactions', label: 'Transactions', icon: IconList },
     { to: '/payments', label: 'Bayar', icon: IconCard },
     { to: '/v2/settings', label: 'Settings', icon: IconGear },
   ]
@@ -66,6 +67,7 @@ export default function App() {
             <Route path="/v2/settings" element={<Shell><SettingsPage /></Shell>} />
             <Route path="/v2/rules" element={<Shell><RulesPage /></Shell>} />
             <Route path="/v2/import" element={<Shell><ImportPage /></Shell>} />
+            <Route path="/v2/transactions" element={<Shell><TransactionsPage /></Shell>} />
           </Routes>
         </main>
         <BottomNav />

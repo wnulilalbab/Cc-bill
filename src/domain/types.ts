@@ -84,6 +84,8 @@ export interface Transaction {
   installment?: { n: number; of: number }
   /** Unbilled row the user chose to "Keep waiting" for although it is older than the latest statement. */
   keepWaiting?: boolean
+  /** The user's own name for the row (Transactions row sheet), shown instead of the merchant. Not used by the money. */
+  label?: string
 }
 
 export interface Allocation {

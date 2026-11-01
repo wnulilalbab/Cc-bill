@@ -16,6 +16,7 @@ import {
   labelHistory,
   listDismissals,
   listRules,
+  PaymentChoiceNeeded,
   previewRuleOnCard,
   RuleError,
   saveRule,
@@ -125,14 +126,24 @@ describe('tagging rules (data)', () => {
     expect((await db.transactions.get('t3'))?.ownerId).toBe('a-sari')
   })
 
-  it('setOwner on a paid row keeps the payment assignment for now (Slice 8 asks Keep / Unassign, X-05/X-06)', async () => {
+  it('X-05/X-06 setOwner on a paid row needs Keep / Unassign; the same owner needs no choice', async () => {
     const db = await seed()
-    await db.transactions.put(tx('t1', 'KCI 1', 'a-andi'))
+    await db.transactions.put(tx('t1', 'KCI 1', 'a-andi', { check: true }))
     const payment = { id: 'p1', cardId: 'A', source: 'manual' as const, date: '2026-10-05', amount: 9000, allocations: [{ txId: 't1', amount: 9000 }] }
     await db.payments.put(payment)
-    await setOwner(db, 't1', 'a-sari')
+    await expect(setOwner(db, 't1', 'a-sari')).rejects.toBeInstanceOf(PaymentChoiceNeeded)
+    expect((await db.transactions.get('t1'))?.ownerId).toBe('a-andi')
+    expect(await setOwner(db, 't1', 'a-andi')).toMatchObject({ ownerId: 'a-andi', tagSource: 'manual' })
+
+    await setOwner(db, 't1', 'a-sari', { payments: 'keep' })
     expect(await db.transactions.get('t1')).toMatchObject({ ownerId: 'a-sari', tagSource: 'manual' })
     expect(await db.payments.get('p1')).toEqual(payment)
+
+    await setOwner(db, 't1', 'a-andi', { payments: 'unassign' })
+    expect((await db.transactions.get('t1'))?.ownerId).toBe('a-andi')
+    expect(await db.payments.get('p1')).toEqual({ ...payment, allocations: [] })
+    // Not covered any more: no choice needed.
+    expect(await setOwner(db, 't1', null)).toMatchObject({ ownerId: null })
   })
 
   it('T-06 the tag sheet sets one owner by hand: source You, Check cleared; refuses bad owners', async () => {
