@@ -50,6 +50,8 @@ describe('repositories', () => {
     await r.transactions.put(tx('t2', 'c1', 's2'))
     await r.payments.put(pay('p1'))
     await r.plans.put({ id: 'pl1', cardId: 'c1', ownerId: 'o1', name: 'Plan', monthly: 100, total: 3, start: '2026-08' })
+    await r.rules.put({ id: 'r1', cardId: 'c1', match: 'startsWith', pattern: 'GRAB*', ownerId: 'o1', updatedAt: '2026-10-01T00:00:00.000Z' })
+    expect((await r.rules.byCard('c1')).map((x) => x.id)).toEqual(['r1'])
 
     expect(await r.cards.get('c1')).toMatchObject({ name: 'BCA Shared' })
     expect(await r.cards.list()).toHaveLength(1)
@@ -64,7 +66,7 @@ describe('repositories', () => {
     await r.owners.remove('o2')
     expect(await r.owners.get('o2')).toBeUndefined()
     const all = await readAll(db)
-    expect(Object.fromEntries(Object.entries(all).map(([k, v]) => [k, v.length]))).toEqual({ cards: 1, owners: 1, statements: 1, transactions: 2, payments: 1, plans: 1 })
+    expect(Object.fromEntries(Object.entries(all).map(([k, v]) => [k, v.length]))).toEqual({ cards: 1, owners: 1, statements: 1, transactions: 2, payments: 1, plans: 1, rules: 1 })
   })
 
   it('G-06 refuses money that is not integer rupiah', async () => {

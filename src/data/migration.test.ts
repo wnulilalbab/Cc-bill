@@ -158,7 +158,7 @@ describe('migration of the synthetic old-format backup', () => {
     const plan = planMigration(old)
     const broken: MigrationPlan = { ...plan, data: { ...plan.data, payments: [...plan.data.payments, { id: undefined } as unknown as Payment] } }
     await expect(applyMigration(db, broken, NOW)).rejects.toThrow()
-    expect(await readAll(db)).toEqual({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [] })
+    expect(await readAll(db)).toEqual({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [], rules: [] })
     expect(await db.meta.count()).toBe(0)
   })
 })

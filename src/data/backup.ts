@@ -25,6 +25,8 @@ export function parseNewBackup(json: string): NewData {
   if (obj?.format !== BACKUP_FORMAT) throw new MigrationError('This file is not a CC Bill backup of the new app.')
   if (obj.version !== BACKUP_VERSION) throw new MigrationError(`Unsupported backup version ${JSON.stringify(obj.version)}.`)
   for (const t of DATA_TABLES) {
+    // Backups made before tagging rules existed (Slice 7) have no "rules" list: no rules.
+    if (t === 'rules' && obj.data && !('rules' in obj.data)) obj.data.rules = []
     const rows = obj.data?.[t]
     if (!Array.isArray(rows)) throw new MigrationError(`The backup is missing the "${t}" list.`)
     const seen = new Set<string>()

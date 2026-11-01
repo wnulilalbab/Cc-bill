@@ -1,4 +1,5 @@
 // CRUD on the Phase-1 database. Thin and typed: money rules live in src/domain; every write is checked (validate.ts).
+import type { TagRule } from '../domain/tagging/types'
 import type { Card, InstallmentPlan, Ledger, Owner, Payment, Statement, Transaction } from '../domain/types'
 import { DATA_TABLES, emptyData, type DataRecords, type DataTable, type NewData, type NewDb } from './db'
 import { checkRecord } from './validate'
@@ -39,6 +40,7 @@ export interface Repos {
   transactions: CardScopedRepo<Transaction> & { byStatement(statementId: string): Promise<Transaction[]> }
   payments: CardScopedRepo<Payment>
   plans: CardScopedRepo<InstallmentPlan>
+  rules: CardScopedRepo<TagRule>
 }
 
 export function repos(db: NewDb): Repos {
@@ -49,6 +51,7 @@ export function repos(db: NewDb): Repos {
     transactions: { ...cardScoped(db, 'transactions'), byStatement: (id) => db.transactions.where('statementId').equals(id).toArray() },
     payments: cardScoped(db, 'payments'),
     plans: cardScoped(db, 'plans'),
+    rules: cardScoped(db, 'rules'),
   }
 }
 

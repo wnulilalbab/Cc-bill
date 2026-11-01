@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 const scope = [
   'src/domain/**/*.ts',
   'src/data/**/*.ts',
-  'src/ai/**/*.ts',
+  'src/ai/**/*.ts', // incl. src/ai/tagging (Slice 7)
   'src/import/**/*.ts',
   'src/features/**/*.{ts,tsx}',
   'src/components/**/*.{ts,tsx}',

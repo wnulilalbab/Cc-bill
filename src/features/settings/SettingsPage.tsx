@@ -91,6 +91,11 @@ export function SettingsPage() {
       <button type="button" className="btn ghost" onClick={() => openCard(null)}>
         + Add card
       </button>
+      {!!cards?.length && (
+        <Link to="/v2/rules" className="btn ghost">
+          Tagging rules
+        </Link>
+      )}
 
       <div className="lbl">Look</div>
       <div className="skin">

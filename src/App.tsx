@@ -8,6 +8,7 @@ import Settings from './pages/Settings'
 import { GearIcon } from './components/icons'
 import { Shell } from './features/Shell'
 import { SettingsPage } from './features/settings/SettingsPage'
+import { RulesPage } from './features/tagging/RulesPage'
 
 function BottomNav() {
   const location = useLocation()
@@ -62,6 +63,7 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             {/* Phase-1 screens (new database). The legacy screens above are replaced in later slices. */}
             <Route path="/v2/settings" element={<Shell><SettingsPage /></Shell>} />
+            <Route path="/v2/rules" element={<Shell><RulesPage /></Shell>} />
           </Routes>
         </main>
         <BottomNav />

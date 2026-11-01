@@ -70,7 +70,7 @@ describe('Settings → Testing', () => {
     await user.click(screen.getByRole('button', { name: 'Reset new data' }))
     await user.click(screen.getByRole('button', { name: 'Reset' }))
     await screen.findByText('New data reset')
-    expect(await readAll(db)).toEqual({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [] })
+    expect(await readAll(db)).toEqual({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [], rules: [] })
     expect(await dumpIdb(oldName)).toEqual(before)
     await screen.findByText(/No cards yet/)
 

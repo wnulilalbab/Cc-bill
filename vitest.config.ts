@@ -29,6 +29,7 @@ export default defineConfig({
         'src/domain/**': gate(100, 100, 100, 100),
         'src/data/**': gate(95, 90),
         'src/ai/**': gate(95),
+        'src/ai/tagging/**': gate(95, 90),
         'src/import/**': gate(95),
         'src/pages/**': gate(80),
         'src/components/**': gate(80),
