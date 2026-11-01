@@ -359,7 +359,7 @@ describe('Settings → Data → Delete old data', () => {
     const old = (await readOldData(oldName))!
     await migrate(db, old, planMigration(old))
     let release = () => {}
-    const save = () => new Promise<void>((resolve) => (release = resolve))
+    const save = vi.fn(() => new Promise<void>((resolve) => (release = resolve)))
     const onClose = vi.fn()
     const user = userEvent.setup()
     render(
@@ -372,6 +372,7 @@ describe('Settings → Data → Delete old data', () => {
     await user.keyboard('{Escape}')
     await user.click(screen.getByTestId('sheet-overlay'))
     expect(onClose).not.toHaveBeenCalled()
+    await waitFor(() => expect(save).toHaveBeenCalled())
     release()
     await screen.findByText(/Backup ready/)
     await user.keyboard('{Escape}')

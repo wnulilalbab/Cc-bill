@@ -37,6 +37,7 @@ export function DeleteOldSheet({ onClose, onDeleted, save = defaultSave, now = (
   async function saveBackup(method: SaveMethod) {
     setBusy(true)
     setError(null)
+    setSaved(null)
     try {
       const verification = await lastVerification(db)
       if (!verification?.ok) throw new MigrationError('Old data can only be deleted after a migration has passed verification.')
