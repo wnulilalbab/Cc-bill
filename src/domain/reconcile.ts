@@ -1,4 +1,4 @@
-import { assertRupiah, MoneyError, sum } from './money'
+import { assertRupiah, MoneyError, signContradicts, sum } from './money'
 import { statementById } from './statements'
 import type { Ledger, PrintedTotals, Rupiah, TxKind } from './types'
 
@@ -13,6 +13,8 @@ export interface Reconciliation {
   /** computed new balance − printed new balance (0 when ok). */
   difference: Rupiah
   computed: { credits: Rupiah; purchases: Rupiah; feesInterest: Rupiah; newBalance: Rupiah }
+  /** Indexes of rows whose sign contradicts their kind (a positive credit or a negative charge). */
+  wrongSign: number[]
 }
 
 const CREDIT = new Set(['payment', 'refund', 'reversal'])
@@ -29,7 +31,8 @@ export function reconcile(printed: PrintedTotals, rows: readonly StatementRow[])
   const feesInterest = total((r) => r.kind === 'fee' || r.kind === 'interest')
   const newBalance = printed.prevBalance - credits + purchases + feesInterest
   const difference = newBalance - printed.newBalance
-  return { ok: difference === 0, difference, computed: { credits, purchases, feesInterest, newBalance } }
+  const wrongSign = rows.flatMap((r, i) => (signContradicts(r.kind, r.amount) ? [i] : []))
+  return { ok: difference === 0, difference, computed: { credits, purchases, feesInterest, newBalance }, wrongSign }
 }
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ledger, months, pay, tx, unbilled } from '../../test/domain/builders'
+import { billed, ledger, months, pay, tx, unbilled } from '../../test/domain/builders'
 import { draftIssues } from './draft'
 import { keepWaiting, keepWaitingRow } from './payments'
 
@@ -90,8 +90,56 @@ describe('Draft / Final', () => {
       transactions: [tx('t', 'oct', '2026-10-01', 1470000, 'sari')],
       payments: [pay('line', '2026-09-27', 1470000, { source: 'statement', statementId: 'oct', allocations: [{ txId: 't', amount: 1470000 }] })],
     }
-    expect(draftIssues(l, 'oct')).toEqual({ checkRows: [], blockingPayments: [], missingPayments: [], notOnStatementRows: [], notOnStatementPayments: [], count: 0, final: true })
+    expect(draftIssues(l, 'oct')).toEqual({
+      checkRows: [],
+      wrongSignRows: [],
+      blockingPayments: [],
+      missingPayments: [],
+      possibleDuplicatePayments: [],
+      notOnStatementRows: [],
+      notOnStatementPayments: [],
+      count: 0,
+      final: true,
+    })
   })
+
+  it('Q2 a missing hand payment blocks only statements due on/after it: not a back-filled Jun statement, but Sep and later', () => {
+    const l = { ...base(), statements: [billed('jun', '2026-06-12', '2026-06-28'), ...base().statements], payments: [pay('h', '2026-09-20', 100000)] }
+    expect(draftIssues(l, 'oct').missingPayments).toEqual(['h'])
+    expect(draftIssues(l, 'sep').missingPayments).toEqual(['h'])
+    expect(draftIssues(l, 'unb').missingPayments).toEqual(['h'])
+    expect(draftIssues(l, 'aug').missingPayments).toEqual([])
+    expect(draftIssues(l, 'jun')).toMatchObject({ missingPayments: [], final: true })
+    const dueDay = { ...l, payments: [pay('h', '2026-09-28', 100000)] }
+    expect(draftIssues(dueDay, 'sep').missingPayments).toEqual(['h'])
+  })
+
+  it('M-D-41 draft issues only look at the statement\'s own card', () => {
+    const l = {
+      ...base(),
+      statements: [...base().statements, billed('m-oct', '2026-10-11', '2026-10-31', 'm')],
+      transactions: [tx('mc', 'm-oct', '2026-10-01', 1, 'a', { cardId: 'm', check: true }), tx('mg', 'm-unb', '2026-10-01', 1, 'a', { cardId: 'm' })],
+      payments: [pay('mp', '2026-10-08', 5, { cardId: 'm' }), pay('ml', '2026-10-02', 5, { cardId: 'm', source: 'statement', statementId: 'm-oct' }), pay('cp', '2026-09-05', 5)],
+    }
+    expect(draftIssues(l, 'oct')).toMatchObject({ checkRows: [], blockingPayments: [], missingPayments: ['cp'], notOnStatementRows: [], count: 1 })
+    expect(draftIssues(l, 'm-oct')).toMatchObject({ checkRows: ['mc'], blockingPayments: ['mp', 'ml'], missingPayments: [], notOnStatementRows: ['mg'], count: 4 })
+  })
+
+  it('M-D-42 a row whose sign contradicts its kind keeps the statement Draft', () => {
+    const l = { ...base(), transactions: [tx('posRefund', 'oct', '2026-10-01', 44631, 'a', { kind: 'refund' }), tx('negBuy', 'oct', '2026-10-02', -9000, 'a', { kind: 'purchase' }), tx('ok', 'oct', '2026-10-02', -5, 'a')] }
+    expect(draftIssues(l, 'oct')).toMatchObject({ wrongSignRows: ['posRefund', 'negBuy'], count: 2, final: false })
+  })
+
+  it('M-D-43 a possible duplicate hand payment is listed (not as blocking) on statements due on/after it', () => {
+    const l = {
+      ...base(),
+      payments: [pay('line', '2026-09-30', 1900000, { source: 'statement', statementId: 'oct', allocations: [{ txId: 't', amount: 1900000 }] }), pay('hand', '2026-09-28', 1900000)],
+    }
+    expect(draftIssues(l, 'oct')).toMatchObject({ possibleDuplicatePayments: ['hand'], blockingPayments: [], missingPayments: [], count: 1 })
+    expect(draftIssues(l, 'aug').possibleDuplicatePayments).toEqual([])
+  })
+
+  it.todo('Q6 (phase 2) Fill oldest first should not offer a charge fully netted by a refund for the same merchant')
 
   it('M-D-40 a card with no billed statement only checks rows and payments; unknown statements throw', () => {
     const l = ledger({ statements: [unbilled()], transactions: [tx('u', 'unb', '2026-10-01', 1, 'a', { check: true })] })

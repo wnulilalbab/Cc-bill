@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { billed, ledger, months, pay, tx, unbilled } from '../../test/domain/builders'
-import { computeMoney, depositLeftOf, paidOf } from './amounts'
+import { computeMoney, depositLeftOf, ownerDepositLeft, paidOf } from './amounts'
+import { paymentTab } from './payments'
 import { convertToInstallment, monthsLeft, parseInstallment, parseInstallmentReversal, type ConversionResult } from './installments'
 import type { InstallmentPlan, Ledger } from './types'
 
@@ -110,9 +111,25 @@ describe('installment conversion', () => {
     const r = ok(convertToInstallment(blibli({ payments: [full, mine, andis] }), 'rev', 'np'))
     expect(r.payments).toEqual([
       { ...mine, allocations: [], depositOwnerId: 'sari' },
-      { ...andis, allocations: [] },
+      { ...andis, allocations: [], depositOwnerId: undefined },
     ])
+    expect('depositOwnerId' in r.payments[1]).toBe(false)
     expect(r.conflicts).toEqual(['andis'])
+  })
+
+  it('M-D-89 a conflicted payment loses the other person\'s deposit: back to To assign, never 800.000 in Bima\'s deposit', () => {
+    const base = blibli()
+    const l: Ledger = {
+      ...base,
+      transactions: base.transactions.map((t) => (t.id === 'i1' ? { ...t, amount: 200000, description: 'CICILAN BCA KE 01 DARI 05, BLIBLI.COM', installment: { n: 1, of: 5 } } : t)),
+      payments: [pay('p', '2026-09-27', 1100000, { source: 'statement', statementId: 'oct', allocations: [{ txId: 'orig', amount: 1000000 }], depositOwnerId: 'bima' })],
+    }
+    const r = ok(convertToInstallment(l, 'rev', 'np'))
+    expect(r.conflicts).toEqual(['p'])
+    expect(r.payments).toEqual([{ id: 'p', cardId: 'c', source: 'statement', statementId: 'oct', date: '2026-09-27', amount: 1100000, allocations: [{ txId: 'i1', amount: 200000 }] }])
+    const after = { ...l, transactions: l.transactions.map((t) => r.transactions.find((x) => x.id === t.id) ?? t), payments: r.payments }
+    expect(ownerDepositLeft(computeMoney(after), 'bima')).toBe(0)
+    expect(paymentTab(after, r.payments[0])).toBe('toAssign')
   })
 
   it('M-D-85 an original with no owner cannot pass its excess to a deposit', () => {

@@ -13,6 +13,7 @@ import {
   tapCharge,
   type AssignDraft,
 } from './allocate'
+import { computeMoney, depositLeftOf } from './amounts'
 import { MoneyError } from './money'
 
 // Statements deliberately out of order: the page must sort them.
@@ -214,5 +215,13 @@ describe('checking and saving', () => {
     expect(savePayment(l, bank, typed, null)).toMatchObject({ amount: 500000, date: '2026-10-20' })
     expect(() => savePayment(l, bank, draft({ amount: 900000, allocations: { a1: 600000 } }), null)).toThrow(MoneyError)
     expect(savePayment(l, pay('h', '2026-10-20', 500000), typed, null)).toMatchObject({ amount: 900000, date: '2026-10-01' })
+  })
+
+  it('P-13 a hand payment matched to a bank line keeps the bank amount and date: no phantom deposit, link stays valid', () => {
+    const linked = pay('h', '2026-09-28', 1900000, { linkedStatementLine: 'line' })
+    const typed = draft({ paymentId: 'h', amount: 1950000, date: '2026-10-20', allocations: { s1: 200000 } })
+    const saved = savePayment(l, linked, typed, 'sari')
+    expect(saved).toMatchObject({ amount: 1900000, date: '2026-09-28', linkedStatementLine: 'line', depositOwnerId: 'sari' })
+    expect(depositLeftOf(computeMoney(ledger({ payments: [saved] })), saved)).toBe(1700000)
   })
 })

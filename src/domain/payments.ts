@@ -1,10 +1,11 @@
 import { countedPayments, depositLeftOf, depositUsedOf, unassignedOf, type MoneyState } from './amounts'
+import { couldMatch, MATCH_WINDOW_DAYS } from './matching'
 import { daysBetween } from './money'
 import { billedOf, previousBilled } from './statements'
 import type { Ledger, Owner, Payment, Rupiah, Statement, Transaction } from './types'
 
-/** A statement that should show a payment, closed at least this many days after it. */
-export const MISSING_GRACE_DAYS = 3
+/** A statement that should show a payment, closed at least this many days after it (same as the matching window). */
+export const MISSING_GRACE_DAYS = MATCH_WINDOW_DAYS
 
 export type BankStatus =
   | { kind: 'onStatement'; statementId: string }
@@ -12,14 +13,24 @@ export type BankStatus =
   | { kind: 'linked'; statementId: string }
   | { kind: 'missing'; statementId: string }
   | { kind: 'waiting'; statementId: string }
+  /** A bank line with the same amount within ±5 days exists but already has its own assignments: maybe the same money twice. */
+  | { kind: 'possibleDuplicate'; lineId: string }
   | { kind: 'pending' }
 
-/** Where the bank shows a payment. Hand-recorded payments become `missing` once a statement dated ≥3 days later doesn't show them. */
+/** Where the bank shows a payment. Hand-recorded payments become `missing` once a statement dated ≥5 days later doesn't show them;
+ * `possibleDuplicate` when an already-assigned bank line could be the same money (unless kept waiting). */
 export function bankStatus(ledger: Pick<Ledger, 'statements' | 'payments'>, p: Payment): BankStatus {
   if (p.source === 'statement') return { kind: 'onStatement', statementId: p.statementId! }
   if (p.source === 'unbilled') return { kind: 'unbilled', statementId: p.statementId! }
   const line = ledger.payments.find((x) => x.source !== 'manual' && x.id === p.linkedStatementLine)
   if (line) return { kind: 'linked', statementId: line.statementId! }
+  if (!p.waiting) {
+    const linkedIds = new Set(ledger.payments.filter((x) => x.source === 'manual').map((x) => x.linkedStatementLine))
+    const twin = ledger.payments.find(
+      (x) => x.source !== 'manual' && !linkedIds.has(x.id) && (x.allocations.length > 0 || x.depositOwnerId !== undefined) && couldMatch(p, x),
+    )
+    if (twin) return { kind: 'possibleDuplicate', lineId: twin.id }
+  }
   const next = billedOf(ledger, p.cardId).find((s) => daysBetween(p.date, s.statementDate) >= MISSING_GRACE_DAYS)
   if (!next) return { kind: 'pending' }
   return { kind: p.waiting ? 'waiting' : 'missing', statementId: next.id }
@@ -31,9 +42,9 @@ export function printedOn(ledger: Pick<Ledger, 'statements' | 'payments'>, p: Pa
   return st.kind === 'onStatement' || st.kind === 'unbilled' || st.kind === 'linked' ? st.statementId : undefined
 }
 
-/** Bank amounts and dates are read-only; only hand-recorded payments can be edited. */
+/** Bank amounts and dates are read-only; so is a hand-recorded payment once matched to a bank line (the bank is the truth). */
 export function canEditAmountAndDate(p: Payment): boolean {
-  return p.source === 'manual'
+  return p.source === 'manual' && !p.linkedStatementLine
 }
 
 /**
@@ -66,7 +77,8 @@ export type PaymentTab = 'toAssign' | 'recordedNotOnStatement' | 'done'
 /** Payments tab section. `null` for a bank line merged into a hand-recorded payment (shown through that one). */
 export function paymentTab(ledger: Pick<Ledger, 'statements' | 'payments'>, p: Payment): PaymentTab | null {
   if (!countedPayments(ledger.payments).includes(p)) return null
-  if (bankStatus(ledger, p).kind === 'missing') return 'recordedNotOnStatement'
+  const status = bankStatus(ledger, p).kind
+  if (status === 'missing' || status === 'possibleDuplicate') return 'recordedNotOnStatement'
   if (unassignedOf(p) > 0 && p.depositOwnerId === undefined) return 'toAssign'
   return 'done'
 }

@@ -59,6 +59,8 @@ export interface OwnerBill {
   depositWaiting: Rupiah
   /** this remaining + older remaining, never below 0. */
   mustPay: Rupiah
+  /** When that net is negative (refunds larger than charges): the credit, as a positive number. mustPay − credit = net. */
+  credit: Rupiah
   /** Nothing open: show "Paid ✓", not 0. */
   settled: boolean
 }
@@ -112,7 +114,8 @@ export function ownerBill(ledger: Ledger, ownerId: string | null, statementId: s
     })
     .filter((f) => f.monthsLeft > 0)
 
-  const mustPay = Math.max(0, thisRemaining + olderRemaining)
+  const net = thisRemaining + olderRemaining
+  const mustPay = Math.max(0, net)
   return {
     ownerId,
     statementId: s.id,
@@ -128,6 +131,7 @@ export function ownerBill(ledger: Ledger, ownerId: string | null, statementId: s
     installmentsToComeTotal: sum(installmentsToCome.map((f) => f.amount)),
     depositWaiting: ownerDepositLeft(state, ownerId),
     mustPay,
+    credit: mustPay - net,
     settled: mustPay === 0,
   }
 }

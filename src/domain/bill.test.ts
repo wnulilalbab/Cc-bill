@@ -128,7 +128,18 @@ describe('owner bill', () => {
     expect(b.alreadyPaid).toBe(500000)
     expect(b.olderRemaining).toBe(300000)
     expect(b.mustPay).toBe(1367840)
+    expect(b.credit).toBe(0)
     expect(b.charges - b.alreadyPaid + b.olderRemaining).toBe(b.mustPay)
+  })
+
+  it('M-10 hero lines add up when refunds exceed charges: shown as a credit, to pay 0', () => {
+    const l = ledger({
+      statements: months(),
+      transactions: [tx('a', 'oct', '2026-10-01', 100000, 'rumah'), tx('r', 'oct', '2026-10-03', -150000, 'rumah'), tx('old', 'sep', '2026-09-01', 30000, 'rumah')],
+    })
+    const b = ownerBill(l, 'rumah', 'oct', TODAY)
+    expect([b.charges, b.alreadyPaid, b.olderRemaining, b.mustPay, b.credit]).toEqual([-50000, 0, 30000, 0, 20000])
+    expect(b.charges - b.alreadyPaid + b.olderRemaining).toBe(b.mustPay - b.credit)
   })
 
   it('M-11 an owner with nothing open is settled (Paid ✓), never below 0', () => {
@@ -140,8 +151,9 @@ describe('owner bill', () => {
     const b = ownerBill(l, 'sari', 'oct', TODAY)
     expect(b.thisRemaining).toBe(-40000)
     expect(b.mustPay).toBe(0)
+    expect(b.credit).toBe(40000)
     expect(b.settled).toBe(true)
-    expect(ownerBill(l, 'nobody', 'oct', TODAY)).toMatchObject({ mustPay: 0, settled: true, charges: 0, lines: [] })
+    expect(ownerBill(l, 'nobody', 'oct', TODAY)).toMatchObject({ mustPay: 0, credit: 0, settled: true, charges: 0, lines: [] })
   })
 
   it('M-D-23 an older refund nets against its own statement; a fully refunded older statement is not listed', () => {
@@ -171,8 +183,10 @@ describe('owner bill', () => {
     expect(b.older.map((g) => [g.statement.id, g.remaining, g.lines.map((x) => x.tx.id)])).toEqual([['aug', -381327, ['r1']]])
     expect(b.olderRemaining).toBe(-381327)
     expect(b.mustPay).toBe(118673)
+    expect(b.credit).toBe(0)
+    // Nothing to absorb the carried refund: the credit is visible, not hidden.
     const small = { ...l, transactions: l.transactions.map((t) => (t.id === 'n' ? { ...t, amount: 1000 } : t)) }
-    expect(ownerBill(small, 'andi', 'oct', TODAY)).toMatchObject({ mustPay: 0, settled: true })
+    expect(ownerBill(small, 'andi', 'oct', TODAY)).toMatchObject({ mustPay: 0, credit: 380327, settled: true })
   })
 
   it('M-D-24 deposit waiting is part of the bill', () => {

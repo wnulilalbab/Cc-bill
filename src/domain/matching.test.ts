@@ -65,6 +65,10 @@ describe('credit line classification', () => {
     expect(classifyCredit('REFUND SHOPEE.CO.ID *AP1260721')).toBe('refund')
     expect(classifyCredit('REFUND SHOPEE Jakarta SelatID')).toBe('refund')
     expect(classifyCredit('REVERSAL REFUND X')).toBe('reversal')
+    // REVERSAL wins over REFUND wherever the words appear; REFUND wins over payment words.
+    expect(classifyCredit('REFUND REVERSAL CICILAN X')).toBe('reversal')
+    expect(classifyCredit('REFUND PEMBAYARAN GANDA')).toBe('refund')
+    expect(classifyCredit('PAYMENT REVERSAL')).toBe('reversal')
     expect(classifyCredit('CASHBACK PROMO')).toBeNull()
     expect(classifyCredit('PAYMENTS')).toBeNull()
   })
