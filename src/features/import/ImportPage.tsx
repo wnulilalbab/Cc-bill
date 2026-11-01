@@ -173,6 +173,7 @@ export function ImportPage({ pdfjs = loadPdfjs, fetch }: ImportPageProps) {
               options={(cards ?? []).map((c) => ({ value: c.card.id, label: c.card.name, sub: `${c.card.bank}${c.card.last4 ? ` •••• ${c.card.last4}` : ''}` }))}
               onChange={(v) => {
                 setCardId(v)
+                setHolder('') // a name typed for one card never goes to another
                 setLocked(false)
                 setError('')
               }}

@@ -24,7 +24,8 @@ export default defineConfig({
     acceptDownloads: true,
   },
   webServer: {
-    command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
+    // CI builds staging just before this step (PHASE1_PREBUILT=1): then only serve that build.
+    command: `${process.env.PHASE1_PREBUILT ? '' : 'npm run build && '}npx vite preview --port ${PORT} --strictPort`,
     env: { VITE_APP_ENV: 'staging', VITE_BASE: BASE },
     url: `http://localhost:${PORT}${BASE}`,
     timeout: 180_000,

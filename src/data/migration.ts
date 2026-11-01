@@ -141,7 +141,7 @@ export function planMigration(old: OldData, options: MigrationOptions = {}): Mig
   const unbilledPeriods = old.periods.filter(isUnbilled)
   const statementOf = new Map<string, string>(unbilledPeriods.map((p) => [p.id, MIGRATED_UNBILLED_ID]))
   for (const p of billedPeriods) {
-    if (p.month < 1 || p.month > 12) throw new MigrationError(`Statement ${p.id} has month ${p.month}; it must be 1–12.`)
+    if (p.month < 1 || p.month > 12) throw new MigrationError(`A statement has month ${p.month}; it must be 1–12 (statement ${p.id}).`)
     statementOf.set(p.id, p.id)
   }
   note('card', `All ${plural(billedPeriods.length, 'statement')} and their rows and payments go to card "${card.name}".`, billedPeriods.map((p) => p.id))
@@ -384,6 +384,16 @@ export interface VerificationRecord {
   differences: Difference[]
 }
 
+const RECORD_NAME: Record<DataTable, string> = {
+  cards: 'A card',
+  owners: 'An owner',
+  statements: 'A statement',
+  transactions: 'A transaction',
+  payments: 'A payment',
+  plans: 'An installment plan',
+  rules: 'A tagging rule',
+}
+
 const META_MIGRATION = 'migration'
 const META_VERIFICATION = 'verification'
 
@@ -393,7 +403,20 @@ const META_VERIFICATION = 'verification'
  */
 export async function applyMigration(db: NewDb, plan: MigrationPlan, now: string = new Date().toISOString()): Promise<void> {
   // Every record passes the same checks as any other write (src/data/validate) before anything is written.
-  for (const t of DATA_TABLES) for (const r of plan.data[t]) checkRecord(t, r as never)
+  for (const t of DATA_TABLES) {
+    for (const r of plan.data[t]) {
+      try {
+        checkRecord(t, r as never)
+      } catch (e) {
+        // "plan plan-1 total must be…" → "An installment plan can't be stored: total must be… Nothing was written. (plan plan-1)"
+        const id = (r as { id?: unknown }).id
+        const what = `${t.slice(0, -1)} ${String(id)}`
+        const message = e instanceof Error ? e.message : String(e)
+        const detail = message.startsWith(`${what} `) ? message.slice(what.length + 1) : message
+        throw new MigrationError(`${RECORD_NAME[t]} can't be stored in the new app: ${detail}. Nothing was written. (${what})`)
+      }
+    }
+  }
   await db.transaction('rw', [...db.dataTables(), db.meta], async () => {
     const previous = (await db.meta.get(META_MIGRATION))?.value as MigrationRecord | undefined
     if (previous) for (const t of DATA_TABLES) await db.table(t).bulkDelete(previous.ids[t] ?? []) // runs before Slice 7 have no rules ids

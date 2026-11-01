@@ -111,6 +111,22 @@ describe('Import screen', () => {
     expect(screen.queryByLabelText(/Card holder name/)).toBeNull()
   })
 
+  it('I-05 a holder name typed for one card is cleared when the card changes; it is never saved on another card', async () => {
+    const fetch = mockFetch(aiAnswerFor(expected('statements/bca-2026-07')))
+    const { user, db, cards } = await setup(fetch)
+    await pickCard(user, 'BCA Keluarga')
+    choose(asFile('statements/bca-2026-07.pdf'))
+    await user.type(await screen.findByLabelText(/Card holder name/), 'Andi Pratama')
+    await pickCard(user, 'Mandiri Pribadi')
+    expect((screen.getByLabelText(/Card holder name/) as HTMLInputElement).value).toBe('')
+    await pickCard(user, 'BCA Keluarga')
+    expect((screen.getByLabelText(/Card holder name/) as HTMLInputElement).value).toBe('')
+    await user.click(screen.getByRole('button', { name: 'Read statement' }))
+    expect(await screen.findByText('Totals match the bank ✓')).toBeTruthy()
+    expect(((await db.cards.get(cards.bca)) as { holderName?: string }).holderName).toBeUndefined()
+    expect(((await db.cards.get(cards.mandiri)) as { holderName?: string }).holderName).toBeUndefined()
+  })
+
   it('I-05 the holder name question: only for a statement PDF; left empty, nothing is saved', async () => {
     const fetch = mockFetch(aiAnswerFor(expected('statements/bca-2026-07')))
     const { user, db, cards } = await setup(fetch)

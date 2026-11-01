@@ -76,6 +76,9 @@ interface Run {
   leaks: string[]
 }
 
+/** What must never reach the AI (I-05): the holder's surname and either card's full or masked number. Last 4 alone is fine. */
+const SECRETS = ['PRATAMA', ...Object.values(household.cards).flatMap((c) => [c.masked, c.masked.replace(/[^0-9]/g, '').slice(0, 6)])]
+
 async function guardNetwork(page: Page): Promise<Run> {
   const run: Run = { aiCalls: [], leaks: [] }
   await page.context().route('**/*', async (route) => {
@@ -85,7 +88,9 @@ async function guardNetwork(page: Page): Promise<Run> {
     if (url.hostname === 'api.anthropic.com') {
       const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, OPTIONS' }
       if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors })
-      const body = JSON.parse(req.postData() ?? '{}')
+      const raw = req.postData() ?? '{}'
+      for (const secret of SECRETS) if (raw.toUpperCase().includes(secret.toUpperCase())) run.leaks.push(`AI request contains "${secret}"`)
+      const body = JSON.parse(raw)
       const hit = answerForRequest(body)
       if (!hit) {
         run.leaks.push(`unrecognised AI request (${req.postData()?.length ?? 0} bytes)`)
