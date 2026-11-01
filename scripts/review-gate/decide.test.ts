@@ -134,6 +134,10 @@ describe('decide', () => {
 describe('prNumberFromEvent', () => {
   it('reads pull_request events', () => expect(prNumberFromEvent({ pull_request: { number: 7 } })).toBe(7))
   it('reads comments on PRs', () => expect(prNumberFromEvent({ issue: { number: 9, pull_request: {} } })).toBe(9))
+  it('reads the pr input of a manual dispatch', () => expect(prNumberFromEvent({ inputs: { pr: '20' } })).toBe(20))
+  it('rejects malformed dispatch input', () => {
+    for (const pr of ['', '0', '-1', '20abc', '1e3', ' 20', '12345678901', 20]) expect(prNumberFromEvent({ inputs: { pr } }), String(pr)).toBeUndefined()
+  })
   it('ignores comments on plain issues and unknown events', () => {
     expect(prNumberFromEvent({ issue: { number: 9 } })).toBeUndefined()
     expect(prNumberFromEvent({})).toBeUndefined()
