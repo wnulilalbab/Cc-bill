@@ -40,7 +40,7 @@ export interface ConversionResult {
   /** Payments whose assignments changed. */
   payments: Payment[]
   plan: InstallmentPlan
-  /** Payment ids whose excess could not become the owner's deposit (already a deposit for someone else). */
+  /** Payment ids whose excess could not become the owner's deposit (deposit for someone else, or no owner): their deposit is cleared, so they go back to To assign. */
   conflicts: string[]
 }
 
@@ -117,7 +117,11 @@ export function convertToInstallment(
       const next: Payment = { ...p, allocations }
       if (move < onOriginal) {
         if (p.depositOwnerId === undefined && ownerId !== null) next.depositOwnerId = ownerId
-        else if (p.depositOwnerId !== ownerId) conflicts.push(p.id)
+        else if (p.depositOwnerId !== ownerId) {
+          // The excess is the purchase owner's money: never leave it in someone else's deposit. "Decide later".
+          delete next.depositOwnerId
+          conflicts.push(p.id)
+        }
       }
       return next
     })

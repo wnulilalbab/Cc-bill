@@ -198,8 +198,10 @@ describe('fixtures: the household story Jul → Nov', () => {
     const l = { ...withSari, transactions: [...withSari.transactions, pending] }
     expect(draftIssues(l, 'bca-2026-11')).toEqual({
       checkRows: [TOKOPEDIA],
+      wrongSignRows: [],
       blockingPayments: ['hand-1018'],
       missingPayments: ['hand-0905'],
+      possibleDuplicatePayments: [],
       notOnStatementRows: ['grab-pending'],
       notOnStatementPayments: [],
       count: 4,

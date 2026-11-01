@@ -4,6 +4,11 @@ import type { Payment } from './types'
 /** A hand-recorded payment and a bank payment line match within this many days. */
 export const MATCH_WINDOW_DAYS = 5
 
+/** Same card, same amount, dates within ±5 days. */
+export function couldMatch(hand: Payment, line: Payment): boolean {
+  return line.cardId === hand.cardId && line.amount === hand.amount && Math.abs(daysBetween(hand.date, line.date)) <= MATCH_WINDOW_DAYS
+}
+
 export interface PaymentLink {
   paymentId: string
   lineId: string
@@ -25,7 +30,7 @@ export function matchManualPayments(payments: readonly Payment[]): PaymentLink[]
   const links: PaymentLink[] = []
   for (const p of manual) {
     const best = lines
-      .filter((l) => !used.has(l.id) && l.cardId === p.cardId && l.amount === p.amount && Math.abs(daysBetween(p.date, l.date)) <= MATCH_WINDOW_DAYS)
+      .filter((l) => !used.has(l.id) && couldMatch(p, l))
       .sort((a, b) => Math.abs(daysBetween(p.date, a.date)) - Math.abs(daysBetween(p.date, b.date)) || a.date.localeCompare(b.date))[0]
     if (best) {
       used.add(best.id)

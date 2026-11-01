@@ -18,6 +18,7 @@ describe('totals check', () => {
         ok: true,
         difference: 0,
         computed: { credits: e.printed.credits, purchases: e.printed.purchases, feesInterest: e.printed.feesInterest, newBalance: e.printed.newBalance },
+        wrongSign: [],
       })
     }
   })
@@ -42,11 +43,26 @@ describe('totals check', () => {
       { amount: 60, kind: 'fee' },
       { amount: 40, kind: 'interest' },
     ])
-    expect(r).toEqual({ ok: true, difference: 0, computed: { credits: 370, purchases: 700, feesInterest: 100, newBalance: 1430 } })
+    expect(r).toEqual({ ok: true, difference: 0, computed: { credits: 370, purchases: 700, feesInterest: 100, newBalance: 1430 }, wrongSign: [] })
     expect(reconcile({ ...printed, newBalance: 1500 }, []).difference).toBe(-500)
     expect(() => reconcile(printed, [{ amount: 0.5, kind: 'purchase' }])).toThrow(MoneyError)
     expect(() => reconcile({ ...printed, prevBalance: 0.5 }, [])).toThrow('previous balance')
     expect(() => reconcile({ ...printed, newBalance: 0.5 }, [])).toThrow('new balance')
+  })
+
+  it('M-D-72 flags rows whose sign contradicts their kind instead of silently counting them', () => {
+    const printed: PrintedTotals = { prevBalance: 0, credits: 0, purchases: 0, feesInterest: 0, newBalance: 0 }
+    const r = reconcile(printed, [
+      { amount: 44631, kind: 'refund' },
+      { amount: 100, kind: 'reversal' },
+      { amount: 5, kind: 'payment' },
+      { amount: -9000, kind: 'purchase' },
+      { amount: -1, kind: 'fee' },
+      { amount: 0, kind: 'refund' },
+      { amount: -5, kind: 'payment' },
+      { amount: 7, kind: 'interest' },
+    ])
+    expect(r.wrongSign).toEqual([0, 1, 2, 3, 4])
   })
 
   it('M-D-71 a statement in the ledger reconciles from its rows and bank payment lines (cancelled and reversal rows as printed)', () => {

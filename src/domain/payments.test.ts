@@ -15,6 +15,7 @@ import {
   paymentTab,
   printedOn,
 } from './payments'
+import { MATCH_WINDOW_DAYS } from './matching'
 import type { Owner } from './types'
 
 const stmts = months()
@@ -38,12 +39,13 @@ describe('bank status', () => {
     expect(bankStatus(ledger({ statements: stmts, payments: [otherHand, hand] }), hand).kind).toBe('missing')
   })
 
-  it('P-14 a hand payment with no line becomes missing on the first statement dated ≥3 days after it', () => {
+  it('P-14 a hand payment with no line becomes missing on the first statement dated ≥5 days after it (= the match window)', () => {
     const l = ledger({ statements: stmts })
-    expect(MISSING_GRACE_DAYS).toBe(3)
+    expect(MISSING_GRACE_DAYS).toBe(5)
+    expect(MISSING_GRACE_DAYS).toBe(MATCH_WINDOW_DAYS)
     expect(bankStatus(l, pay('bima', '2026-09-05', 300000))).toEqual({ kind: 'missing', statementId: 'sep' })
-    expect(bankStatus(l, pay('edge', '2026-09-09', 1))).toEqual({ kind: 'missing', statementId: 'sep' })
-    expect(bankStatus(l, pay('grace', '2026-09-10', 1))).toEqual({ kind: 'missing', statementId: 'oct' })
+    expect(bankStatus(l, pay('edge', '2026-09-07', 1))).toEqual({ kind: 'missing', statementId: 'sep' })
+    expect(bankStatus(l, pay('grace', '2026-09-08', 1))).toEqual({ kind: 'missing', statementId: 'oct' })
     expect(bankStatus(l, pay('recent', '2026-10-10', 1))).toEqual({ kind: 'pending' })
     expect(bankStatus(l, pay('other', '2026-09-05', 1, { cardId: 'm' }))).toEqual({ kind: 'pending' })
   })
@@ -70,6 +72,25 @@ describe('bank status', () => {
     expect(canEditAmountAndDate(pay('s', '2026-09-27', 1, { source: 'statement', statementId: 'oct' }))).toBe(false)
     expect(canEditAmountAndDate(pay('u', '2026-09-27', 1, { source: 'unbilled', statementId: 'unb' }))).toBe(false)
     expect(canEditAmountAndDate(pay('m', '2026-09-27', 1))).toBe(true)
+    // Matched to a bank line: the bank amount and date are the truth.
+    expect(canEditAmountAndDate(pay('h', '2026-09-28', 1, { linkedStatementLine: 'l' }))).toBe(false)
+  })
+
+  it('M-D-34 a hand payment next to an already-assigned bank line of the same amount is a possible duplicate', () => {
+    const assigned = pay('line', '2026-09-30', 1900000, { source: 'statement', statementId: 'oct', allocations: [{ txId: 't', amount: 1900000 }] })
+    const deposited = pay('dline', '2026-09-30', 700000, { source: 'unbilled', statementId: 'unb', depositOwnerId: 'sari' })
+    const hand = pay('hand', '2026-09-28', 1900000)
+    const l = ledger({ statements: stmts, payments: [assigned, deposited, hand] })
+    expect(bankStatus(l, hand)).toEqual({ kind: 'possibleDuplicate', lineId: 'line' })
+    expect(bankStatus(l, pay('h7', '2026-10-05', 700000))).toEqual({ kind: 'possibleDuplicate', lineId: 'dline' })
+    expect(paymentTab(l, hand)).toBe('recordedNotOnStatement')
+    // Kept waiting, too far, a free line (the matcher will link it), or a line another hand payment took: no warning.
+    expect(bankStatus(l, keepWaiting(hand))).toEqual({ kind: 'waiting', statementId: 'oct' })
+    expect(bankStatus(l, pay('far', '2026-09-24', 1900000)).kind).toBe('missing')
+    const free = ledger({ statements: stmts, payments: [pay('fl', '2026-09-30', 1900000, { source: 'statement', statementId: 'oct' }), hand] })
+    expect(bankStatus(free, hand).kind).toBe('missing')
+    const taken = ledger({ statements: stmts, payments: [assigned, pay('other', '2026-09-29', 1900000, { linkedStatementLine: 'line' }), hand] })
+    expect(bankStatus(taken, hand).kind).toBe('missing')
   })
 })
 
