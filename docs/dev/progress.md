@@ -6,8 +6,8 @@ Kept by the Lead. Any session resumes from here. Rules: [`../intent/dev-loop.md`
 
 | Slice | State | PR | Notes |
 |---|---|---|---|
-| 0 Gate the deploy | in review | — | main → staging only; Release workflow skeleton; docs brought in |
-| 1 Fixtures + harness + minimal CI | next | | |
+| 0 Gate the deploy | **done** | #16 | main → staging only (verified on gh-pages: `staging/` published, root untouched); Release workflow skeleton |
+| 1 Fixtures + harness + minimal CI | in review | | 5 BCA + 2 locked Mandiri PDFs, 2 Mandiri screenshot statements, 3 unbilled captures, corrupt + empty edge files, ~300-row old backup; 22 tests in CI |
 | 2 Pipeline | queued | | |
 | 3 Money core | queued | | |
 | 4 Database + migration | queued | | |
@@ -32,7 +32,7 @@ None.
 
 ## Waiting for the owner
 
-- One-time GitHub setup (branch protection, allow auto-merge, `ANTHROPIC_API_KEY_CI`, Pages). Checklist will be posted when Slice 2 lands.
+- ~~One-time GitHub setup~~ **done 2026-11-01**: ruleset `protect-main` (PR required, 0 approvals, required check `ci`, block force pushes, restrict deletions), auto-merge allowed, environment `release` (main only) with `ANTHROPIC_API_KEY_CI`. After Slice 2: add `coverage`, `mutation`, `review-gate` to the ruleset; release.yml must declare `environment: release`.
 - Before opening staging on a phone that already has the app installed: run the **first Release** once. Until then the old production service worker (without the staging deny-list) can serve the production app at `/staging/`.
 
 ## Follow-ups for later slices
@@ -40,8 +40,9 @@ None.
 - Slice 2: Release checks must **fail** (not warn) when `ANTHROPIC_API_KEY_CI` is missing.
 - Slice 2: put `ANTHROPIC_API_KEY_CI` in a GitHub **Environment** restricted to `main` (so a Release dispatched from another branch can't use it); pin `peaceiris/actions-gh-pages` to a commit SHA.
 - Slice 2: create the tag/release only after the production smoke test passes.
+- Slice 2: type-check `scripts/` and `test/` in CI (Vitest transpiles without type checking; `tsc` only covers `src/`).
 - Shared origin: `localStorage` keys (`testing_mode`, `tx_filter_*`, and any new ones) must be environment-prefixed on staging so they never leak into production.
 
 ## Handover
 
-Next: Slice 1 — synthetic fixture generator (BCA Jul–Nov PDFs, Mandiri screenshots Aug–Sep + locked PDFs Oct–Nov, unbilled screenshots, edge files, synthetic old backup) with expected-result files, plus Vitest harness and CI test job.
+Next: Slice 2 — pipeline (coverage gates, mutation, review-gate, staging Playwright, full Release workflow with `environment: release`).

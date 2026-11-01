@@ -1,0 +1,136 @@
+{
+  "file": "bca-2026-10",
+  "card": "bca",
+  "bank": "BCA",
+  "format": "pdf",
+  "locked": false,
+  "statementDate": "2026-10-12",
+  "dueDate": "2026-10-28",
+  "printed": {
+    "prevBalance": 5846117,
+    "credits": 6046200,
+    "purchases": 3310284,
+    "feesInterest": 170895,
+    "newBalance": 3281096,
+    "minPayment": 334950
+  },
+  "rows": [
+    {
+      "txDate": "2026-09-15",
+      "postDate": "2026-09-15",
+      "description": "REVERSAL CICILAN BCA BLIBLI.COM *121",
+      "amount": -4376200,
+      "kind": "reversal",
+      "expectedOwner": "Sari",
+      "reverses": "BLIBLI.COM *121 SEPEDA STATIS"
+    },
+    {
+      "txDate": "2026-09-15",
+      "postDate": "2026-09-15",
+      "description": "CICILAN BCA KE 01 DARI 06, BLIBLI.COM",
+      "amount": 729367,
+      "kind": "installment",
+      "expectedOwner": "Sari",
+      "installment": {
+        "n": 1,
+        "of": 6,
+        "plan": "Sepeda Statis (Blibli)"
+      }
+    },
+    {
+      "txDate": "2026-09-25",
+      "postDate": "2026-09-25",
+      "description": "WATSONS SENAYAN CITY",
+      "amount": 200000,
+      "kind": "purchase",
+      "expectedOwner": "Sari"
+    },
+    {
+      "txDate": "2026-09-25",
+      "postDate": "2026-09-25",
+      "description": "CICILAN BCA KE 04 DARI 12, GARMIN INDONESIA",
+      "amount": 499917,
+      "kind": "installment",
+      "expectedOwner": "Andi",
+      "installment": {
+        "n": 4,
+        "of": 12,
+        "plan": "Garmin Forerunner"
+      }
+    },
+    {
+      "txDate": "2026-09-26",
+      "postDate": "2026-09-26",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -200000,
+      "kind": "payment",
+      "expectedOwner": null
+    },
+    {
+      "txDate": "2026-09-27",
+      "postDate": "2026-09-27",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -1470000,
+      "kind": "payment",
+      "expectedOwner": null
+    },
+    {
+      "txDate": "2026-09-28",
+      "postDate": "2026-09-28",
+      "description": "SHOPEE.CO.ID *AP1260928 JAKARTA BARATID",
+      "amount": 150000,
+      "kind": "purchase",
+      "expectedOwner": "Sari",
+      "needsCheck": true
+    },
+    {
+      "txDate": "2026-09-28",
+      "postDate": "2026-09-28",
+      "description": "SHOPEE.CO.ID *AP1260928 JAKARTA BARATID",
+      "amount": 150000,
+      "kind": "purchase",
+      "expectedOwner": "Andi",
+      "needsCheck": true
+    },
+    {
+      "txDate": "2026-10-02",
+      "postDate": "2026-10-03",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 245000,
+      "kind": "purchase",
+      "expectedOwner": "Bima"
+    },
+    {
+      "txDate": "2026-10-05",
+      "postDate": "2026-10-06",
+      "description": "RS PONDOK INDAH",
+      "amount": 1150000,
+      "kind": "purchase",
+      "expectedOwner": "Medis"
+    },
+    {
+      "txDate": "2026-10-08",
+      "postDate": "2026-10-08",
+      "description": "NETFLIX.COM",
+      "amount": 186000,
+      "kind": "purchase",
+      "expectedOwner": "Keluarga"
+    },
+    {
+      "txDate": "2026-10-12",
+      "postDate": "2026-10-12",
+      "description": "BUNGA",
+      "amount": 155895,
+      "kind": "interest",
+      "expectedOwner": "Keluarga"
+    },
+    {
+      "txDate": "2026-10-12",
+      "postDate": "2026-10-12",
+      "description": "BIAYA ADM KARTU",
+      "amount": 15000,
+      "kind": "fee",
+      "expectedOwner": "Keluarga"
+    }
+  ]
+}

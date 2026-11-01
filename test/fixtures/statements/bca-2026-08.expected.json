@@ -1,0 +1,99 @@
+{
+  "file": "bca-2026-08",
+  "card": "bca",
+  "bank": "BCA",
+  "format": "pdf",
+  "locked": false,
+  "statementDate": "2026-08-12",
+  "dueDate": "2026-08-28",
+  "printed": {
+    "prevBalance": 1796417,
+    "credits": 1381327,
+    "purchases": 2684084,
+    "feesInterest": 23508,
+    "newBalance": 3122682,
+    "minPayment": 179642
+  },
+  "rows": [
+    {
+      "txDate": "2026-07-26",
+      "postDate": "2026-07-26",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -1000000,
+      "kind": "payment",
+      "expectedOwner": null
+    },
+    {
+      "txDate": "2026-07-14",
+      "postDate": "2026-07-15",
+      "description": "GRAB* A-1AUG01CCCC JAKARTA PUSATID",
+      "amount": 9000,
+      "kind": "purchase",
+      "expectedOwner": "Andi"
+    },
+    {
+      "txDate": "2026-07-21",
+      "postDate": "2026-07-21",
+      "description": "SHOPEE.CO.ID *AP1260721 JAKARTA BARATID",
+      "amount": 355840,
+      "kind": "purchase",
+      "expectedOwner": "Sari",
+      "needsCheck": true
+    },
+    {
+      "txDate": "2026-07-21",
+      "postDate": "2026-07-21",
+      "description": "SHOPEE.CO.ID *AP1260721 JAKARTA BARATID",
+      "amount": 381327,
+      "kind": "purchase",
+      "expectedOwner": "Andi",
+      "needsCheck": true
+    },
+    {
+      "txDate": "2026-07-21",
+      "postDate": "2026-07-21",
+      "description": "SHOPEE.CO.ID *AP1260721 JAKARTA BARATID",
+      "amount": 1252000,
+      "kind": "purchase",
+      "expectedOwner": "Sari",
+      "needsCheck": true
+    },
+    {
+      "txDate": "2026-07-25",
+      "postDate": "2026-07-25",
+      "description": "CICILAN BCA KE 02 DARI 12, GARMIN INDONESIA",
+      "amount": 499917,
+      "kind": "installment",
+      "expectedOwner": "Andi",
+      "installment": {
+        "n": 2,
+        "of": 12,
+        "plan": "Garmin Forerunner"
+      }
+    },
+    {
+      "txDate": "2026-07-28",
+      "postDate": "2026-07-28",
+      "description": "NETFLIX.COM",
+      "amount": 186000,
+      "kind": "purchase",
+      "expectedOwner": "Keluarga"
+    },
+    {
+      "txDate": "2026-08-02",
+      "postDate": "2026-08-02",
+      "description": "REFUND SHOPEE.CO.ID *AP1260721",
+      "amount": -381327,
+      "kind": "refund",
+      "expectedOwner": "Andi"
+    },
+    {
+      "txDate": "2026-08-12",
+      "postDate": "2026-08-12",
+      "description": "BUNGA",
+      "amount": 23508,
+      "kind": "interest",
+      "expectedOwner": "Keluarga"
+    }
+  ]
+}

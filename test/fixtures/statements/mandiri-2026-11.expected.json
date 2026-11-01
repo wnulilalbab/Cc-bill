@@ -1,0 +1,65 @@
+{
+  "file": "mandiri-2026-11",
+  "card": "mandiri",
+  "bank": "Mandiri",
+  "format": "pdf",
+  "locked": true,
+  "password": "test1234",
+  "statementDate": "2026-11-11",
+  "dueDate": "2026-11-30",
+  "printed": {
+    "prevBalance": 647034,
+    "credits": 647034,
+    "purchases": 348133,
+    "feesInterest": 0,
+    "newBalance": 348133,
+    "minPayment": 17407
+  },
+  "rows": [
+    {
+      "txDate": "2026-10-31",
+      "postDate": "2026-10-31",
+      "description": "PAYMENT THANK YOU - Livin",
+      "amount": -647034,
+      "kind": "payment",
+      "expectedOwner": null
+    },
+    {
+      "txDate": "2026-10-30",
+      "postDate": "2026-10-30",
+      "description": "UNIQLO AEON BSD 003/003",
+      "amount": 133333,
+      "kind": "installment",
+      "expectedOwner": "Andi",
+      "installment": {
+        "n": 3,
+        "of": 3,
+        "plan": "Uniqlo AEON BSD"
+      }
+    },
+    {
+      "txDate": "2026-11-01",
+      "postDate": "2026-11-02",
+      "description": "KOPI SOE BLILI MART",
+      "amount": 19800,
+      "kind": "purchase",
+      "expectedOwner": "Andi"
+    },
+    {
+      "txDate": "2026-11-04",
+      "postDate": "2026-11-04",
+      "description": "Netflix.com Los Gatos SGP",
+      "amount": 120000,
+      "kind": "purchase",
+      "expectedOwner": "Rumah"
+    },
+    {
+      "txDate": "2026-10-23",
+      "postDate": "2026-10-25",
+      "description": "OPENAI *CHATGPT SUBSCR SAN FRANCISCO USA",
+      "amount": 75000,
+      "kind": "purchase",
+      "expectedOwner": "Kantor"
+    }
+  ]
+}

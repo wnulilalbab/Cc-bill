@@ -1,0 +1,6375 @@
+{
+  "owners": [
+    {
+      "id": "own-0",
+      "name": "Unknown",
+      "color": "red"
+    },
+    {
+      "id": "own-1",
+      "name": "Andi",
+      "color": "blue"
+    },
+    {
+      "id": "own-2",
+      "name": "Sari",
+      "color": "pink"
+    },
+    {
+      "id": "own-3",
+      "name": "Bima",
+      "color": "yellow"
+    },
+    {
+      "id": "own-4",
+      "name": "Keluarga",
+      "color": "purple"
+    },
+    {
+      "id": "own-5",
+      "name": "Medis",
+      "color": "teal"
+    }
+  ],
+  "periods": [
+    {
+      "id": "per-2026-01",
+      "label": "Jan 2026",
+      "month": 1,
+      "year": 2026,
+      "dueDate": "2026-01-28",
+      "importedAt": "2026-01-13T00:00:00.000Z",
+      "type": "billed"
+    },
+    {
+      "id": "per-2026-02",
+      "label": "Feb 2026",
+      "month": 2,
+      "year": 2026,
+      "dueDate": "2026-02-28",
+      "importedAt": "2026-02-13T00:00:00.000Z",
+      "type": "billed"
+    },
+    {
+      "id": "per-2026-03",
+      "label": "Mar 2026",
+      "month": 3,
+      "year": 2026,
+      "dueDate": "2026-03-28",
+      "importedAt": "2026-03-13T00:00:00.000Z",
+      "type": "billed"
+    },
+    {
+      "id": "per-2026-04",
+      "label": "Apr 2026",
+      "month": 4,
+      "year": 2026,
+      "dueDate": "2026-04-28",
+      "importedAt": "2026-04-13T00:00:00.000Z",
+      "type": "billed"
+    },
+    {
+      "id": "per-2026-05",
+      "label": "May 2026",
+      "month": 5,
+      "year": 2026,
+      "dueDate": "2026-05-28",
+      "importedAt": "2026-05-13T00:00:00.000Z",
+      "type": "billed"
+    },
+    {
+      "id": "per-2026-06",
+      "label": "Jun 2026",
+      "month": 6,
+      "year": 2026,
+      "dueDate": "2026-06-28",
+      "importedAt": "2026-06-13T00:00:00.000Z",
+      "type": "billed"
+    },
+    {
+      "id": "per-2026-07",
+      "label": "Jul 2026",
+      "month": 7,
+      "year": 2026,
+      "dueDate": "2026-07-28",
+      "importedAt": "2026-07-12T09:00:00.000Z",
+      "type": "billed"
+    },
+    {
+      "id": "per-2026-08",
+      "label": "Aug 2026",
+      "month": 8,
+      "year": 2026,
+      "dueDate": "2026-08-28",
+      "importedAt": "2026-08-12T09:00:00.000Z",
+      "type": "billed"
+    },
+    {
+      "id": "per-2026-09",
+      "label": "Sep 2026",
+      "month": 9,
+      "year": 2026,
+      "dueDate": "2026-09-28",
+      "importedAt": "2026-09-12T09:00:00.000Z",
+      "type": "billed"
+    },
+    {
+      "id": "unbilled-pool",
+      "label": "Unbilled",
+      "month": 0,
+      "year": 0,
+      "importedAt": "2026-09-20T00:00:00.000Z",
+      "type": "unbilled"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "tx-0001",
+      "periodId": "per-2026-01",
+      "date": "2026-01-10",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 21200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0002",
+      "periodId": "per-2026-01",
+      "date": "2026-01-06",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 41300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0003",
+      "periodId": "per-2026-01",
+      "date": "2026-01-12",
+      "description": "INDOMARET CILANDAK",
+      "amount": 111400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0004",
+      "periodId": "per-2026-01",
+      "date": "2026-01-08",
+      "description": "ALFAMART KEMANG",
+      "amount": 171700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0005",
+      "periodId": "per-2026-01",
+      "date": "2026-01-21",
+      "description": "ALFAMART KEMANG",
+      "amount": 22000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0006",
+      "periodId": "per-2026-01",
+      "date": "2026-01-16",
+      "description": "ALFAMART KEMANG",
+      "amount": 149300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0007",
+      "periodId": "per-2026-01",
+      "date": "2026-01-05",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 58200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0008",
+      "periodId": "per-2026-01",
+      "date": "2026-01-07",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 559600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0009",
+      "periodId": "per-2026-01",
+      "date": "2026-01-15",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 253700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0010",
+      "periodId": "per-2026-01",
+      "date": "2026-01-06",
+      "description": "ALFAMART KEMANG",
+      "amount": 38800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0011",
+      "periodId": "per-2026-01",
+      "date": "2026-01-23",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 407900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0012",
+      "periodId": "per-2026-01",
+      "date": "2026-01-26",
+      "description": "ALFAMART KEMANG",
+      "amount": 128200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0013",
+      "periodId": "per-2026-01",
+      "date": "2026-01-13",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 92500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0014",
+      "periodId": "per-2026-01",
+      "date": "2026-01-03",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 79900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0015",
+      "periodId": "per-2026-01",
+      "date": "2026-01-06",
+      "description": "INDOMARET CILANDAK",
+      "amount": 122000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0016",
+      "periodId": "per-2026-01",
+      "date": "2026-01-24",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 97800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0017",
+      "periodId": "per-2026-01",
+      "date": "2026-01-11",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 244200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0018",
+      "periodId": "per-2026-01",
+      "date": "2026-01-23",
+      "description": "INDOMARET CILANDAK",
+      "amount": 271200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0019",
+      "periodId": "per-2026-01",
+      "date": "2026-01-19",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 201000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0020",
+      "periodId": "per-2026-01",
+      "date": "2026-01-19",
+      "description": "ALFAMART KEMANG",
+      "amount": 50300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0021",
+      "periodId": "per-2026-01",
+      "date": "2026-01-12",
+      "description": "INDOMARET CILANDAK",
+      "amount": 251200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0022",
+      "periodId": "per-2026-01",
+      "date": "2026-01-17",
+      "description": "GRAB* A-121X1273 JAKARTA PUSATID",
+      "amount": 17100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0023",
+      "periodId": "per-2026-01",
+      "date": "2026-01-03",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 32600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0024",
+      "periodId": "per-2026-01",
+      "date": "2026-01-09",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 146100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0025",
+      "periodId": "per-2026-01",
+      "date": "2026-01-25",
+      "description": "INDOMARET CILANDAK",
+      "amount": 273500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0026",
+      "periodId": "per-2026-01",
+      "date": "2026-01-13",
+      "description": "INDOMARET CILANDAK",
+      "amount": 54500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0027",
+      "periodId": "per-2026-01",
+      "date": "2026-01-12",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 26000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0028",
+      "periodId": "per-2026-01",
+      "date": "2026-01-22",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 271000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0029",
+      "periodId": "per-2026-01",
+      "date": "2026-01-26",
+      "description": "SHOPEE.CO.ID *AP128X633 JAKARTA BARATID",
+      "amount": 236100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0030",
+      "periodId": "per-2026-01",
+      "date": "2026-01-18",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 19900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0031",
+      "periodId": "per-2026-01",
+      "date": "2026-01-27",
+      "description": "GRAB* A-130X2038 JAKARTA PUSATID",
+      "amount": 35100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0032",
+      "periodId": "per-2026-01",
+      "date": "2026-01-10",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 277900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0033",
+      "periodId": "per-2026-01",
+      "date": "2026-01-09",
+      "description": "INDOMARET CILANDAK",
+      "amount": 45200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0034",
+      "periodId": "per-2026-01",
+      "date": "2026-01-04",
+      "description": "INDOMARET CILANDAK",
+      "amount": 230800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0035",
+      "periodId": "per-2026-01",
+      "date": "2026-01-12",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 46800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0036",
+      "periodId": "per-2026-01",
+      "date": "2026-01-03",
+      "description": "ALFAMART KEMANG",
+      "amount": 57400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0037",
+      "periodId": "per-2026-01",
+      "date": "2026-01-01",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 57500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0038",
+      "periodId": "per-2026-01",
+      "date": "2026-01-21",
+      "description": "INDOMARET CILANDAK",
+      "amount": 230100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0039",
+      "periodId": "per-2026-01",
+      "date": "2026-01-09",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 620500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0040",
+      "periodId": "per-2026-01",
+      "date": "2026-01-11",
+      "description": "SHOPEE.CO.ID *AP139X1000 JAKARTA BARATID",
+      "amount": 161400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0041",
+      "periodId": "per-2026-01",
+      "date": "2026-01-24",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 66300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0042",
+      "periodId": "per-2026-01",
+      "date": "2026-01-27",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 315900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0043",
+      "periodId": "per-2026-01",
+      "date": "2026-01-13",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 222600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0044",
+      "periodId": "per-2026-01",
+      "date": "2026-01-04",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 90400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0045",
+      "periodId": "per-2026-01",
+      "date": "2026-01-15",
+      "description": "ALFAMART KEMANG",
+      "amount": 142100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0046",
+      "periodId": "per-2026-02",
+      "date": "2026-01-27",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -6765600,
+      "type": "payment",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0047",
+      "periodId": "per-2026-02",
+      "date": "2026-02-12",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 180300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0048",
+      "periodId": "per-2026-02",
+      "date": "2026-02-26",
+      "description": "GRAB* A-21X6951 JAKARTA PUSATID",
+      "amount": 12500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0049",
+      "periodId": "per-2026-02",
+      "date": "2026-02-25",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 47000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0050",
+      "periodId": "per-2026-02",
+      "date": "2026-02-03",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 47700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0051",
+      "periodId": "per-2026-02",
+      "date": "2026-02-06",
+      "description": "GRAB* A-24X2832 JAKARTA PUSATID",
+      "amount": 9000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0052",
+      "periodId": "per-2026-02",
+      "date": "2026-02-21",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 28400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0053",
+      "periodId": "per-2026-02",
+      "date": "2026-02-23",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 305000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0054",
+      "periodId": "per-2026-02",
+      "date": "2026-02-10",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 653500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0055",
+      "periodId": "per-2026-02",
+      "date": "2026-02-23",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 82800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0056",
+      "periodId": "per-2026-02",
+      "date": "2026-02-13",
+      "description": "GRAB* A-29X2650 JAKARTA PUSATID",
+      "amount": 27400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0057",
+      "periodId": "per-2026-02",
+      "date": "2026-02-13",
+      "description": "GRAB* A-210X8750 JAKARTA PUSATID",
+      "amount": 34300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0058",
+      "periodId": "per-2026-02",
+      "date": "2026-02-04",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 197400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0059",
+      "periodId": "per-2026-02",
+      "date": "2026-02-19",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 93800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0060",
+      "periodId": "per-2026-02",
+      "date": "2026-02-06",
+      "description": "ALFAMART KEMANG",
+      "amount": 73800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0061",
+      "periodId": "per-2026-02",
+      "date": "2026-02-25",
+      "description": "INDOMARET CILANDAK",
+      "amount": 247500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0062",
+      "periodId": "per-2026-02",
+      "date": "2026-02-06",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 305800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0063",
+      "periodId": "per-2026-02",
+      "date": "2026-02-21",
+      "description": "ALFAMART KEMANG",
+      "amount": 117900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0064",
+      "periodId": "per-2026-02",
+      "date": "2026-02-23",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 448400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0065",
+      "periodId": "per-2026-02",
+      "date": "2026-02-06",
+      "description": "INDOMARET CILANDAK",
+      "amount": 133700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0066",
+      "periodId": "per-2026-02",
+      "date": "2026-02-17",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 174900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0067",
+      "periodId": "per-2026-02",
+      "date": "2026-02-05",
+      "description": "GRAB* A-220X8469 JAKARTA PUSATID",
+      "amount": 34100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0068",
+      "periodId": "per-2026-02",
+      "date": "2026-02-20",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 28800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0069",
+      "periodId": "per-2026-02",
+      "date": "2026-02-15",
+      "description": "INDOMARET CILANDAK",
+      "amount": 74500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0070",
+      "periodId": "per-2026-02",
+      "date": "2026-02-07",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 51800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0071",
+      "periodId": "per-2026-02",
+      "date": "2026-02-09",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 151500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0072",
+      "periodId": "per-2026-02",
+      "date": "2026-02-08",
+      "description": "SHOPEE.CO.ID *AP225X2264 JAKARTA BARATID",
+      "amount": 365700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0073",
+      "periodId": "per-2026-02",
+      "date": "2026-02-01",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 367800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0074",
+      "periodId": "per-2026-02",
+      "date": "2026-02-19",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 224100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0075",
+      "periodId": "per-2026-02",
+      "date": "2026-02-24",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 51800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0076",
+      "periodId": "per-2026-02",
+      "date": "2026-02-09",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 103900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0077",
+      "periodId": "per-2026-02",
+      "date": "2026-02-24",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 30900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0078",
+      "periodId": "per-2026-02",
+      "date": "2026-02-18",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 22400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0079",
+      "periodId": "per-2026-02",
+      "date": "2026-02-07",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 48400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0080",
+      "periodId": "per-2026-02",
+      "date": "2026-02-14",
+      "description": "GRAB* A-233X6333 JAKARTA PUSATID",
+      "amount": 37300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0081",
+      "periodId": "per-2026-02",
+      "date": "2026-02-05",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 19700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0082",
+      "periodId": "per-2026-02",
+      "date": "2026-02-09",
+      "description": "INDOMARET CILANDAK",
+      "amount": 74900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0083",
+      "periodId": "per-2026-02",
+      "date": "2026-02-19",
+      "description": "GRAB* A-236X8682 JAKARTA PUSATID",
+      "amount": 14200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0084",
+      "periodId": "per-2026-02",
+      "date": "2026-02-03",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 159400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0085",
+      "periodId": "per-2026-02",
+      "date": "2026-02-25",
+      "description": "ALFAMART KEMANG",
+      "amount": 144600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0086",
+      "periodId": "per-2026-02",
+      "date": "2026-02-26",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 74600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0087",
+      "periodId": "per-2026-02",
+      "date": "2026-02-15",
+      "description": "GRAB* A-240X3560 JAKARTA PUSATID",
+      "amount": 42500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0088",
+      "periodId": "per-2026-02",
+      "date": "2026-02-11",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 138700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0089",
+      "periodId": "per-2026-02",
+      "date": "2026-02-18",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 389800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0090",
+      "periodId": "per-2026-02",
+      "date": "2026-02-07",
+      "description": "ALFAMART KEMANG",
+      "amount": 16300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0091",
+      "periodId": "per-2026-02",
+      "date": "2026-02-07",
+      "description": "GRAB* A-244X6236 JAKARTA PUSATID",
+      "amount": 10300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0092",
+      "periodId": "per-2026-03",
+      "date": "2026-02-27",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -5785400,
+      "type": "payment",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0093",
+      "periodId": "per-2026-03",
+      "date": "2026-03-24",
+      "description": "SHOPEE.CO.ID *AP30X1051 JAKARTA BARATID",
+      "amount": 767400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0094",
+      "periodId": "per-2026-03",
+      "date": "2026-03-05",
+      "description": "GRAB* A-31X383 JAKARTA PUSATID",
+      "amount": 20700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0095",
+      "periodId": "per-2026-03",
+      "date": "2026-03-27",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 195800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0096",
+      "periodId": "per-2026-03",
+      "date": "2026-03-26",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 276600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0097",
+      "periodId": "per-2026-03",
+      "date": "2026-03-21",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 93300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0098",
+      "periodId": "per-2026-03",
+      "date": "2026-03-23",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 289700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0099",
+      "periodId": "per-2026-03",
+      "date": "2026-03-19",
+      "description": "ALFAMART KEMANG",
+      "amount": 103300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0100",
+      "periodId": "per-2026-03",
+      "date": "2026-03-01",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 35500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0101",
+      "periodId": "per-2026-03",
+      "date": "2026-03-21",
+      "description": "ALFAMART KEMANG",
+      "amount": 56900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0102",
+      "periodId": "per-2026-03",
+      "date": "2026-03-17",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 44500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0103",
+      "periodId": "per-2026-03",
+      "date": "2026-03-25",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 37800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0104",
+      "periodId": "per-2026-03",
+      "date": "2026-03-25",
+      "description": "ALFAMART KEMANG",
+      "amount": 126600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0105",
+      "periodId": "per-2026-03",
+      "date": "2026-03-15",
+      "description": "INDOMARET CILANDAK",
+      "amount": 77200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0106",
+      "periodId": "per-2026-03",
+      "date": "2026-03-01",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 584400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0107",
+      "periodId": "per-2026-03",
+      "date": "2026-03-27",
+      "description": "GRAB* A-314X7089 JAKARTA PUSATID",
+      "amount": 30900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0108",
+      "periodId": "per-2026-03",
+      "date": "2026-03-14",
+      "description": "GRAB* A-315X1797 JAKARTA PUSATID",
+      "amount": 25100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0109",
+      "periodId": "per-2026-03",
+      "date": "2026-03-11",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 86300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0110",
+      "periodId": "per-2026-03",
+      "date": "2026-03-10",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 356800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0111",
+      "periodId": "per-2026-03",
+      "date": "2026-03-02",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 379800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0112",
+      "periodId": "per-2026-03",
+      "date": "2026-03-23",
+      "description": "ALFAMART KEMANG",
+      "amount": 159200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0113",
+      "periodId": "per-2026-03",
+      "date": "2026-03-13",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 181900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0114",
+      "periodId": "per-2026-03",
+      "date": "2026-03-03",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 36900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0115",
+      "periodId": "per-2026-03",
+      "date": "2026-03-24",
+      "description": "GRAB* A-322X2797 JAKARTA PUSATID",
+      "amount": 39200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0116",
+      "periodId": "per-2026-03",
+      "date": "2026-03-15",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 57600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0117",
+      "periodId": "per-2026-03",
+      "date": "2026-03-11",
+      "description": "ALFAMART KEMANG",
+      "amount": 62600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0118",
+      "periodId": "per-2026-03",
+      "date": "2026-03-26",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 116200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0119",
+      "periodId": "per-2026-03",
+      "date": "2026-03-08",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 43900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0120",
+      "periodId": "per-2026-03",
+      "date": "2026-03-11",
+      "description": "SHOPEE.CO.ID *AP327X1736 JAKARTA BARATID",
+      "amount": 705600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0121",
+      "periodId": "per-2026-03",
+      "date": "2026-03-18",
+      "description": "INDOMARET CILANDAK",
+      "amount": 80500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0122",
+      "periodId": "per-2026-03",
+      "date": "2026-03-13",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 96500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0123",
+      "periodId": "per-2026-03",
+      "date": "2026-03-25",
+      "description": "GRAB* A-330X1564 JAKARTA PUSATID",
+      "amount": 10600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0124",
+      "periodId": "per-2026-03",
+      "date": "2026-03-13",
+      "description": "GRAB* A-331X206 JAKARTA PUSATID",
+      "amount": 30700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0125",
+      "periodId": "per-2026-03",
+      "date": "2026-03-26",
+      "description": "INDOMARET CILANDAK",
+      "amount": 207700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0126",
+      "periodId": "per-2026-03",
+      "date": "2026-03-03",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 75700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0127",
+      "periodId": "per-2026-03",
+      "date": "2026-03-10",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 483600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0128",
+      "periodId": "per-2026-03",
+      "date": "2026-03-26",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 166400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0129",
+      "periodId": "per-2026-03",
+      "date": "2026-03-23",
+      "description": "INDOMARET CILANDAK",
+      "amount": 186400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0130",
+      "periodId": "per-2026-03",
+      "date": "2026-03-17",
+      "description": "GRAB* A-337X3811 JAKARTA PUSATID",
+      "amount": 44800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0131",
+      "periodId": "per-2026-03",
+      "date": "2026-03-08",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 475100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0132",
+      "periodId": "per-2026-03",
+      "date": "2026-03-24",
+      "description": "SHOPEE.CO.ID *AP339X5491 JAKARTA BARATID",
+      "amount": 95300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0133",
+      "periodId": "per-2026-03",
+      "date": "2026-03-25",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 219900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0134",
+      "periodId": "per-2026-03",
+      "date": "2026-03-24",
+      "description": "SHOPEE.CO.ID *AP341X5810 JAKARTA BARATID",
+      "amount": 562900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0135",
+      "periodId": "per-2026-03",
+      "date": "2026-03-08",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 294400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0136",
+      "periodId": "per-2026-03",
+      "date": "2026-03-21",
+      "description": "ALFAMART KEMANG",
+      "amount": 67300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0137",
+      "periodId": "per-2026-03",
+      "date": "2026-03-21",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 42600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0138",
+      "periodId": "per-2026-04",
+      "date": "2026-03-27",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -7599400,
+      "type": "payment",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0139",
+      "periodId": "per-2026-04",
+      "date": "2026-04-03",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 61600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0140",
+      "periodId": "per-2026-04",
+      "date": "2026-04-18",
+      "description": "GRAB* A-41X3620 JAKARTA PUSATID",
+      "amount": 20400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0141",
+      "periodId": "per-2026-04",
+      "date": "2026-04-15",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 49900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0142",
+      "periodId": "per-2026-04",
+      "date": "2026-04-04",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 48100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0143",
+      "periodId": "per-2026-04",
+      "date": "2026-04-26",
+      "description": "INDOMARET CILANDAK",
+      "amount": 84300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0144",
+      "periodId": "per-2026-04",
+      "date": "2026-04-05",
+      "description": "INDOMARET CILANDAK",
+      "amount": 244300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0145",
+      "periodId": "per-2026-04",
+      "date": "2026-04-22",
+      "description": "GRAB* A-46X9241 JAKARTA PUSATID",
+      "amount": 44600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0146",
+      "periodId": "per-2026-04",
+      "date": "2026-04-03",
+      "description": "ALFAMART KEMANG",
+      "amount": 167000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0147",
+      "periodId": "per-2026-04",
+      "date": "2026-04-14",
+      "description": "GRAB* A-48X2773 JAKARTA PUSATID",
+      "amount": 11800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0148",
+      "periodId": "per-2026-04",
+      "date": "2026-04-26",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 212200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0149",
+      "periodId": "per-2026-04",
+      "date": "2026-04-11",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 277800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0150",
+      "periodId": "per-2026-04",
+      "date": "2026-04-07",
+      "description": "GRAB* A-411X724 JAKARTA PUSATID",
+      "amount": 30200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0151",
+      "periodId": "per-2026-04",
+      "date": "2026-04-17",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 27800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0152",
+      "periodId": "per-2026-04",
+      "date": "2026-04-02",
+      "description": "SHOPEE.CO.ID *AP413X5005 JAKARTA BARATID",
+      "amount": 143400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0153",
+      "periodId": "per-2026-04",
+      "date": "2026-04-25",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 45000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0154",
+      "periodId": "per-2026-04",
+      "date": "2026-04-07",
+      "description": "GRAB* A-415X948 JAKARTA PUSATID",
+      "amount": 39800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0155",
+      "periodId": "per-2026-04",
+      "date": "2026-04-10",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 128500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0156",
+      "periodId": "per-2026-04",
+      "date": "2026-04-20",
+      "description": "SHOPEE.CO.ID *AP417X2504 JAKARTA BARATID",
+      "amount": 566200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0157",
+      "periodId": "per-2026-04",
+      "date": "2026-04-22",
+      "description": "SHOPEE.CO.ID *AP418X8760 JAKARTA BARATID",
+      "amount": 406200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0158",
+      "periodId": "per-2026-04",
+      "date": "2026-04-09",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 58900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0159",
+      "periodId": "per-2026-04",
+      "date": "2026-04-08",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 22300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0160",
+      "periodId": "per-2026-04",
+      "date": "2026-04-14",
+      "description": "GRAB* A-421X3192 JAKARTA PUSATID",
+      "amount": 34200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0161",
+      "periodId": "per-2026-04",
+      "date": "2026-04-20",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 112700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0162",
+      "periodId": "per-2026-04",
+      "date": "2026-04-26",
+      "description": "INDOMARET CILANDAK",
+      "amount": 123800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0163",
+      "periodId": "per-2026-04",
+      "date": "2026-04-07",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 224300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0164",
+      "periodId": "per-2026-04",
+      "date": "2026-04-11",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 282100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0165",
+      "periodId": "per-2026-04",
+      "date": "2026-04-11",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 33800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0166",
+      "periodId": "per-2026-04",
+      "date": "2026-04-14",
+      "description": "GRAB* A-427X1896 JAKARTA PUSATID",
+      "amount": 24900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0167",
+      "periodId": "per-2026-04",
+      "date": "2026-04-16",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 114600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0168",
+      "periodId": "per-2026-04",
+      "date": "2026-04-02",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 50700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0169",
+      "periodId": "per-2026-04",
+      "date": "2026-04-02",
+      "description": "SHOPEE.CO.ID *AP430X8945 JAKARTA BARATID",
+      "amount": 540800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0170",
+      "periodId": "per-2026-04",
+      "date": "2026-04-21",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 82700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0171",
+      "periodId": "per-2026-04",
+      "date": "2026-04-25",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 167700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0172",
+      "periodId": "per-2026-04",
+      "date": "2026-04-11",
+      "description": "SHOPEE.CO.ID *AP433X2314 JAKARTA BARATID",
+      "amount": 139900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0173",
+      "periodId": "per-2026-04",
+      "date": "2026-04-16",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 234000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0174",
+      "periodId": "per-2026-04",
+      "date": "2026-04-13",
+      "description": "ALFAMART KEMANG",
+      "amount": 102800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0175",
+      "periodId": "per-2026-04",
+      "date": "2026-04-01",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 158900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0176",
+      "periodId": "per-2026-04",
+      "date": "2026-04-12",
+      "description": "SHOPEE.CO.ID *AP437X6785 JAKARTA BARATID",
+      "amount": 679000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0177",
+      "periodId": "per-2026-04",
+      "date": "2026-04-01",
+      "description": "SHOPEE.CO.ID *AP438X2012 JAKARTA BARATID",
+      "amount": 602700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0178",
+      "periodId": "per-2026-04",
+      "date": "2026-04-09",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 89200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0179",
+      "periodId": "per-2026-04",
+      "date": "2026-04-13",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 19800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0180",
+      "periodId": "per-2026-04",
+      "date": "2026-04-26",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 47400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0181",
+      "periodId": "per-2026-04",
+      "date": "2026-04-14",
+      "description": "INDOMARET CILANDAK",
+      "amount": 261300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0182",
+      "periodId": "per-2026-04",
+      "date": "2026-04-05",
+      "description": "SHOPEE.CO.ID *AP443X6027 JAKARTA BARATID",
+      "amount": 102300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0183",
+      "periodId": "per-2026-04",
+      "date": "2026-04-06",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 162700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0184",
+      "periodId": "per-2026-05",
+      "date": "2026-04-27",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -6779000,
+      "type": "payment",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0185",
+      "periodId": "per-2026-05",
+      "date": "2026-05-17",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 210400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0186",
+      "periodId": "per-2026-05",
+      "date": "2026-05-09",
+      "description": "SHOPEE.CO.ID *AP51X9746 JAKARTA BARATID",
+      "amount": 447500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0187",
+      "periodId": "per-2026-05",
+      "date": "2026-05-11",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 73700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0188",
+      "periodId": "per-2026-05",
+      "date": "2026-05-17",
+      "description": "GRAB* A-53X8343 JAKARTA PUSATID",
+      "amount": 18900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0189",
+      "periodId": "per-2026-05",
+      "date": "2026-05-27",
+      "description": "INDOMARET CILANDAK",
+      "amount": 254900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0190",
+      "periodId": "per-2026-05",
+      "date": "2026-05-17",
+      "description": "SHOPEE.CO.ID *AP55X9547 JAKARTA BARATID",
+      "amount": 884100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0191",
+      "periodId": "per-2026-05",
+      "date": "2026-05-10",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 45300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0192",
+      "periodId": "per-2026-05",
+      "date": "2026-05-14",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 23900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0193",
+      "periodId": "per-2026-05",
+      "date": "2026-05-19",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 315000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0194",
+      "periodId": "per-2026-05",
+      "date": "2026-05-14",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 299500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0195",
+      "periodId": "per-2026-05",
+      "date": "2026-05-18",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 177500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0196",
+      "periodId": "per-2026-05",
+      "date": "2026-05-23",
+      "description": "GRAB* A-511X4362 JAKARTA PUSATID",
+      "amount": 32700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0197",
+      "periodId": "per-2026-05",
+      "date": "2026-05-13",
+      "description": "ALFAMART KEMANG",
+      "amount": 61300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0198",
+      "periodId": "per-2026-05",
+      "date": "2026-05-24",
+      "description": "GRAB* A-513X2894 JAKARTA PUSATID",
+      "amount": 32900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0199",
+      "periodId": "per-2026-05",
+      "date": "2026-05-24",
+      "description": "SHOPEE.CO.ID *AP514X403 JAKARTA BARATID",
+      "amount": 145400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0200",
+      "periodId": "per-2026-05",
+      "date": "2026-05-17",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 179200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0201",
+      "periodId": "per-2026-05",
+      "date": "2026-05-15",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 257100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0202",
+      "periodId": "per-2026-05",
+      "date": "2026-05-18",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 32300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0203",
+      "periodId": "per-2026-05",
+      "date": "2026-05-16",
+      "description": "ALFAMART KEMANG",
+      "amount": 132300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0204",
+      "periodId": "per-2026-05",
+      "date": "2026-05-01",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 32800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0205",
+      "periodId": "per-2026-05",
+      "date": "2026-05-20",
+      "description": "INDOMARET CILANDAK",
+      "amount": 138600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0206",
+      "periodId": "per-2026-05",
+      "date": "2026-05-10",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 107200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0207",
+      "periodId": "per-2026-05",
+      "date": "2026-05-17",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 95400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0208",
+      "periodId": "per-2026-05",
+      "date": "2026-05-06",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 198600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0209",
+      "periodId": "per-2026-05",
+      "date": "2026-05-09",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 284100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0210",
+      "periodId": "per-2026-05",
+      "date": "2026-05-16",
+      "description": "INDOMARET CILANDAK",
+      "amount": 239300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0211",
+      "periodId": "per-2026-05",
+      "date": "2026-05-22",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 297100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0212",
+      "periodId": "per-2026-05",
+      "date": "2026-05-18",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 113900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0213",
+      "periodId": "per-2026-05",
+      "date": "2026-05-20",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 32600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0214",
+      "periodId": "per-2026-05",
+      "date": "2026-05-17",
+      "description": "INDOMARET CILANDAK",
+      "amount": 45500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0215",
+      "periodId": "per-2026-05",
+      "date": "2026-05-20",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 40000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0216",
+      "periodId": "per-2026-05",
+      "date": "2026-05-18",
+      "description": "ALFAMART KEMANG",
+      "amount": 33700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0217",
+      "periodId": "per-2026-05",
+      "date": "2026-05-20",
+      "description": "INDOMARET CILANDAK",
+      "amount": 136300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0218",
+      "periodId": "per-2026-05",
+      "date": "2026-05-16",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 84600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0219",
+      "periodId": "per-2026-05",
+      "date": "2026-05-12",
+      "description": "INDOMARET CILANDAK",
+      "amount": 280600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0220",
+      "periodId": "per-2026-05",
+      "date": "2026-05-13",
+      "description": "SHOPEE.CO.ID *AP535X2606 JAKARTA BARATID",
+      "amount": 127300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0221",
+      "periodId": "per-2026-05",
+      "date": "2026-05-27",
+      "description": "INDOMARET CILANDAK",
+      "amount": 295200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0222",
+      "periodId": "per-2026-05",
+      "date": "2026-05-10",
+      "description": "SHOPEE.CO.ID *AP537X2247 JAKARTA BARATID",
+      "amount": 751300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0223",
+      "periodId": "per-2026-05",
+      "date": "2026-05-23",
+      "description": "SHOPEE.CO.ID *AP538X5558 JAKARTA BARATID",
+      "amount": 543700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0224",
+      "periodId": "per-2026-05",
+      "date": "2026-05-19",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 89400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0225",
+      "periodId": "per-2026-05",
+      "date": "2026-05-05",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 67800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0226",
+      "periodId": "per-2026-05",
+      "date": "2026-05-22",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 100600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0227",
+      "periodId": "per-2026-05",
+      "date": "2026-05-06",
+      "description": "SHOPEE.CO.ID *AP542X3383 JAKARTA BARATID",
+      "amount": 599000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0228",
+      "periodId": "per-2026-05",
+      "date": "2026-05-25",
+      "description": "SHOPEE.CO.ID *AP543X2935 JAKARTA BARATID",
+      "amount": 551000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0229",
+      "periodId": "per-2026-05",
+      "date": "2026-05-06",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 102400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0230",
+      "periodId": "per-2026-06",
+      "date": "2026-05-27",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -7303800,
+      "type": "payment",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0231",
+      "periodId": "per-2026-06",
+      "date": "2026-06-01",
+      "description": "INDOMARET CILANDAK",
+      "amount": 246800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0232",
+      "periodId": "per-2026-06",
+      "date": "2026-06-06",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 103300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0233",
+      "periodId": "per-2026-06",
+      "date": "2026-06-13",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 281100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0234",
+      "periodId": "per-2026-06",
+      "date": "2026-06-18",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 47600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0235",
+      "periodId": "per-2026-06",
+      "date": "2026-06-05",
+      "description": "INDOMARET CILANDAK",
+      "amount": 109200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0236",
+      "periodId": "per-2026-06",
+      "date": "2026-06-13",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 282100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0237",
+      "periodId": "per-2026-06",
+      "date": "2026-06-22",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 637100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0238",
+      "periodId": "per-2026-06",
+      "date": "2026-06-01",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 104900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0239",
+      "periodId": "per-2026-06",
+      "date": "2026-06-14",
+      "description": "APOTEK K24 FATMAWATI",
+      "amount": 249800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0240",
+      "periodId": "per-2026-06",
+      "date": "2026-06-13",
+      "description": "ALFAMART KEMANG",
+      "amount": 109300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0241",
+      "periodId": "per-2026-06",
+      "date": "2026-06-08",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 126000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0242",
+      "periodId": "per-2026-06",
+      "date": "2026-06-13",
+      "description": "INDOMARET CILANDAK",
+      "amount": 38600,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0243",
+      "periodId": "per-2026-06",
+      "date": "2026-06-25",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 455000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0244",
+      "periodId": "per-2026-06",
+      "date": "2026-06-24",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 98800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0245",
+      "periodId": "per-2026-06",
+      "date": "2026-06-27",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 159200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0246",
+      "periodId": "per-2026-06",
+      "date": "2026-06-11",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 354200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0247",
+      "periodId": "per-2026-06",
+      "date": "2026-06-26",
+      "description": "INDOMARET CILANDAK",
+      "amount": 86100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0248",
+      "periodId": "per-2026-06",
+      "date": "2026-06-10",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 246200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0249",
+      "periodId": "per-2026-06",
+      "date": "2026-06-15",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 31500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0250",
+      "periodId": "per-2026-06",
+      "date": "2026-06-25",
+      "description": "INDOMARET CILANDAK",
+      "amount": 154800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0251",
+      "periodId": "per-2026-06",
+      "date": "2026-06-14",
+      "description": "PERTAMINA SPBU 34-12345",
+      "amount": 268400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0252",
+      "periodId": "per-2026-06",
+      "date": "2026-06-27",
+      "description": "ALFAMART KEMANG",
+      "amount": 103700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0253",
+      "periodId": "per-2026-06",
+      "date": "2026-06-03",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 273900,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0254",
+      "periodId": "per-2026-06",
+      "date": "2026-06-18",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 36000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0255",
+      "periodId": "per-2026-06",
+      "date": "2026-06-13",
+      "description": "ALFAMART KEMANG",
+      "amount": 112400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0256",
+      "periodId": "per-2026-06",
+      "date": "2026-06-03",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 68500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0257",
+      "periodId": "per-2026-06",
+      "date": "2026-06-25",
+      "description": "ALFAMART KEMANG",
+      "amount": 50000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0258",
+      "periodId": "per-2026-06",
+      "date": "2026-06-11",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 39100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0259",
+      "periodId": "per-2026-06",
+      "date": "2026-06-11",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 126300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0260",
+      "periodId": "per-2026-06",
+      "date": "2026-06-16",
+      "description": "INDOMARET CILANDAK",
+      "amount": 281100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0261",
+      "periodId": "per-2026-06",
+      "date": "2026-06-11",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 286800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0262",
+      "periodId": "per-2026-06",
+      "date": "2026-06-17",
+      "description": "GOJEK *GOFOOD JAKARTA",
+      "amount": 59300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0263",
+      "periodId": "per-2026-06",
+      "date": "2026-06-02",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 123400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0264",
+      "periodId": "per-2026-06",
+      "date": "2026-06-19",
+      "description": "GRAB* A-633X4547 JAKARTA PUSATID",
+      "amount": 16800,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0265",
+      "periodId": "per-2026-06",
+      "date": "2026-06-09",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 188300,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0266",
+      "periodId": "per-2026-06",
+      "date": "2026-06-23",
+      "description": "SHOPEE.CO.ID *AP635X6219 JAKARTA BARATID",
+      "amount": 185100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0267",
+      "periodId": "per-2026-06",
+      "date": "2026-06-27",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 76700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0268",
+      "periodId": "per-2026-06",
+      "date": "2026-06-25",
+      "description": "SHOPEE.CO.ID *AP637X1150 JAKARTA BARATID",
+      "amount": 524200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0269",
+      "periodId": "per-2026-06",
+      "date": "2026-06-16",
+      "description": "ALFAMART KEMANG",
+      "amount": 71100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0270",
+      "periodId": "per-2026-06",
+      "date": "2026-06-14",
+      "description": "INDOMARET CILANDAK",
+      "amount": 29000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0271",
+      "periodId": "per-2026-06",
+      "date": "2026-06-21",
+      "description": "SHOPEE.CO.ID *AP640X9018 JAKARTA BARATID",
+      "amount": 613200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0272",
+      "periodId": "per-2026-06",
+      "date": "2026-06-07",
+      "description": "ALFAMART KEMANG",
+      "amount": 81000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0273",
+      "periodId": "per-2026-06",
+      "date": "2026-06-02",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 318700,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0274",
+      "periodId": "per-2026-06",
+      "date": "2026-06-16",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 102100,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0275",
+      "periodId": "per-2026-06",
+      "date": "2026-06-17",
+      "description": "KOPI KENANGAN SENOPATI",
+      "amount": 50400,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0276",
+      "periodId": "per-2026-07",
+      "date": "2026-06-15",
+      "description": "GRAB* A-1JUL01AAAA JAKARTA PUSATID",
+      "amount": 9000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0277",
+      "periodId": "per-2026-07",
+      "date": "2026-06-18",
+      "description": "GRAB* A-1JUL02BBBB JAKARTA SELATID",
+      "amount": 13000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0278",
+      "periodId": "per-2026-07",
+      "date": "2026-06-20",
+      "description": "NETFLIX.COM",
+      "amount": 186000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0279",
+      "periodId": "per-2026-07",
+      "date": "2026-06-22",
+      "description": "INDOMARET CILANDAK",
+      "amount": 245500,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0280",
+      "periodId": "per-2026-07",
+      "date": "2026-06-25",
+      "description": "CICILAN BCA KE 01 DARI 12, GARMIN INDONESIA",
+      "amount": 499917,
+      "type": "installment",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0281",
+      "periodId": "per-2026-07",
+      "date": "2026-07-01",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 178000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0282",
+      "periodId": "per-2026-07",
+      "date": "2026-07-05",
+      "description": "RS PONDOK INDAH",
+      "amount": 650000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0283",
+      "periodId": "per-2026-07",
+      "date": "2026-07-12",
+      "description": "BIAYA ADM KARTU",
+      "amount": 15000,
+      "type": "fee",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0284",
+      "periodId": "per-2026-08",
+      "date": "2026-07-26",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -1000000,
+      "type": "payment",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0285",
+      "periodId": "per-2026-08",
+      "date": "2026-07-14",
+      "description": "GRAB* A-1AUG01CCCC JAKARTA PUSATID",
+      "amount": 9000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0286",
+      "periodId": "per-2026-08",
+      "date": "2026-07-21",
+      "description": "SHOPEE.CO.ID *AP1260721 JAKARTA BARATID",
+      "amount": 355840,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0287",
+      "periodId": "per-2026-08",
+      "date": "2026-07-21",
+      "description": "SHOPEE.CO.ID *AP1260721 JAKARTA BARATID",
+      "amount": 381327,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0288",
+      "periodId": "per-2026-08",
+      "date": "2026-07-21",
+      "description": "SHOPEE.CO.ID *AP1260721 JAKARTA BARATID",
+      "amount": 1252000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0289",
+      "periodId": "per-2026-08",
+      "date": "2026-07-25",
+      "description": "CICILAN BCA KE 02 DARI 12, GARMIN INDONESIA",
+      "amount": 499917,
+      "type": "installment",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0290",
+      "periodId": "per-2026-08",
+      "date": "2026-07-28",
+      "description": "NETFLIX.COM",
+      "amount": 186000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0291",
+      "periodId": "per-2026-08",
+      "date": "2026-08-02",
+      "description": "REFUND SHOPEE.CO.ID *AP1260721",
+      "amount": -381327,
+      "type": "refund",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0292",
+      "periodId": "per-2026-08",
+      "date": "2026-08-12",
+      "description": "BUNGA",
+      "amount": 23508,
+      "type": "interest",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0293",
+      "periodId": "per-2026-09",
+      "date": "2026-08-27",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -3122682,
+      "type": "payment",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0294",
+      "periodId": "per-2026-09",
+      "date": "2026-08-25",
+      "description": "CICILAN BCA KE 03 DARI 12, GARMIN INDONESIA",
+      "amount": 499917,
+      "type": "installment",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0295",
+      "periodId": "per-2026-09",
+      "date": "2026-08-28",
+      "description": "NETFLIX.COM",
+      "amount": 186000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0296",
+      "periodId": "per-2026-09",
+      "date": "2026-08-30",
+      "description": "KIDZANIA JAKARTA",
+      "amount": 760000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0297",
+      "periodId": "per-2026-09",
+      "date": "2026-09-03",
+      "description": "BLIBLI.COM *121 SEPEDA STATIS",
+      "amount": 4376200,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0298",
+      "periodId": "per-2026-09",
+      "date": "2026-09-05",
+      "description": "GRAB* A-1SEP01DDDD JAKARTA SELATID",
+      "amount": 9000,
+      "type": "purchase",
+      "hidden": false,
+      "source": "statement"
+    },
+    {
+      "id": "tx-0299",
+      "periodId": "per-2026-09",
+      "date": "2026-09-12",
+      "description": "BIAYA ADM KARTU",
+      "amount": 15000,
+      "type": "fee",
+      "hidden": false,
+      "source": "statement"
+    }
+  ],
+  "expenses": [
+    {
+      "id": "ex-0001",
+      "transactionId": "tx-0001",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0002",
+      "transactionId": "tx-0002",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0003",
+      "transactionId": "tx-0003",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0004",
+      "transactionId": "tx-0004",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0005",
+      "transactionId": "tx-0005",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0006",
+      "transactionId": "tx-0006",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0007",
+      "transactionId": "tx-0007",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0008",
+      "transactionId": "tx-0008",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0009",
+      "transactionId": "tx-0009",
+      "label": "GRAMEDIA",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0010",
+      "transactionId": "tx-0010",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0011",
+      "transactionId": "tx-0011",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0012",
+      "transactionId": "tx-0012",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0013",
+      "transactionId": "tx-0013",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0014",
+      "transactionId": "tx-0014",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0015",
+      "transactionId": "tx-0015",
+      "label": "INDOMARET",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0016",
+      "transactionId": "tx-0016",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0017",
+      "transactionId": "tx-0017",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0018",
+      "transactionId": "tx-0018",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0019",
+      "transactionId": "tx-0019",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0020",
+      "transactionId": "tx-0020",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0021",
+      "transactionId": "tx-0021",
+      "label": "INDOMARET",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0022",
+      "transactionId": "tx-0022",
+      "label": "GRAB",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0023",
+      "transactionId": "tx-0023",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0024",
+      "transactionId": "tx-0024",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0025",
+      "transactionId": "tx-0025",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0026",
+      "transactionId": "tx-0027",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0027",
+      "transactionId": "tx-0028",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0028",
+      "transactionId": "tx-0029",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0029",
+      "transactionId": "tx-0030",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0030",
+      "transactionId": "tx-0031",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0031",
+      "transactionId": "tx-0032",
+      "label": "GRAMEDIA",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0032",
+      "transactionId": "tx-0033",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0033",
+      "transactionId": "tx-0034",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0034",
+      "transactionId": "tx-0035",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0035",
+      "transactionId": "tx-0036",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0036",
+      "transactionId": "tx-0037",
+      "label": "KOPI",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0037",
+      "transactionId": "tx-0039",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0038",
+      "transactionId": "tx-0040",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0039",
+      "transactionId": "tx-0041",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0040",
+      "transactionId": "tx-0042",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0041",
+      "transactionId": "tx-0043",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0042",
+      "transactionId": "tx-0044",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0043",
+      "transactionId": "tx-0045",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0044",
+      "transactionId": "tx-0047",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0045",
+      "transactionId": "tx-0048",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0046",
+      "transactionId": "tx-0049",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0047",
+      "transactionId": "tx-0050",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0048",
+      "transactionId": "tx-0051",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0049",
+      "transactionId": "tx-0052",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0050",
+      "transactionId": "tx-0053",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0051",
+      "transactionId": "tx-0054",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0052",
+      "transactionId": "tx-0056",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0053",
+      "transactionId": "tx-0057",
+      "label": "GRAB",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0054",
+      "transactionId": "tx-0058",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0055",
+      "transactionId": "tx-0059",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0056",
+      "transactionId": "tx-0060",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0057",
+      "transactionId": "tx-0061",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0058",
+      "transactionId": "tx-0062",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0059",
+      "transactionId": "tx-0063",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0060",
+      "transactionId": "tx-0064",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0061",
+      "transactionId": "tx-0065",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0062",
+      "transactionId": "tx-0066",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0063",
+      "transactionId": "tx-0067",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0064",
+      "transactionId": "tx-0068",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0065",
+      "transactionId": "tx-0069",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0066",
+      "transactionId": "tx-0070",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0067",
+      "transactionId": "tx-0071",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0068",
+      "transactionId": "tx-0072",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0069",
+      "transactionId": "tx-0073",
+      "label": "PERTAMINA",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0070",
+      "transactionId": "tx-0074",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0071",
+      "transactionId": "tx-0075",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0072",
+      "transactionId": "tx-0076",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0073",
+      "transactionId": "tx-0078",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0074",
+      "transactionId": "tx-0079",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0075",
+      "transactionId": "tx-0080",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0076",
+      "transactionId": "tx-0081",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0077",
+      "transactionId": "tx-0082",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0078",
+      "transactionId": "tx-0083",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0079",
+      "transactionId": "tx-0084",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0080",
+      "transactionId": "tx-0085",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0081",
+      "transactionId": "tx-0086",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0082",
+      "transactionId": "tx-0087",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0083",
+      "transactionId": "tx-0088",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0084",
+      "transactionId": "tx-0089",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0085",
+      "transactionId": "tx-0090",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0086",
+      "transactionId": "tx-0091",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0087",
+      "transactionId": "tx-0093",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0088",
+      "transactionId": "tx-0094",
+      "label": "GRAB",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0089",
+      "transactionId": "tx-0095",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0090",
+      "transactionId": "tx-0096",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0091",
+      "transactionId": "tx-0097",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0092",
+      "transactionId": "tx-0098",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0093",
+      "transactionId": "tx-0099",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0094",
+      "transactionId": "tx-0100",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0095",
+      "transactionId": "tx-0101",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0096",
+      "transactionId": "tx-0102",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0097",
+      "transactionId": "tx-0103",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0098",
+      "transactionId": "tx-0104",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0099",
+      "transactionId": "tx-0105",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0100",
+      "transactionId": "tx-0106",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0101",
+      "transactionId": "tx-0107",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0102",
+      "transactionId": "tx-0108",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0103",
+      "transactionId": "tx-0109",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0104",
+      "transactionId": "tx-0110",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0105",
+      "transactionId": "tx-0112",
+      "label": "ALFAMART",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0106",
+      "transactionId": "tx-0113",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0107",
+      "transactionId": "tx-0114",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0108",
+      "transactionId": "tx-0115",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0109",
+      "transactionId": "tx-0117",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0110",
+      "transactionId": "tx-0118",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0111",
+      "transactionId": "tx-0119",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0112",
+      "transactionId": "tx-0120",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0113",
+      "transactionId": "tx-0121",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0114",
+      "transactionId": "tx-0122",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0115",
+      "transactionId": "tx-0123",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0116",
+      "transactionId": "tx-0124",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0117",
+      "transactionId": "tx-0125",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0118",
+      "transactionId": "tx-0126",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0119",
+      "transactionId": "tx-0127",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0120",
+      "transactionId": "tx-0128",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0121",
+      "transactionId": "tx-0129",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0122",
+      "transactionId": "tx-0130",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0123",
+      "transactionId": "tx-0131",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0124",
+      "transactionId": "tx-0133",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0125",
+      "transactionId": "tx-0134",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0126",
+      "transactionId": "tx-0135",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0127",
+      "transactionId": "tx-0136",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0128",
+      "transactionId": "tx-0137",
+      "label": "GOJEK",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0129",
+      "transactionId": "tx-0139",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0130",
+      "transactionId": "tx-0140",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0131",
+      "transactionId": "tx-0141",
+      "label": "KOPI",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0132",
+      "transactionId": "tx-0142",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0133",
+      "transactionId": "tx-0144",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0134",
+      "transactionId": "tx-0145",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0135",
+      "transactionId": "tx-0146",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0136",
+      "transactionId": "tx-0147",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0137",
+      "transactionId": "tx-0148",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0138",
+      "transactionId": "tx-0149",
+      "label": "PERTAMINA",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0139",
+      "transactionId": "tx-0150",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0140",
+      "transactionId": "tx-0151",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0141",
+      "transactionId": "tx-0153",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0142",
+      "transactionId": "tx-0154",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0143",
+      "transactionId": "tx-0155",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0144",
+      "transactionId": "tx-0156",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0145",
+      "transactionId": "tx-0157",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0146",
+      "transactionId": "tx-0158",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0147",
+      "transactionId": "tx-0160",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0148",
+      "transactionId": "tx-0161",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0149",
+      "transactionId": "tx-0162",
+      "label": "INDOMARET",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0150",
+      "transactionId": "tx-0163",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0151",
+      "transactionId": "tx-0164",
+      "label": "GRAMEDIA",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0152",
+      "transactionId": "tx-0166",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0153",
+      "transactionId": "tx-0167",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0154",
+      "transactionId": "tx-0168",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0155",
+      "transactionId": "tx-0169",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0156",
+      "transactionId": "tx-0170",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0157",
+      "transactionId": "tx-0171",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0158",
+      "transactionId": "tx-0172",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0159",
+      "transactionId": "tx-0173",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0160",
+      "transactionId": "tx-0174",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0161",
+      "transactionId": "tx-0175",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0162",
+      "transactionId": "tx-0176",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0163",
+      "transactionId": "tx-0177",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0164",
+      "transactionId": "tx-0178",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0165",
+      "transactionId": "tx-0180",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0166",
+      "transactionId": "tx-0181",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0167",
+      "transactionId": "tx-0182",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0168",
+      "transactionId": "tx-0183",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0169",
+      "transactionId": "tx-0185",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0170",
+      "transactionId": "tx-0186",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0171",
+      "transactionId": "tx-0187",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0172",
+      "transactionId": "tx-0188",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0173",
+      "transactionId": "tx-0189",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0174",
+      "transactionId": "tx-0190",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0175",
+      "transactionId": "tx-0191",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0176",
+      "transactionId": "tx-0192",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0177",
+      "transactionId": "tx-0193",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0178",
+      "transactionId": "tx-0194",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0179",
+      "transactionId": "tx-0196",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0180",
+      "transactionId": "tx-0197",
+      "label": "ALFAMART",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0181",
+      "transactionId": "tx-0198",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0182",
+      "transactionId": "tx-0199",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0183",
+      "transactionId": "tx-0200",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0184",
+      "transactionId": "tx-0203",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0185",
+      "transactionId": "tx-0204",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0186",
+      "transactionId": "tx-0205",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0187",
+      "transactionId": "tx-0206",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0188",
+      "transactionId": "tx-0207",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0189",
+      "transactionId": "tx-0208",
+      "label": "APOTEK",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0190",
+      "transactionId": "tx-0209",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0191",
+      "transactionId": "tx-0210",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0192",
+      "transactionId": "tx-0211",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0193",
+      "transactionId": "tx-0214",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0194",
+      "transactionId": "tx-0215",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0195",
+      "transactionId": "tx-0216",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0196",
+      "transactionId": "tx-0217",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0197",
+      "transactionId": "tx-0218",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0198",
+      "transactionId": "tx-0219",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0199",
+      "transactionId": "tx-0220",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0200",
+      "transactionId": "tx-0221",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0201",
+      "transactionId": "tx-0222",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0202",
+      "transactionId": "tx-0224",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0203",
+      "transactionId": "tx-0225",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0204",
+      "transactionId": "tx-0226",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0205",
+      "transactionId": "tx-0227",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0206",
+      "transactionId": "tx-0229",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0207",
+      "transactionId": "tx-0231",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0208",
+      "transactionId": "tx-0232",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0209",
+      "transactionId": "tx-0233",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0210",
+      "transactionId": "tx-0234",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0211",
+      "transactionId": "tx-0235",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0212",
+      "transactionId": "tx-0236",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0213",
+      "transactionId": "tx-0237",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0214",
+      "transactionId": "tx-0239",
+      "label": "APOTEK",
+      "ownerId": "own-5",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0215",
+      "transactionId": "tx-0241",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0216",
+      "transactionId": "tx-0242",
+      "label": "INDOMARET",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0217",
+      "transactionId": "tx-0243",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0218",
+      "transactionId": "tx-0244",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0219",
+      "transactionId": "tx-0245",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0220",
+      "transactionId": "tx-0246",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0221",
+      "transactionId": "tx-0247",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0222",
+      "transactionId": "tx-0248",
+      "label": "PERTAMINA",
+      "ownerId": "own-0",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0223",
+      "transactionId": "tx-0249",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0224",
+      "transactionId": "tx-0250",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0225",
+      "transactionId": "tx-0251",
+      "label": "PERTAMINA",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0226",
+      "transactionId": "tx-0252",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "paid"
+    },
+    {
+      "id": "ex-0227",
+      "transactionId": "tx-0253",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-2",
+      "status": "partial"
+    },
+    {
+      "id": "ex-0228",
+      "transactionId": "tx-0254",
+      "label": "KOPI",
+      "ownerId": "own-1",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0229",
+      "transactionId": "tx-0255",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0230",
+      "transactionId": "tx-0256",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0231",
+      "transactionId": "tx-0257",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0232",
+      "transactionId": "tx-0258",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-0",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0233",
+      "transactionId": "tx-0259",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0234",
+      "transactionId": "tx-0260",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0235",
+      "transactionId": "tx-0261",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0236",
+      "transactionId": "tx-0262",
+      "label": "GOJEK",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0237",
+      "transactionId": "tx-0263",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0238",
+      "transactionId": "tx-0264",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0239",
+      "transactionId": "tx-0265",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0240",
+      "transactionId": "tx-0266",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0241",
+      "transactionId": "tx-0268",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0242",
+      "transactionId": "tx-0270",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0243",
+      "transactionId": "tx-0271",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-2",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0244",
+      "transactionId": "tx-0272",
+      "label": "ALFAMART",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0245",
+      "transactionId": "tx-0273",
+      "label": "TOKOPEDIA",
+      "ownerId": "own-0",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0246",
+      "transactionId": "tx-0274",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0247",
+      "transactionId": "tx-0276",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0248",
+      "transactionId": "tx-0277",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0249",
+      "transactionId": "tx-0278",
+      "label": "NETFLIX.COM",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0250",
+      "transactionId": "tx-0279",
+      "label": "INDOMARET",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0251",
+      "transactionId": "tx-0280",
+      "label": "Garmin Forerunner",
+      "ownerId": "own-1",
+      "status": "unpaid",
+      "installmentPlanId": "plan-1"
+    },
+    {
+      "id": "ex-0252",
+      "transactionId": "tx-0281",
+      "label": "GRAMEDIA",
+      "ownerId": "own-3",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0253",
+      "transactionId": "tx-0282",
+      "label": "RS",
+      "ownerId": "own-5",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0254",
+      "transactionId": "tx-0283",
+      "label": "BIAYA",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0255",
+      "transactionId": "tx-0285",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0256",
+      "transactionId": "tx-0286",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-0",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0257",
+      "transactionId": "tx-0287",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-0",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0258",
+      "transactionId": "tx-0288",
+      "label": "SHOPEE.CO.ID",
+      "ownerId": "own-0",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0259",
+      "transactionId": "tx-0289",
+      "label": "Garmin Forerunner",
+      "ownerId": "own-1",
+      "status": "unpaid",
+      "installmentPlanId": "plan-1"
+    },
+    {
+      "id": "ex-0260",
+      "transactionId": "tx-0290",
+      "label": "NETFLIX.COM",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0261",
+      "transactionId": "tx-0292",
+      "label": "BUNGA",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0262",
+      "transactionId": "tx-0294",
+      "label": "Garmin Forerunner",
+      "ownerId": "own-1",
+      "status": "unpaid",
+      "installmentPlanId": "plan-1"
+    },
+    {
+      "id": "ex-0263",
+      "transactionId": "tx-0295",
+      "label": "NETFLIX.COM",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0264",
+      "transactionId": "tx-0296",
+      "label": "KIDZANIA",
+      "ownerId": "own-3",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0265",
+      "transactionId": "tx-0297",
+      "label": "BLIBLI.COM",
+      "ownerId": "own-2",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0266",
+      "transactionId": "tx-0298",
+      "label": "GRAB",
+      "ownerId": "own-1",
+      "status": "unpaid"
+    },
+    {
+      "id": "ex-0267",
+      "transactionId": "tx-0299",
+      "label": "BIAYA",
+      "ownerId": "own-4",
+      "status": "unpaid"
+    }
+  ],
+  "installmentPlans": [
+    {
+      "id": "plan-1",
+      "name": "Garmin Forerunner",
+      "originalAmount": 5999000,
+      "totalMonths": 12,
+      "monthlyAmount": 499917,
+      "startPeriod": "2026-07",
+      "ownerId": "own-1",
+      "notes": ""
+    }
+  ],
+  "payments": [],
+  "paymentAllocations": [
+    {
+      "id": "al-0001",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0001",
+      "amount": 21200
+    },
+    {
+      "id": "al-0002",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0002",
+      "amount": 41300
+    },
+    {
+      "id": "al-0003",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0003",
+      "amount": 111400
+    },
+    {
+      "id": "al-0004",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0004",
+      "amount": 171700
+    },
+    {
+      "id": "al-0005",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0005",
+      "amount": 22000
+    },
+    {
+      "id": "al-0006",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0006",
+      "amount": 149300
+    },
+    {
+      "id": "al-0007",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0007",
+      "amount": 58200
+    },
+    {
+      "id": "al-0008",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0008",
+      "amount": 559600
+    },
+    {
+      "id": "al-0009",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0009",
+      "amount": 253700
+    },
+    {
+      "id": "al-0010",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0010",
+      "amount": 38800
+    },
+    {
+      "id": "al-0011",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0011",
+      "amount": 407900
+    },
+    {
+      "id": "al-0012",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0012",
+      "amount": 128200
+    },
+    {
+      "id": "al-0013",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0013",
+      "amount": 92500
+    },
+    {
+      "id": "al-0014",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0014",
+      "amount": 79900
+    },
+    {
+      "id": "al-0015",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0015",
+      "amount": 122000
+    },
+    {
+      "id": "al-0016",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0016",
+      "amount": 97800
+    },
+    {
+      "id": "al-0017",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0017",
+      "amount": 244200
+    },
+    {
+      "id": "al-0018",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0018",
+      "amount": 271200
+    },
+    {
+      "id": "al-0019",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0019",
+      "amount": 201000
+    },
+    {
+      "id": "al-0020",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0020",
+      "amount": 50300
+    },
+    {
+      "id": "al-0021",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0021",
+      "amount": 251200
+    },
+    {
+      "id": "al-0022",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0022",
+      "amount": 17100
+    },
+    {
+      "id": "al-0023",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0023",
+      "amount": 32600
+    },
+    {
+      "id": "al-0024",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0024",
+      "amount": 146100
+    },
+    {
+      "id": "al-0025",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0025",
+      "amount": 273500
+    },
+    {
+      "id": "al-0026",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0026",
+      "amount": 26000
+    },
+    {
+      "id": "al-0027",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0027",
+      "amount": 271000
+    },
+    {
+      "id": "al-0028",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0028",
+      "amount": 236100
+    },
+    {
+      "id": "al-0029",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0029",
+      "amount": 19900
+    },
+    {
+      "id": "al-0030",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0030",
+      "amount": 35100
+    },
+    {
+      "id": "al-0031",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0031",
+      "amount": 277900
+    },
+    {
+      "id": "al-0032",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0032",
+      "amount": 45200
+    },
+    {
+      "id": "al-0033",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0033",
+      "amount": 230800
+    },
+    {
+      "id": "al-0034",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0034",
+      "amount": 46800
+    },
+    {
+      "id": "al-0035",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0035",
+      "amount": 57400
+    },
+    {
+      "id": "al-0036",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0036",
+      "amount": 57500
+    },
+    {
+      "id": "al-0037",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0037",
+      "amount": 620500
+    },
+    {
+      "id": "al-0038",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0038",
+      "amount": 161400
+    },
+    {
+      "id": "al-0039",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0039",
+      "amount": 66300
+    },
+    {
+      "id": "al-0040",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0040",
+      "amount": 315900
+    },
+    {
+      "id": "al-0041",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0041",
+      "amount": 222600
+    },
+    {
+      "id": "al-0042",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0042",
+      "amount": 90400
+    },
+    {
+      "id": "al-0043",
+      "paymentId": "tx-0046",
+      "expenseId": "ex-0043",
+      "amount": 142100
+    },
+    {
+      "id": "al-0044",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0044",
+      "amount": 180300
+    },
+    {
+      "id": "al-0045",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0045",
+      "amount": 12500
+    },
+    {
+      "id": "al-0046",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0046",
+      "amount": 47000
+    },
+    {
+      "id": "al-0047",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0047",
+      "amount": 47700
+    },
+    {
+      "id": "al-0048",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0048",
+      "amount": 9000
+    },
+    {
+      "id": "al-0049",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0049",
+      "amount": 28400
+    },
+    {
+      "id": "al-0050",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0050",
+      "amount": 305000
+    },
+    {
+      "id": "al-0051",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0051",
+      "amount": 653500
+    },
+    {
+      "id": "al-0052",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0052",
+      "amount": 27400
+    },
+    {
+      "id": "al-0053",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0053",
+      "amount": 34300
+    },
+    {
+      "id": "al-0054",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0054",
+      "amount": 197400
+    },
+    {
+      "id": "al-0055",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0055",
+      "amount": 93800
+    },
+    {
+      "id": "al-0056",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0056",
+      "amount": 73800
+    },
+    {
+      "id": "al-0057",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0057",
+      "amount": 247500
+    },
+    {
+      "id": "al-0058",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0058",
+      "amount": 305800
+    },
+    {
+      "id": "al-0059",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0059",
+      "amount": 117900
+    },
+    {
+      "id": "al-0060",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0060",
+      "amount": 448400
+    },
+    {
+      "id": "al-0061",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0061",
+      "amount": 133700
+    },
+    {
+      "id": "al-0062",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0062",
+      "amount": 174900
+    },
+    {
+      "id": "al-0063",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0063",
+      "amount": 34100
+    },
+    {
+      "id": "al-0064",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0064",
+      "amount": 28800
+    },
+    {
+      "id": "al-0065",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0065",
+      "amount": 74500
+    },
+    {
+      "id": "al-0066",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0066",
+      "amount": 51800
+    },
+    {
+      "id": "al-0067",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0067",
+      "amount": 151500
+    },
+    {
+      "id": "al-0068",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0068",
+      "amount": 365700
+    },
+    {
+      "id": "al-0069",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0069",
+      "amount": 367800
+    },
+    {
+      "id": "al-0070",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0070",
+      "amount": 224100
+    },
+    {
+      "id": "al-0071",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0071",
+      "amount": 51800
+    },
+    {
+      "id": "al-0072",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0072",
+      "amount": 103900
+    },
+    {
+      "id": "al-0073",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0073",
+      "amount": 22400
+    },
+    {
+      "id": "al-0074",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0074",
+      "amount": 48400
+    },
+    {
+      "id": "al-0075",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0075",
+      "amount": 37300
+    },
+    {
+      "id": "al-0076",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0076",
+      "amount": 19700
+    },
+    {
+      "id": "al-0077",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0077",
+      "amount": 74900
+    },
+    {
+      "id": "al-0078",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0078",
+      "amount": 14200
+    },
+    {
+      "id": "al-0079",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0079",
+      "amount": 159400
+    },
+    {
+      "id": "al-0080",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0080",
+      "amount": 144600
+    },
+    {
+      "id": "al-0081",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0081",
+      "amount": 74600
+    },
+    {
+      "id": "al-0082",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0082",
+      "amount": 42500
+    },
+    {
+      "id": "al-0083",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0083",
+      "amount": 138700
+    },
+    {
+      "id": "al-0084",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0084",
+      "amount": 389800
+    },
+    {
+      "id": "al-0085",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0085",
+      "amount": 16300
+    },
+    {
+      "id": "al-0086",
+      "paymentId": "tx-0092",
+      "expenseId": "ex-0086",
+      "amount": 10300
+    },
+    {
+      "id": "al-0087",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0087",
+      "amount": 767400
+    },
+    {
+      "id": "al-0088",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0088",
+      "amount": 20700
+    },
+    {
+      "id": "al-0089",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0089",
+      "amount": 195800
+    },
+    {
+      "id": "al-0090",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0090",
+      "amount": 276600
+    },
+    {
+      "id": "al-0091",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0091",
+      "amount": 93300
+    },
+    {
+      "id": "al-0092",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0092",
+      "amount": 289700
+    },
+    {
+      "id": "al-0093",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0093",
+      "amount": 103300
+    },
+    {
+      "id": "al-0094",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0094",
+      "amount": 35500
+    },
+    {
+      "id": "al-0095",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0095",
+      "amount": 56900
+    },
+    {
+      "id": "al-0096",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0096",
+      "amount": 44500
+    },
+    {
+      "id": "al-0097",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0097",
+      "amount": 37800
+    },
+    {
+      "id": "al-0098",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0098",
+      "amount": 126600
+    },
+    {
+      "id": "al-0099",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0099",
+      "amount": 77200
+    },
+    {
+      "id": "al-0100",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0100",
+      "amount": 584400
+    },
+    {
+      "id": "al-0101",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0101",
+      "amount": 30900
+    },
+    {
+      "id": "al-0102",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0102",
+      "amount": 25100
+    },
+    {
+      "id": "al-0103",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0103",
+      "amount": 86300
+    },
+    {
+      "id": "al-0104",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0104",
+      "amount": 356800
+    },
+    {
+      "id": "al-0105",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0105",
+      "amount": 159200
+    },
+    {
+      "id": "al-0106",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0106",
+      "amount": 181900
+    },
+    {
+      "id": "al-0107",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0107",
+      "amount": 36900
+    },
+    {
+      "id": "al-0108",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0108",
+      "amount": 39200
+    },
+    {
+      "id": "al-0109",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0109",
+      "amount": 62600
+    },
+    {
+      "id": "al-0110",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0110",
+      "amount": 116200
+    },
+    {
+      "id": "al-0111",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0111",
+      "amount": 43900
+    },
+    {
+      "id": "al-0112",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0112",
+      "amount": 705600
+    },
+    {
+      "id": "al-0113",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0113",
+      "amount": 80500
+    },
+    {
+      "id": "al-0114",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0114",
+      "amount": 96500
+    },
+    {
+      "id": "al-0115",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0115",
+      "amount": 10600
+    },
+    {
+      "id": "al-0116",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0116",
+      "amount": 30700
+    },
+    {
+      "id": "al-0117",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0117",
+      "amount": 207700
+    },
+    {
+      "id": "al-0118",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0118",
+      "amount": 75700
+    },
+    {
+      "id": "al-0119",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0119",
+      "amount": 483600
+    },
+    {
+      "id": "al-0120",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0120",
+      "amount": 166400
+    },
+    {
+      "id": "al-0121",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0121",
+      "amount": 186400
+    },
+    {
+      "id": "al-0122",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0122",
+      "amount": 44800
+    },
+    {
+      "id": "al-0123",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0123",
+      "amount": 475100
+    },
+    {
+      "id": "al-0124",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0124",
+      "amount": 219900
+    },
+    {
+      "id": "al-0125",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0125",
+      "amount": 562900
+    },
+    {
+      "id": "al-0126",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0126",
+      "amount": 294400
+    },
+    {
+      "id": "al-0127",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0127",
+      "amount": 67300
+    },
+    {
+      "id": "al-0128",
+      "paymentId": "tx-0138",
+      "expenseId": "ex-0128",
+      "amount": 42600
+    },
+    {
+      "id": "al-0129",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0129",
+      "amount": 61600
+    },
+    {
+      "id": "al-0130",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0130",
+      "amount": 20400
+    },
+    {
+      "id": "al-0131",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0131",
+      "amount": 49900
+    },
+    {
+      "id": "al-0132",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0132",
+      "amount": 48100
+    },
+    {
+      "id": "al-0133",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0133",
+      "amount": 244300
+    },
+    {
+      "id": "al-0134",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0134",
+      "amount": 44600
+    },
+    {
+      "id": "al-0135",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0135",
+      "amount": 167000
+    },
+    {
+      "id": "al-0136",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0136",
+      "amount": 11800
+    },
+    {
+      "id": "al-0137",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0137",
+      "amount": 212200
+    },
+    {
+      "id": "al-0138",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0138",
+      "amount": 277800
+    },
+    {
+      "id": "al-0139",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0139",
+      "amount": 30200
+    },
+    {
+      "id": "al-0140",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0140",
+      "amount": 27800
+    },
+    {
+      "id": "al-0141",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0141",
+      "amount": 45000
+    },
+    {
+      "id": "al-0142",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0142",
+      "amount": 39800
+    },
+    {
+      "id": "al-0143",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0143",
+      "amount": 128500
+    },
+    {
+      "id": "al-0144",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0144",
+      "amount": 566200
+    },
+    {
+      "id": "al-0145",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0145",
+      "amount": 406200
+    },
+    {
+      "id": "al-0146",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0146",
+      "amount": 58900
+    },
+    {
+      "id": "al-0147",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0147",
+      "amount": 34200
+    },
+    {
+      "id": "al-0148",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0148",
+      "amount": 112700
+    },
+    {
+      "id": "al-0149",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0149",
+      "amount": 123800
+    },
+    {
+      "id": "al-0150",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0150",
+      "amount": 224300
+    },
+    {
+      "id": "al-0151",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0151",
+      "amount": 282100
+    },
+    {
+      "id": "al-0152",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0152",
+      "amount": 24900
+    },
+    {
+      "id": "al-0153",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0153",
+      "amount": 114600
+    },
+    {
+      "id": "al-0154",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0154",
+      "amount": 50700
+    },
+    {
+      "id": "al-0155",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0155",
+      "amount": 540800
+    },
+    {
+      "id": "al-0156",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0156",
+      "amount": 82700
+    },
+    {
+      "id": "al-0157",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0157",
+      "amount": 167700
+    },
+    {
+      "id": "al-0158",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0158",
+      "amount": 139900
+    },
+    {
+      "id": "al-0159",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0159",
+      "amount": 234000
+    },
+    {
+      "id": "al-0160",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0160",
+      "amount": 102800
+    },
+    {
+      "id": "al-0161",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0161",
+      "amount": 158900
+    },
+    {
+      "id": "al-0162",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0162",
+      "amount": 679000
+    },
+    {
+      "id": "al-0163",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0163",
+      "amount": 602700
+    },
+    {
+      "id": "al-0164",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0164",
+      "amount": 89200
+    },
+    {
+      "id": "al-0165",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0165",
+      "amount": 47400
+    },
+    {
+      "id": "al-0166",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0166",
+      "amount": 261300
+    },
+    {
+      "id": "al-0167",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0167",
+      "amount": 102300
+    },
+    {
+      "id": "al-0168",
+      "paymentId": "tx-0184",
+      "expenseId": "ex-0168",
+      "amount": 162700
+    },
+    {
+      "id": "al-0169",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0169",
+      "amount": 210400
+    },
+    {
+      "id": "al-0170",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0170",
+      "amount": 447500
+    },
+    {
+      "id": "al-0171",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0171",
+      "amount": 73700
+    },
+    {
+      "id": "al-0172",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0172",
+      "amount": 18900
+    },
+    {
+      "id": "al-0173",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0173",
+      "amount": 254900
+    },
+    {
+      "id": "al-0174",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0174",
+      "amount": 884100
+    },
+    {
+      "id": "al-0175",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0175",
+      "amount": 45300
+    },
+    {
+      "id": "al-0176",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0176",
+      "amount": 23900
+    },
+    {
+      "id": "al-0177",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0177",
+      "amount": 315000
+    },
+    {
+      "id": "al-0178",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0178",
+      "amount": 299500
+    },
+    {
+      "id": "al-0179",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0179",
+      "amount": 32700
+    },
+    {
+      "id": "al-0180",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0180",
+      "amount": 61300
+    },
+    {
+      "id": "al-0181",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0181",
+      "amount": 32900
+    },
+    {
+      "id": "al-0182",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0182",
+      "amount": 145400
+    },
+    {
+      "id": "al-0183",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0183",
+      "amount": 179200
+    },
+    {
+      "id": "al-0184",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0184",
+      "amount": 132300
+    },
+    {
+      "id": "al-0185",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0185",
+      "amount": 32800
+    },
+    {
+      "id": "al-0186",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0186",
+      "amount": 138600
+    },
+    {
+      "id": "al-0187",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0187",
+      "amount": 107200
+    },
+    {
+      "id": "al-0188",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0188",
+      "amount": 95400
+    },
+    {
+      "id": "al-0189",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0189",
+      "amount": 198600
+    },
+    {
+      "id": "al-0190",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0190",
+      "amount": 284100
+    },
+    {
+      "id": "al-0191",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0191",
+      "amount": 239300
+    },
+    {
+      "id": "al-0192",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0192",
+      "amount": 297100
+    },
+    {
+      "id": "al-0193",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0193",
+      "amount": 45500
+    },
+    {
+      "id": "al-0194",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0194",
+      "amount": 40000
+    },
+    {
+      "id": "al-0195",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0195",
+      "amount": 33700
+    },
+    {
+      "id": "al-0196",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0196",
+      "amount": 136300
+    },
+    {
+      "id": "al-0197",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0197",
+      "amount": 84600
+    },
+    {
+      "id": "al-0198",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0198",
+      "amount": 280600
+    },
+    {
+      "id": "al-0199",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0199",
+      "amount": 127300
+    },
+    {
+      "id": "al-0200",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0200",
+      "amount": 295200
+    },
+    {
+      "id": "al-0201",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0201",
+      "amount": 751300
+    },
+    {
+      "id": "al-0202",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0202",
+      "amount": 89400
+    },
+    {
+      "id": "al-0203",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0203",
+      "amount": 67800
+    },
+    {
+      "id": "al-0204",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0204",
+      "amount": 100600
+    },
+    {
+      "id": "al-0205",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0205",
+      "amount": 599000
+    },
+    {
+      "id": "al-0206",
+      "paymentId": "tx-0230",
+      "expenseId": "ex-0206",
+      "amount": 102400
+    },
+    {
+      "id": "al-0207",
+      "paymentId": "tx-0284",
+      "expenseId": "ex-0207",
+      "amount": 246800
+    },
+    {
+      "id": "al-0208",
+      "paymentId": "tx-0284",
+      "expenseId": "ex-0208",
+      "amount": 103300
+    },
+    {
+      "id": "al-0209",
+      "paymentId": "tx-0284",
+      "expenseId": "ex-0209",
+      "amount": 281100
+    },
+    {
+      "id": "al-0210",
+      "paymentId": "tx-0284",
+      "expenseId": "ex-0210",
+      "amount": 47600
+    },
+    {
+      "id": "al-0211",
+      "paymentId": "tx-0284",
+      "expenseId": "ex-0211",
+      "amount": 109200
+    },
+    {
+      "id": "al-0212",
+      "paymentId": "tx-0284",
+      "expenseId": "ex-0212",
+      "amount": 212000
+    },
+    {
+      "id": "al-0213",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0212",
+      "amount": 70100
+    },
+    {
+      "id": "al-0214",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0213",
+      "amount": 637100
+    },
+    {
+      "id": "al-0215",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0214",
+      "amount": 249800
+    },
+    {
+      "id": "al-0216",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0215",
+      "amount": 126000
+    },
+    {
+      "id": "al-0217",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0216",
+      "amount": 38600
+    },
+    {
+      "id": "al-0218",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0217",
+      "amount": 455000
+    },
+    {
+      "id": "al-0219",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0218",
+      "amount": 98800
+    },
+    {
+      "id": "al-0220",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0219",
+      "amount": 159200
+    },
+    {
+      "id": "al-0221",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0220",
+      "amount": 354200
+    },
+    {
+      "id": "al-0222",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0221",
+      "amount": 86100
+    },
+    {
+      "id": "al-0223",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0222",
+      "amount": 246200
+    },
+    {
+      "id": "al-0224",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0223",
+      "amount": 31500
+    },
+    {
+      "id": "al-0225",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0224",
+      "amount": 154800
+    },
+    {
+      "id": "al-0226",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0225",
+      "amount": 268400
+    },
+    {
+      "id": "al-0227",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0226",
+      "amount": 103700
+    },
+    {
+      "id": "al-0228",
+      "paymentId": "tx-0293",
+      "expenseId": "ex-0227",
+      "amount": 43182
+    }
+  ],
+  "exportedAt": "2026-10-01T00:00:00.000Z"
+}

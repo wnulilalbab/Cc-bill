@@ -25,6 +25,9 @@ jobs:
       - name: Type check and build (production config)
         run: npm run build
 
+      - name: Tests (fixtures and harness)
+        run: npm test
+
       - name: Build (staging config)
         env:
           VITE_APP_ENV: staging

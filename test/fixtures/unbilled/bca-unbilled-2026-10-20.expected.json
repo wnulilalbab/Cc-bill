@@ -1,0 +1,41 @@
+{
+  "file": "bca-unbilled-2026-10-20",
+  "card": "bca",
+  "capturedAt": "2026-10-20",
+  "note": "After the Oct statement. Includes a payment line (20 Oct) that later appears on the Nov statement.",
+  "rows": [
+    {
+      "txDate": "2026-10-14",
+      "postDate": "2026-10-15",
+      "description": "GRAB* A-1NOV01EEEE JAKARTA PUSATID",
+      "amount": 9000,
+      "kind": "purchase",
+      "expectedOwner": "Andi"
+    },
+    {
+      "txDate": "2026-10-16",
+      "postDate": "2026-10-16",
+      "description": "TOKOPEDIA JAKARTA",
+      "amount": 320000,
+      "kind": "purchase",
+      "expectedOwner": "Sari",
+      "needsCheck": true
+    },
+    {
+      "txDate": "2026-10-18",
+      "postDate": "2026-10-18",
+      "description": "HALODOC JAKARTA",
+      "amount": 85000,
+      "kind": "purchase",
+      "expectedOwner": "Medis"
+    },
+    {
+      "txDate": "2026-10-20",
+      "postDate": "2026-10-20",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -2000000,
+      "kind": "payment",
+      "expectedOwner": null
+    }
+  ]
+}

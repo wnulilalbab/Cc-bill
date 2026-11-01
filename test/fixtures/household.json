@@ -1,0 +1,63 @@
+{
+  "holder": "ANDI PRATAMA",
+  "address": [
+    "JL MELATI NO 7",
+    "KEL SUKAJADI",
+    "BANDUNG 40111"
+  ],
+  "cards": {
+    "bca": {
+      "name": "BCA Keluarga",
+      "bank": "BCA",
+      "masked": "4556-77XX-XXXX-1234",
+      "customerNo": "10000001",
+      "owners": [
+        "Andi",
+        "Sari",
+        "Bima",
+        "Keluarga",
+        "Medis"
+      ],
+      "defaultOwner": "Keluarga"
+    },
+    "mandiri": {
+      "name": "Mandiri Pribadi",
+      "bank": "Mandiri",
+      "masked": "5299 12** **** 4321",
+      "customerNo": "20000002",
+      "owners": [
+        "Andi",
+        "Rumah",
+        "Kantor"
+      ],
+      "defaultOwner": "Andi"
+    }
+  },
+  "password": "test1234",
+  "handRecorded": {
+    "payments": [
+      {
+        "card": "bca",
+        "date": "2026-09-05",
+        "amount": 300000,
+        "owner": "Bima",
+        "note": "Never appears on any statement (missing-payment scenario)."
+      },
+      {
+        "card": "bca",
+        "date": "2026-10-18",
+        "amount": 2000000,
+        "owner": "Andi",
+        "note": "Matches PEMBAYARAN 20 Oct 2.000.000 on the Nov statement (within ±5 days)."
+      }
+    ],
+    "scenarios": [
+      "Aug: payment 1.000.000 leaves an unpaid balance carried into later bills.",
+      "Sep: PEMBAYARAN 3.122.682 is one transfer covering several people.",
+      "Oct: REVERSAL CICILAN cancels the Sep Blibli purchase (4.376.200); CICILAN 01/06 starts at 729.367.",
+      "Oct: Watsons 200.000 paid the day after purchase (Unbilled payment line, printed on Oct).",
+      "Oct: two SHOPEE 150.000 on 28 Sep are a genuine duplicate (two orders): keep both.",
+      "Nov: PEMBAYARAN 30 Oct 1.500.000 is more than Sari owes; the leftover becomes her deposit."
+    ]
+  }
+}

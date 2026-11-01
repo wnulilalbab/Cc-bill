@@ -1,0 +1,18 @@
+{
+  "counts": {
+    "owners": 6,
+    "periods": 10,
+    "transactions": 299,
+    "expenses": 267,
+    "installmentPlans": 1,
+    "payments": 0,
+    "paymentAllocations": 228
+  },
+  "totals": {
+    "charges": 55533126,
+    "credits": 38737209,
+    "allocated": 38355882
+  },
+  "unknownOwnerExpenses": 26,
+  "unlabeledTransactions": 24
+}

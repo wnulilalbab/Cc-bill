@@ -1,0 +1,91 @@
+{
+  "file": "mandiri-2026-10",
+  "card": "mandiri",
+  "bank": "Mandiri",
+  "format": "pdf",
+  "locked": true,
+  "password": "test1234",
+  "statementDate": "2026-10-11",
+  "dueDate": "2026-10-31",
+  "printed": {
+    "prevBalance": 377933,
+    "credits": 422564,
+    "purchases": 691665,
+    "feesInterest": 0,
+    "newBalance": 647034,
+    "minPayment": 32352
+  },
+  "rows": [
+    {
+      "txDate": "2026-09-30",
+      "postDate": "2026-09-30",
+      "description": "PAYMENT THANK YOU - Livin",
+      "amount": -377933,
+      "kind": "payment",
+      "expectedOwner": null
+    },
+    {
+      "txDate": "2026-09-23",
+      "postDate": "2026-09-25",
+      "description": "OPENAI *CHATGPT SUBSCR SAN FRANCISCO USA",
+      "amount": 75000,
+      "kind": "purchase",
+      "expectedOwner": "Kantor"
+    },
+    {
+      "txDate": "2026-09-30",
+      "postDate": "2026-09-30",
+      "description": "UNIQLO AEON BSD 002/003",
+      "amount": 133333,
+      "kind": "installment",
+      "expectedOwner": "Andi",
+      "installment": {
+        "n": 2,
+        "of": 3,
+        "plan": "Uniqlo AEON BSD"
+      }
+    },
+    {
+      "txDate": "2026-10-03",
+      "postDate": "2026-10-04",
+      "description": "Pondok Sate Kambing Muda",
+      "amount": 283000,
+      "kind": "purchase",
+      "expectedOwner": "Rumah"
+    },
+    {
+      "txDate": "2026-10-05",
+      "postDate": "2026-10-06",
+      "description": "SHOPEE Jakarta SelatID",
+      "amount": 55201,
+      "kind": "purchase",
+      "expectedOwner": "Andi",
+      "needsCheck": true
+    },
+    {
+      "txDate": "2026-10-05",
+      "postDate": "2026-10-06",
+      "description": "SHOPEE Jakarta SelatID",
+      "amount": 44631,
+      "kind": "purchase",
+      "expectedOwner": "Rumah",
+      "needsCheck": true
+    },
+    {
+      "txDate": "2026-10-05",
+      "postDate": "2026-10-06",
+      "description": "KCI C Access Topup",
+      "amount": 100500,
+      "kind": "purchase",
+      "expectedOwner": "Andi"
+    },
+    {
+      "txDate": "2026-10-08",
+      "postDate": "2026-10-08",
+      "description": "REFUND SHOPEE Jakarta SelatID",
+      "amount": -44631,
+      "kind": "refund",
+      "expectedOwner": "Rumah"
+    }
+  ]
+}

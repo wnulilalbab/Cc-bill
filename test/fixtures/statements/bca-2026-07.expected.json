@@ -1,0 +1,88 @@
+{
+  "file": "bca-2026-07",
+  "card": "bca",
+  "bank": "BCA",
+  "format": "pdf",
+  "locked": false,
+  "statementDate": "2026-07-12",
+  "dueDate": "2026-07-28",
+  "printed": {
+    "prevBalance": 0,
+    "credits": 0,
+    "purchases": 1781417,
+    "feesInterest": 15000,
+    "newBalance": 1796417,
+    "minPayment": 104821
+  },
+  "rows": [
+    {
+      "txDate": "2026-06-15",
+      "postDate": "2026-06-16",
+      "description": "GRAB* A-1JUL01AAAA JAKARTA PUSATID",
+      "amount": 9000,
+      "kind": "purchase",
+      "expectedOwner": "Andi"
+    },
+    {
+      "txDate": "2026-06-18",
+      "postDate": "2026-06-19",
+      "description": "GRAB* A-1JUL02BBBB JAKARTA SELATID",
+      "amount": 13000,
+      "kind": "purchase",
+      "expectedOwner": "Andi"
+    },
+    {
+      "txDate": "2026-06-20",
+      "postDate": "2026-06-20",
+      "description": "NETFLIX.COM",
+      "amount": 186000,
+      "kind": "purchase",
+      "expectedOwner": "Keluarga"
+    },
+    {
+      "txDate": "2026-06-22",
+      "postDate": "2026-06-23",
+      "description": "INDOMARET CILANDAK",
+      "amount": 245500,
+      "kind": "purchase",
+      "expectedOwner": "Keluarga"
+    },
+    {
+      "txDate": "2026-06-25",
+      "postDate": "2026-06-25",
+      "description": "CICILAN BCA KE 01 DARI 12, GARMIN INDONESIA",
+      "amount": 499917,
+      "kind": "installment",
+      "expectedOwner": "Andi",
+      "installment": {
+        "n": 1,
+        "of": 12,
+        "plan": "Garmin Forerunner"
+      }
+    },
+    {
+      "txDate": "2026-07-01",
+      "postDate": "2026-07-02",
+      "description": "GRAMEDIA MATRAMAN",
+      "amount": 178000,
+      "kind": "purchase",
+      "expectedOwner": "Bima"
+    },
+    {
+      "txDate": "2026-07-05",
+      "postDate": "2026-07-06",
+      "description": "RS PONDOK INDAH",
+      "amount": 650000,
+      "kind": "purchase",
+      "expectedOwner": "Medis"
+    },
+    {
+      "txDate": "2026-07-12",
+      "postDate": "2026-07-12",
+      "description": "BIAYA ADM KARTU",
+      "amount": 15000,
+      "kind": "fee",
+      "expectedOwner": "Keluarga"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "file": "bca-2026-12-empty",
+  "card": "bca",
+  "bank": "BCA",
+  "format": "pdf",
+  "locked": false,
+  "statementDate": "2026-12-12",
+  "dueDate": "2026-12-28",
+  "printed": {
+    "prevBalance": 0,
+    "credits": 0,
+    "purchases": 0,
+    "feesInterest": 0,
+    "newBalance": 0,
+    "minPayment": 0
+  },
+  "rows": []
+}

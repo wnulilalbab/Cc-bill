@@ -1,0 +1,80 @@
+{
+  "file": "bca-2026-09",
+  "card": "bca",
+  "bank": "BCA",
+  "format": "pdf",
+  "locked": false,
+  "statementDate": "2026-09-12",
+  "dueDate": "2026-09-28",
+  "printed": {
+    "prevBalance": 3122682,
+    "credits": 3122682,
+    "purchases": 5831117,
+    "feesInterest": 15000,
+    "newBalance": 5846117,
+    "minPayment": 307306
+  },
+  "rows": [
+    {
+      "txDate": "2026-08-27",
+      "postDate": "2026-08-27",
+      "description": "PEMBAYARAN - MBCA",
+      "amount": -3122682,
+      "kind": "payment",
+      "expectedOwner": null
+    },
+    {
+      "txDate": "2026-08-25",
+      "postDate": "2026-08-25",
+      "description": "CICILAN BCA KE 03 DARI 12, GARMIN INDONESIA",
+      "amount": 499917,
+      "kind": "installment",
+      "expectedOwner": "Andi",
+      "installment": {
+        "n": 3,
+        "of": 12,
+        "plan": "Garmin Forerunner"
+      }
+    },
+    {
+      "txDate": "2026-08-28",
+      "postDate": "2026-08-28",
+      "description": "NETFLIX.COM",
+      "amount": 186000,
+      "kind": "purchase",
+      "expectedOwner": "Keluarga"
+    },
+    {
+      "txDate": "2026-08-30",
+      "postDate": "2026-08-31",
+      "description": "KIDZANIA JAKARTA",
+      "amount": 760000,
+      "kind": "purchase",
+      "expectedOwner": "Bima"
+    },
+    {
+      "txDate": "2026-09-03",
+      "postDate": "2026-09-03",
+      "description": "BLIBLI.COM *121 SEPEDA STATIS",
+      "amount": 4376200,
+      "kind": "purchase",
+      "expectedOwner": "Sari"
+    },
+    {
+      "txDate": "2026-09-05",
+      "postDate": "2026-09-06",
+      "description": "GRAB* A-1SEP01DDDD JAKARTA SELATID",
+      "amount": 9000,
+      "kind": "purchase",
+      "expectedOwner": "Andi"
+    },
+    {
+      "txDate": "2026-09-12",
+      "postDate": "2026-09-12",
+      "description": "BIAYA ADM KARTU",
+      "amount": 15000,
+      "kind": "fee",
+      "expectedOwner": "Keluarga"
+    }
+  ]
+}
