@@ -4,7 +4,9 @@
 import { spawnSync } from 'node:child_process'
 
 const DOMAIN = /^src\/domain\/.+\.ts$/
-const isTest = (f: string) => /\.(test|spec)\.ts$/.test(f) || /\.d\.ts$/.test(f)
+// `types.ts` files hold only type declarations: they produce no mutants and no related tests,
+// and Stryker fails with "No tests were executed" when they are the only target.
+const isTest = (f: string) => /\.(test|spec)\.ts$/.test(f) || /\.d\.ts$/.test(f) || /(^|\/)types\.ts$/.test(f)
 
 /** Domain source files (not tests) among `files`, sorted. */
 export function domainSources(files: string[]): string[] {
