@@ -246,6 +246,14 @@ describe('size limits', () => {
     expect(textOf(layoutShareImage({ ...card, lang: 'id' }, BLUE, measure), '+360 lainnya')).toBeTruthy()
   })
 
+  it('never hides older unpaid months behind the charge-line cap', () => {
+    const card = big()
+    const withOlder = { ...card, blocks: card.blocks.map((b, i) => (i === 0 ? { ...b, older: [{ label: 'Unpaid from Sep 2026', amount: 'Rp 12.345' }] } : b)) }
+    const l = layoutShareImage(withOlder, BLUE, measure)
+    expect(textOf(l, 'Unpaid from Sep 2026')).toBeTruthy()
+    expect(texts(l).filter((o) => o.text === '+360 more')).toHaveLength(5)
+  })
+
   it('keeps the canvas within 16M device pixels and 16.000 px tall', () => {
     expect([MAX_CANVAS_AREA, MAX_CANVAS_HEIGHT]).toEqual([16_000_000, 16_000])
     expect(canvasScale(360, 1000, 2)).toBe(2)

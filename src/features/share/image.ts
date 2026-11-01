@@ -119,12 +119,11 @@ export function layoutShareImage(card: ShareCard, palette: ImagePalette, measure
     y += 30
     pair(b.name, b.headline, font(14, true), palette.deep, amountFont, b.settled ? OK : INK)
     for (const s of b.summary) para(s, 18, font(12), MUTED)
-    const lines = [
-      ...b.rows.map((r) => ({ label: r.label, value: r.mark ? `${r.amount} (${r.mark})` : r.amount, strike: r.paid })),
-      ...b.older.map((g) => ({ label: g.label, value: g.amount, strike: false })),
-    ]
+    // Only charge rows are capped: older unpaid per month must always match the text message.
+    const lines = b.rows.map((r) => ({ label: r.label, value: r.mark ? `${r.amount} (${r.mark})` : r.amount, strike: r.paid }))
     const hidden = lines.length - MAX_IMAGE_ROWS
     if (hidden > 0) lines.splice(MAX_IMAGE_ROWS, hidden, { label: `+${hidden} ${WORDS[card.lang].more}`, value: '', strike: false })
+    lines.push(...b.older.map((g) => ({ label: g.label, value: g.amount, strike: false })))
     for (const l of lines) {
       y += 20
       pair(l.label, l.value, font(12), INK, font(12), INK, l.strike)
