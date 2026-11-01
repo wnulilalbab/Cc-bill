@@ -36,10 +36,39 @@ jobs:
           printf '{"env":"staging","sha":"%s","builtAt":"%s"}\n' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > dist/build.json
 
       - name: Publish to gh-pages/staging
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           destination_dir: staging
           keep_files: false
           commit_message: "staging: ${{ github.sha }}"
+
+      - name: Wait until staging serves this commit
+        env:
+          STAGING_URL: https://${{ github.repository_owner }}.github.io/Cc-bill/staging/
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          for i in $(seq 1 30); do
+            body=$(curl -fsSL -H 'Cache-Control: no-cache' "${STAGING_URL}build.json?nocache=$i" || true)
+            if echo "$body" | grep -q "\"sha\":\"$EXPECTED_SHA\""; then echo "Staging serves $EXPECTED_SHA"; exit 0; fi
+            echo "Attempt $i: not yet (got: ${body:-nothing})"
+            sleep 10
+          done
+          echo "::error::Staging did not serve $EXPECTED_SHA within 5 minutes"; exit 1
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Staging smoke test (service workers blocked)
+        env:
+          STAGING_URL: https://${{ github.repository_owner }}.github.io/Cc-bill/staging/
+        run: npm run test:e2e:staging
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-smoke-traces
+          path: test-results
+          if-no-files-found: ignore

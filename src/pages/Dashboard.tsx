@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import { formatRupiah, formatRupiahCompact, OWNER_COLOR_CLASSES } from '../lib/format'
 import { useNavigate } from 'react-router-dom'
+import { lsSet } from '../lib/storage'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -218,9 +219,9 @@ export default function Dashboard() {
                       {remaining > 0 && (
                         <button
                           onClick={() => {
-                            localStorage.setItem('tx_filter_owner', owner.id)
-                            localStorage.setItem('tx_filter_status', 'pending')
-                            localStorage.setItem('tx_filter_period', 'all')
+                            lsSet('tx_filter_owner', owner.id)
+                            lsSet('tx_filter_status', 'pending')
+                            lsSet('tx_filter_period', 'all')
                             navigate('/transactions')
                           }}
                           className="text-xs text-blue-600"

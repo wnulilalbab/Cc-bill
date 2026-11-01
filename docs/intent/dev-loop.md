@@ -93,3 +93,9 @@ Each slice ends merged, deployed to staging, with its test-plan IDs passing.
 ## Out of scope
 
 Human code review, nightly/scheduled automation, real data in tests, more than one reviewer of each kind per PR.
+
+## Owner checklist after Slice 2
+
+1. In ruleset `protect-main`, add the required checks `coverage`, `mutation` and `review-gate` (alongside `ci`). `review-gate` is a commit status posted by the "Review gate" workflow, so pick it from the status list (it appears after the workflow has run once on a PR). Do this after Slice 2 is merged, otherwise Slice 2's own PR cannot satisfy the new checks.
+2. Run the first **Release** (Actions, Release, Run workflow on `main`). It needs the `release` environment secret `ANTHROPIC_API_KEY_CI`, and staging must already serve the current `main` commit.
+3. Note: marker comments only count when posted by the repo owner, a member or a collaborator.

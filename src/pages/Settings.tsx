@@ -4,6 +4,7 @@ import { db, getSetting, setSetting, generateId, seedDefaultOwners } from '../db
 import { OWNER_COLOR_CLASSES } from '../lib/format'
 import { CLAUDE_MODELS, DEFAULT_MODEL } from '../lib/claude'
 import type { Owner, OwnerColor } from '../types'
+import { lsGet, lsSet, lsRemove } from '../lib/storage'
 
 const COLORS: OwnerColor[] = ['blue', 'pink', 'purple', 'green', 'orange', 'teal', 'red', 'yellow']
 
@@ -20,7 +21,7 @@ export default function Settings() {
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [testingMode, setTestingMode] = useState(() => localStorage.getItem('testing_mode') === '1')
+  const [testingMode, setTestingMode] = useState(() => lsGet('testing_mode') === '1')
 
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL)
   const [editOwner, setEditOwner] = useState<Partial<Owner> | null>(null)
@@ -196,8 +197,8 @@ export default function Settings() {
             <button
               onClick={() => {
                 const next = !testingMode
-                if (next) localStorage.setItem('testing_mode', '1')
-                else localStorage.removeItem('testing_mode')
+                if (next) lsSet('testing_mode', '1')
+                else lsRemove('testing_mode')
                 setTestingMode(next)
               }}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${testingMode ? 'bg-blue-600' : 'bg-gray-200'}`}
