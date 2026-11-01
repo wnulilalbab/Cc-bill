@@ -62,6 +62,13 @@ describe('testing-mode tools', () => {
   })
 })
 
+const TX = { id: 't1', cardId: 'c', statementId: 's', date: '2026-08-01', description: 'X', amount: 1000, kind: 'purchase', ownerId: null }
+const PAY = { id: 'p1', cardId: 'c', source: 'manual', date: '2026-08-02', amount: 1000, allocations: [] }
+function backupWith(table: string, ...rows: unknown[]): string {
+  const data = { cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [], [table]: rows }
+  return JSON.stringify({ format: 'ccbill-v2-backup', version: 1, exportedAt: 'x', data }, null, 1)
+}
+
 describe('backup of the new database', () => {
   it('G-06 export then import round-trips identically', async () => {
     const db = freshNewDb()
@@ -85,8 +92,17 @@ describe('backup of the new database', () => {
     [JSON.stringify({ owners: [] }), 'This file is not a CC Bill backup of the new app.'],
     [JSON.stringify({ format: 'ccbill-v2-backup', version: 2 }), 'Unsupported backup version 2.'],
     [JSON.stringify({ format: 'ccbill-v2-backup', version: 1 }), 'The backup is missing the "cards" list.'],
-    [JSON.stringify({ format: 'ccbill-v2-backup', version: 1, data: { cards: [{ name: 'x' }] } }), 'cards[0] has no id.'],
-    [JSON.stringify({ format: 'ccbill-v2-backup', version: 1, data: { cards: [null] } }), 'cards[0] has no id.'],
+    [backupWith('cards', { name: 'x' }), 'cards[0] is invalid: cards record has no id.'],
+    [backupWith('cards', null), 'cards[0] is invalid: cards record must be an object.'],
+    [backupWith('transactions', { ...TX, amount: 1.5 }), 'transactions[0] is invalid: transaction t1 amount must be an integer number of rupiah, got 1.5.'],
+    [backupWith('transactions', { ...TX, amount: '1000' }), 'transactions[0] is invalid: transaction t1 amount must be an integer number of rupiah, got 1000.'],
+    [backupWith('transactions', { ...TX, amount: 1 }).replace('"amount": 1', '"amount": 1e400'), 'transactions[0] is invalid: transaction t1 amount must be an integer number of rupiah, got Infinity.'],
+    [backupWith('transactions', { ...TX, kind: 'gift' }), 'transactions[0] is invalid: transaction t1 kind must be one of purchase, installment, fee, interest, refund, reversal.'],
+    [backupWith('transactions', { ...TX, cardId: '' }), 'transactions[0] is invalid: transaction t1 cardId must be a non-empty text.'],
+    [backupWith('payments', { ...PAY, allocations: 'nope' }), 'payments[0] is invalid: payment p1 allocations must be a list.'],
+    [backupWith('payments', { ...PAY, allocations: [{ txId: 't1', amount: 0.5 }] }), 'payments[0] is invalid: payment p1 allocation to t1 must be an integer number of rupiah, got 0.5.'],
+    [backupWith('plans', { id: 'pl', cardId: 'c', ownerId: null, name: 'x', monthly: 1.5, total: 2, start: '2026-08' }), 'plans[0] is invalid: plan pl monthly amount must be an integer number of rupiah, got 1.5.'],
+    [backupWith('owners', { id: 'o', cardId: 'c', name: 'A' }, { id: 'o', cardId: 'c', name: 'B' }), 'owners has the id "o" twice.'],
   ])('G-06 rejects a bad backup (%s) and changes nothing', async (json, message) => {
     const db = freshNewDb()
     await db.cards.put({ id: 'keep', name: 'Keep', bank: 'X', defaultOwnerId: null })

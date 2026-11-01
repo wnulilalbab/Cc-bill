@@ -25,6 +25,7 @@ export type AdjustmentKind =
   | 'untagged'
   | 'feeOwner'
   | 'signFixed'
+  | 'emptyDescription'
   | 'hidden'
   | 'installmentNumber'
   | 'statementPayments'
@@ -257,6 +258,8 @@ export function planMigration(old: OldData, options: MigrationOptions = {}): Mig
   if (untaggedRows.length) note('untagged', `${plural(untaggedRows.length, 'row')} without an owner go to the card default (${defaultName}) and are marked Check.`, untaggedRows)
   if (feeRows.length) note('feeOwner', `${plural(feeRows.length, 'fee or interest row')} without an owner go to the card default (${defaultName})${defaultOwnerId === null ? ' and are marked Check' : ''}.`, feeRows)
   if (signRows.length) note('signFixed', `${plural(signRows.length, 'row')} had a type that did not match the sign of the amount; the type now follows the amount and the row is marked Check.`, signRows)
+  const blank = old.transactions.filter((t) => t.description.trim() === '').map((t) => t.id)
+  if (blank.length) note('emptyDescription', `${plural(blank.length, 'row')} with an empty description are kept as they are.`, blank)
   if (hiddenRows.length) note('hidden', `${plural(hiddenRows.length, 'hidden row')} (reversal pairs) are kept as cancelled rows and reversals, which count 0.`, hiddenRows)
   if (numberRows.length) note('installmentNumber', `${plural(numberRows.length, 'installment row')} got their number (n of N) from the plan's start month.`, numberRows)
 
@@ -549,21 +552,29 @@ export interface OldBackup {
 }
 
 /**
- * Produces the JSON backup of the old database, hands it to `beforeDelete` (the UI downloads it there; if it throws,
- * nothing is deleted), then deletes the old database. Refuses unless the last migration verified and the old data
- * is still exactly what was verified.
+ * Produces the JSON backup of the old database and hands it to `beforeDelete` (the UI downloads it there). Only when
+ * that resolves is the old database deleted. Refuses unless the last migration verified, every record it wrote is
+ * still in the new database, and the old data is still exactly what was verified.
  */
 export async function deleteOldData(
   db: NewDb,
-  { oldName = oldDbName(), now = new Date().toISOString(), beforeDelete }: { oldName?: string; now?: string; beforeDelete?: (backup: OldBackup) => unknown } = {},
+  { oldName = oldDbName(), now = new Date().toISOString(), beforeDelete }: { oldName?: string; now?: string; beforeDelete: (backup: OldBackup) => unknown },
 ): Promise<OldBackup> {
+  if (typeof beforeDelete !== 'function') throw new MigrationError('The backup must be saved before the old data is deleted (beforeDelete is required).')
   const verification = await lastVerification(db)
   if (!verification?.ok) throw new MigrationError('Old data can only be deleted after a migration has passed verification.')
+  const run = (await db.meta.get(META_MIGRATION))?.value as MigrationRecord | undefined
+  if (!run) throw new MigrationError('There is no record of a migration in the new app. Run the migration first.')
+  let missing = 0
+  for (const t of DATA_TABLES) missing += (await db.table(t).bulkGet(run.ids[t])).filter((r) => r === undefined).length
+  if (missing) {
+    throw new MigrationError(`The migrated data is no longer complete in the new app (${plural(missing, 'record')} missing). Run the migration again before deleting the old data.`)
+  }
   const old = await readOldData(oldName)
   if (!old) throw new MigrationError('There is no old data to delete.')
   if (fingerprint(old) !== verification.oldFingerprint) throw new MigrationError('The old data changed after it was verified. Run the migration again before deleting it.')
   const backup: OldBackup = { json: oldBackupJson(old, now), fileName: `ccbill-old-backup-${now.slice(0, 10)}.json` }
-  await beforeDelete?.(backup)
+  await beforeDelete(backup)
   await Dexie.delete(oldName)
   return backup
 }

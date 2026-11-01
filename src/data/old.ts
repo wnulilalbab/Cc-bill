@@ -37,22 +37,23 @@ const OLD_TYPES = new Set(['purchase', 'installment', 'payment', 'refund', 'reve
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 const ISO_MONTH = /^\d{4}-\d{2}$/
 
-type Field = 'string' | 'date' | 'month' | 'rupiah' | 'count' | 'type' | 'boolean'
+type Field = 'string' | 'text' | 'date' | 'month' | 'rupiah' | 'count' | 'type' | 'boolean'
 type Shape = Record<string, `${Field}` | `${Field}?`>
 
 const SHAPES: Record<keyof OldData, Shape> = {
   owners: { id: 'string', name: 'string' },
   periods: { id: 'string', month: 'count', year: 'count', dueDate: 'date?' },
-  transactions: { id: 'string', periodId: 'string', date: 'date', description: 'string', amount: 'rupiah', type: 'type', hidden: 'boolean?' },
+  transactions: { id: 'string', periodId: 'string', date: 'date', description: 'text', amount: 'rupiah', type: 'type', hidden: 'boolean?' },
   expenses: { id: 'string', transactionId: 'string', ownerId: 'string', installmentPlanId: 'string?' },
   installmentPlans: { id: 'string', name: 'string', totalMonths: 'count', monthlyAmount: 'rupiah', startPeriod: 'month', ownerId: 'string' },
-  payments: { id: 'string', periodId: 'string', date: 'date', amount: 'rupiah' },
+  payments: { id: 'string', periodId: 'string', date: 'date', amount: 'rupiah', note: 'text?' },
   paymentAllocations: { id: 'string', paymentId: 'string', expenseId: 'string', amount: 'rupiah' },
 }
 
 function fieldOk(kind: Field, v: unknown): boolean {
   switch (kind) {
     case 'string': return typeof v === 'string' && v.length > 0
+    case 'text': return typeof v === 'string'
     case 'date': return typeof v === 'string' && ISO_DATE.test(v)
     case 'month': return typeof v === 'string' && ISO_MONTH.test(v)
     case 'rupiah': return Number.isSafeInteger(v)
@@ -64,6 +65,7 @@ function fieldOk(kind: Field, v: unknown): boolean {
 
 const EXPECTED: Record<Field, string> = {
   string: 'a non-empty text',
+  text: 'a text',
   date: 'a date (YYYY-MM-DD)',
   month: 'a month (YYYY-MM)',
   rupiah: 'an integer number of rupiah',
@@ -72,11 +74,29 @@ const EXPECTED: Record<Field, string> = {
   boolean: 'true or false',
 }
 
+/** `typeof` plus a short preview. Never serialises the value: a deeply nested one would overflow the stack. */
+export function describeValue(v: unknown): string {
+  if (Array.isArray(v)) return `a list of ${v.length}`
+  if (v === null) return 'null'
+  if (typeof v === 'object') return 'an object'
+  const text = typeof v === 'string' ? `"${v}"` : String(v)
+  return `${typeof v} ${text.length > 40 ? `${text.slice(0, 40)}…` : text}`
+}
+
 /**
  * Checks that `input` (parsed JSON or a JSON string) is an old-format backup. Throws a MigrationError that names
  * the first problem (list, row and field) so the user can tell a wrong file from a damaged one.
  */
 export function parseOldBackup(input: unknown): OldData {
+  try {
+    return parseOrThrow(input)
+  } catch (e) {
+    if (e instanceof MigrationError) throw e
+    throw new MigrationError(`The backup could not be read (${(e as Error).name}: it may be damaged or far too deeply nested).`)
+  }
+}
+
+function parseOrThrow(input: unknown): OldData {
   let raw = input
   if (typeof input === 'string') {
     try {
@@ -100,7 +120,7 @@ export function parseOldBackup(input: unknown): OldData {
         const optional = spec.endsWith('?')
         const kind = spec.replace('?', '') as Field
         if (optional && r[key] === undefined) continue
-        if (!fieldOk(kind, r[key])) throw new MigrationError(`${where}.${key} must be ${EXPECTED[kind]}, got ${JSON.stringify(r[key])}.`)
+        if (!fieldOk(kind, r[key])) throw new MigrationError(`${where}.${key} must be ${EXPECTED[kind]}, got ${describeValue(r[key])}.`)
       }
       if (seen.has(r.id as string)) throw new MigrationError(`${table} has the id "${r.id}" twice.`)
       seen.add(r.id as string)
@@ -118,6 +138,7 @@ export function parseOldBackup(input: unknown): OldData {
   for (const a of out.paymentAllocations as OldAllocation[]) {
     if (a.amount < 0) throw new MigrationError(`Assignment ${a.id} has a negative amount (${a.amount}).`)
   }
+  JSON.stringify(out) // the plan fingerprints and backs up this data: anything that cannot be serialised fails here
   return out as unknown as OldData
 }
 
