@@ -19,6 +19,7 @@ import { useAppearance } from '../look/Appearance'
 import { ownerColor } from '../look/palettes'
 import { OwnerChip } from '../settings/SettingsPage'
 import { rp } from '../settings/format'
+import { ShareSheet } from '../share/ShareSheet'
 import { TagSheet } from '../tagging/TagSheet'
 import { AddRowSheet } from './AddRowSheet'
 import { BulkOwnerSheet } from './BulkOwnerSheet'
@@ -45,7 +46,7 @@ import {
   type StatusFilter,
 } from './view'
 
-type Open = { kind: 'row'; id: string } | { kind: 'tag'; id: string; ownerId: string } | { kind: 'bulk' } | { kind: 'add' } | null
+type Open = { kind: 'row'; id: string } | { kind: 'tag'; id: string; ownerId: string } | { kind: 'bulk' } | { kind: 'add' } | { kind: 'share' } | null
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 const today = () => localIsoDate()
@@ -115,6 +116,11 @@ export function TransactionsPage() {
   return (
     <div className="screen">
       <Header>
+        {statement && !selecting && (
+          <button type="button" className="btn ghost sm" onClick={() => setOpen({ kind: 'share' })}>
+            Share
+          </button>
+        )}
         <button type="button" className="btn ghost sm" aria-pressed={selecting} onClick={() => (selecting ? endSelect() : setSelecting(true))}>
           {selecting ? 'Done' : 'Select'}
         </button>
@@ -295,6 +301,9 @@ export function TransactionsPage() {
             endSelect()
           }}
         />
+      )}
+      {open?.kind === 'share' && ledger && statement && (
+        <ShareSheet ledger={ledger} card={selected.card} owners={owners} statementId={statement.id} onClose={() => setOpen(null)} />
       )}
       {open?.kind === 'add' && statement && (
         <AddRowSheet

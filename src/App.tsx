@@ -14,6 +14,7 @@ import { TransactionsPage } from './features/transactions/TransactionsPage'
 import { BillPage } from './features/bill/BillPage'
 import { PersonPage } from './features/bill/PersonPage'
 import { PaymentsRoutes } from './features/payments/PaymentsRoutes'
+import { SharePage } from './features/share/SharePage'
 
 function BottomNav() {
   const location = useLocation()
@@ -76,6 +77,7 @@ export default function App() {
             <Route path="/v2/bill" element={<Shell><BillPage /></Shell>} />
             <Route path="/v2/bill/person/:ownerId" element={<Shell><PersonPage /></Shell>} />
             <Route path="/v2/payments/*" element={<Shell><PaymentsRoutes /></Shell>} />
+            <Route path="/v2/share" element={<Shell><SharePage /></Shell>} />
           </Routes>
         </main>
         <BottomNav />

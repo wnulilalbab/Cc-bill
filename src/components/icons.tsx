@@ -8,6 +8,15 @@ export function GearIcon({ className }: { className?: string }) {
   )
 }
 
+/** The prototype's share glyph (arrow up out of a tray). */
+export function ShareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+      <path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6" />
+    </svg>
+  )
+}
+
 export function BackIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">

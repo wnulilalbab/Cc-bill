@@ -77,4 +77,11 @@ describe('routing', () => {
     await user.click(screen.getByRole('link', { name: 'Old import screen' }))
     expect(window.location.hash).toBe('#/import')
   })
+
+  it('#/v2/share opens the Share screen (until the Bill screen carries the Share buttons)', async () => {
+    window.location.hash = '#/v2/share'
+    const { default: App } = await import('../App')
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Share' })).toBeTruthy()
+  })
 })
