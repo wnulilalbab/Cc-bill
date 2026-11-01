@@ -11,6 +11,7 @@ import { SettingsPage } from './features/settings/SettingsPage'
 import { BottomNav } from './features/shell/BottomNav'
 import { fromLegacy, PATHS } from './features/shell/paths'
 import { isStaging, StagingBanner } from './features/shell/StagingBanner'
+import { SharePage } from './features/share/SharePage'
 import { RulesPage } from './features/tagging/RulesPage'
 import { TransactionsPage } from './features/transactions/TransactionsPage'
 
@@ -30,6 +31,7 @@ export function AppRoutes() {
       <Route path={PATHS.import} element={<ImportPage />} />
       <Route path={PATHS.settings} element={<SettingsPage />} />
       <Route path={PATHS.rules} element={<RulesPage />} />
+      <Route path={PATHS.share} element={<SharePage />} />
       <Route path="/v2/*" element={<FromV2 />} />
       {/* Retired legacy screens (/dashboard, /installments) and unknown paths go home. */}
       <Route path="*" element={<Navigate to={PATHS.bill} replace />} />

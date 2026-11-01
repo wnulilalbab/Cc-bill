@@ -3,6 +3,7 @@ import type { Card, Owner, UnbilledStatement } from '../domain/types'
 import type { NewDb } from './db'
 import { DISMISSED_PREFIX } from './rules'
 import { pdfPasswordKey } from './deviceSecrets'
+import { shareLogPrefix } from './shares'
 
 /** A card as stored: the domain card plus its look. */
 export interface CardRecord extends Card {
@@ -154,7 +155,7 @@ export async function saveCard(db: NewDb, d: CardDraft): Promise<string> {
   })
 }
 
-/** Deletes a card that has no history, with its owners, its (empty) statements, its rules and dismissed suggestions, and its remembered PDF password. */
+/** Deletes a card that has no history, with its owners, its (empty) statements, its rules and dismissed suggestions, its remembered PDF password and its share log. */
 export async function deleteCard(db: NewDb, cardId: string): Promise<void> {
   await db.transaction('rw', [db.cards, db.owners, db.statements, db.transactions, db.plans, db.payments, db.rules, db.meta], async () => {
     if (await cardHasHistory(db, cardId)) throw new CardError('This card has transactions or payments, so it cannot be deleted.')
@@ -163,6 +164,7 @@ export async function deleteCard(db: NewDb, cardId: string): Promise<void> {
     await db.meta.delete(DISMISSED_PREFIX + cardId)
     await db.statements.where('cardId').equals(cardId).delete()
     await db.meta.delete(pdfPasswordKey(cardId)) // its remembered PDF password goes with it
+    await db.meta.where('key').startsWith(shareLogPrefix(cardId)).delete() // and its share log
     await db.cards.delete(cardId)
   })
 }

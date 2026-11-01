@@ -7,6 +7,7 @@ export const PATHS = {
   import: '/import',
   settings: '/settings',
   rules: '/rules',
+  share: '/share',
 } as const
 
 /** "/v2/bill/person/x?s=1" → "/bill/person/x?s=1". Any other path is returned unchanged. */

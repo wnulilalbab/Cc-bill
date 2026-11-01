@@ -1,14 +1,17 @@
 // One person's bill (docs/intent/phase-1.md §8, prototype "owner detail"): this statement's charges grouped by kind
 // with what paid each one ("after due" marked), the payments and deposits behind "Already paid", carried credit,
 // older unpaid bills, not billed yet and installments to come. Lines add up to the hero numbers (M-10).
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { ShareIcon } from '../../components/icons'
 import { computeMoney } from '../../domain/amounts'
 import { coverageOf, ownerBill, type BillLine, type OwnerBill } from '../../domain/bill'
 import type { Ledger, Payment, Statement } from '../../domain/types'
-import type { OwnerRecord } from '../../data/cards'
+import type { CardRecord, OwnerRecord } from '../../data/cards'
 import { rp } from '../settings/format'
 import { PATHS } from '../shell/paths'
 import { TopBar } from '../shell/TopBar'
+import { ShareSheet } from '../share/ShareSheet'
 import { StatusPill } from '../transactions/RowSheet'
 import { dayLabel, fmt, MONTHS, statementName, TAG_SOURCE_LABEL } from '../transactions/view'
 import { HeroBox, NO_OWNER, ownerLabel, payPath, txPath } from './BillPage'
@@ -32,11 +35,17 @@ export function PersonPage() {
       </div>
     )
   }
-  return <Person ledger={ledger} statement={statement} ownerId={ownerId} owners={selected.owners} cardName={selected.card.name} />
+  return <Person ledger={ledger} statement={statement} ownerId={ownerId} owners={selected.owners} card={selected.card} />
 }
 
-function Header({ title, sub, statementId }: { title: string; sub: string; statementId: string }) {
-  return <TopBar title={title} sub={sub} backTo={`${PATHS.bill}?s=${encodeURIComponent(statementId)}`} />
+function Header({ title, sub, statementId, onShare }: { title: string; sub: string; statementId: string; onShare?(): void }) {
+  // As the prototype's owner detail: Back, the person, and Share on the right.
+  const share = onShare && (
+    <button type="button" className="iconbtn" aria-label="Share" onClick={onShare}>
+      <ShareIcon />
+    </button>
+  )
+  return <TopBar title={title} sub={sub} backTo={`${PATHS.bill}?s=${encodeURIComponent(statementId)}`} actions={share} gear={false} />
 }
 
 function heroOf(b: OwnerBill): Hero {
@@ -53,9 +62,12 @@ function heroOf(b: OwnerBill): Hero {
   }
 }
 
-function Person({ ledger, statement, ownerId, owners, cardName }: { ledger: Ledger; statement: Statement; ownerId: string | null; owners: OwnerRecord[]; cardName: string }) {
+function Person({ ledger, statement, ownerId, owners, card }: { ledger: Ledger; statement: Statement; ownerId: string | null; owners: OwnerRecord[]; card: CardRecord }) {
+  const cardName = card.name
+  const today = todayIso()
+  const [sharing, setSharing] = useState(false)
   const state = computeMoney(ledger)
-  const bill = ownerBill(ledger, ownerId, statement.id, todayIso(), state)
+  const bill = ownerBill(ledger, ownerId, statement.id, today, state)
   const { name } = ownerLabel(owners, ownerId)
   const un = statement.kind === 'unbilled'
   const month = monthName(statement)
@@ -66,7 +78,7 @@ function Person({ ledger, statement, ownerId, owners, cardName }: { ledger: Ledg
 
   return (
     <div className="screen">
-      <Header title={name} sub={`${cardName} · ${un ? 'Unbilled' : `${month} bill`}`} statementId={statement.id} />
+      <Header title={name} sub={`${cardName} · ${un ? 'Unbilled' : `${month} bill`}`} statementId={statement.id} onShare={() => setSharing(true)} />
       <HeroBox view={{ hero: heroOf(bill) }} label={`To pay for the ${un ? 'unbilled' : month} bill`} chargesLabel={`${month} charges`} />
 
       <div className="lbl">
@@ -188,9 +200,13 @@ function Person({ ledger, statement, ownerId, owners, cardName }: { ledger: Ledg
         </section>
       )}
 
+      <button type="button" className="btn acc" onClick={() => setSharing(true)}>
+        Share {name}&apos;s bill
+      </button>
       <Link className="btn ghost" to={txPath(statement.id)}>
         Open in Transactions
       </Link>
+      {sharing && <ShareSheet ledger={ledger} card={card} owners={owners} statementId={statement.id} initialTarget={{ ownerId }} today={today} onClose={() => setSharing(false)} />}
     </div>
   )
 }

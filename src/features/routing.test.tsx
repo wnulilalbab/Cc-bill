@@ -109,6 +109,7 @@ describe('routes', () => {
     ['#/v2/import', '#/import', 'Import'],
     ['#/v2/settings', '#/settings', 'Settings'],
     ['#/v2/rules', '#/rules', 'Tagging rules'],
+    ['#/v2/share', '#/share', 'Share'],
     ['#/v2', '#/bill', 'Bill'],
   ])('the Phase-1 path %s redirects to %s', async (from, to, heading) => {
     await openApp(from)

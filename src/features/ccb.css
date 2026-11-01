@@ -250,6 +250,13 @@
 @keyframes ccb-slidenext { from { transform: translateX(48px); opacity: 0.25; } to { transform: none; opacity: 1; } }
 @keyframes ccb-slideprev { from { transform: translateX(-48px); opacity: 0.25; } to { transform: none; opacity: 1; } }
 
+/* ---------- Share (sheet, /share screen, share buttons) ---------- */
+.ccb .share-preview { margin: 0; white-space: pre-wrap; word-break: break-word; font: inherit; font-size: 12.5px; line-height: 1.5; border: 1px solid var(--line); border-radius: var(--r-sm, 12px); padding: 14px; background: var(--surface); }
+.ccb .waimg { border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px; background: #fff; }
+.ccb .orow-wrap { display: flex; flex-direction: column; gap: 2px; }
+.ccb .orow-share { align-self: flex-end; padding: 2px 4px; }
+.ccb .hero .btn { margin-top: 4px; }
+
 /* ---------- Bill ---------- */
 .ccb .hero { background: var(--hero); color: var(--hero-ink); border: 2px solid var(--hero-line); border-radius: var(--r, 18px); padding: 16px; display: flex; flex-direction: column; gap: 9px; position: relative; overflow: hidden; }
 .ccb .hero .big { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
