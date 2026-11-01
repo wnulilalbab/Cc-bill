@@ -382,9 +382,11 @@ function DraftPanel({ ledger, statementId, onCheckRows, onRow }: { ledger: Ledge
     </li>
   )
   const payItem = (id: string, why: string) => (
-    <li key={`${why}-${id}`} className="xs">
-      {why}: {payText(pay(id))}
-      {why === 'Not fully assigned' && ` (${rp(unassignedOf(pay(id)))} left)`}
+    <li key={`${why}-${id}`}>
+      <Link className="link xs" to={`/v2/payments/${encodeURIComponent(id)}`}>
+        {why}: {payText(pay(id))}
+        {why === 'Not fully assigned' && ` (${rp(unassignedOf(pay(id)))} left)`}
+      </Link>
     </li>
   )
   return (
@@ -406,7 +408,9 @@ function DraftPanel({ ledger, statementId, onCheckRows, onRow }: { ledger: Ledge
         {issues.notOnStatementPayments.map((id) => payItem(id, 'Unbilled payment not on this statement'))}
       </ul>
       {issues.blockingPayments.length + issues.missingPayments.length + issues.possibleDuplicatePayments.length + issues.notOnStatementPayments.length > 0 && (
-        <div className="xs muted">Payments are assigned on the Payments tab.</div>
+        <div className="xs muted">
+          Tap a payment to assign or resolve it, or open <Link to="/v2/payments">Payments</Link>.
+        </div>
       )}
     </div>
   )
