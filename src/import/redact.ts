@@ -26,7 +26,7 @@ const ROW_DATE = String.raw`\d{1,2}-(?:JAN|FEB|MAR|APR|MEI|MAY|JUN|JUL|AGU|AUG|S
  * address word, so "17 AGUSTUS RAYA NO 5", "01/10 02/10 JL MAWAR NO 7" or "12-OKT 13-OKT BLOK 5" stay on the phone.
  */
 const SMALL_TX_LINE = new RegExp(`^${ROW_DATE}\\s+${ROW_DATE}\\s+\\S.*\\s(?:RP\\.?\\s*)?-?\\d{1,3}(?:\\s*CR)?$`, 'i')
-const ADDRESS_WORD = /\b(?:JL|JALAN|BLOK|RT|RW|NO|DESA|KEL|KEC|KOMP|KOMPLEK|PERUM|GG)\b/i
+const ADDRESS_WORD = /\b(?:JL|JLN|JALAN|GANG|GG|BLOK|RT|RW|NO|DESA|KEL|KEC|KOMP|KOMPLEK|KOMPLEKS|PERUM|PERUMAHAN|KAV|RESIDENCE)\b/i
 const LABELS = [
   'TANGGAL REKENING',
   'TANGGAL JATUH TEMPO',
