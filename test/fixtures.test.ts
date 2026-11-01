@@ -105,7 +105,7 @@ describe('statement PDFs', () => {
       const data = bytes(`statements/${s.file}.pdf`)
       const doc = await pdfjs.getDocument({ data: data.slice(), password: s.locked ? PASSWORD : undefined, verbosity: 0 }).promise
       expect(doc.numPages, s.file).toBeGreaterThan(1)
-      const page = async (n: number) => (await (await doc.getPage(n)).getTextContent()).items.map((it: any) => it.str).join('\n')
+      const page = async (n: number) => (await (await doc.getPage(n)).getTextContent()).items.map((it) => ('str' in it ? it.str : '')).join('\n')
       expect(await page(2), s.file).toContain(s.lines[8].description)
       const totalsLabel = s.bank === 'BCA' ? 'TAGIHAN SEBELUMNYA' : 'SUB-TOTAL'
       expect(await page(1), s.file).not.toContain(totalsLabel)
