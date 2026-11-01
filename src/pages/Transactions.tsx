@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, generateId } from '../db'
+import { lsGet, lsSet, lsRemove } from '../lib/storage'
 import {
   formatRupiah, formatRupiahCompact, formatDateShort, TX_TYPE_LABEL, TX_TYPE_COLOR,
   OWNER_COLOR_CLASSES, parseInstallmentDescription, periodLabelFromKey,
@@ -21,40 +22,40 @@ export default function Transactions() {
   const installmentPlans = useLiveQuery(() => db.installmentPlans.toArray(), []) ?? []
 
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>(
-    () => localStorage.getItem(LS_PERIOD) ?? 'unbilled'
+    () => lsGet(LS_PERIOD) ?? 'unbilled'
   )
   const [filterOwner, setFilterOwner] = useState<string>(
-    () => localStorage.getItem(LS_OWNER) ?? 'all'
+    () => lsGet(LS_OWNER) ?? 'all'
   )
   const [filterUnlabeled, setFilterUnlabeled] = useState<boolean>(
-    () => localStorage.getItem(LS_UNLABELED) === '1'
+    () => lsGet(LS_UNLABELED) === '1'
   )
   const [filterStatus, setFilterStatus] = useState<string>(
-    () => localStorage.getItem(LS_STATUS) ?? 'all'
+    () => lsGet(LS_STATUS) ?? 'all'
   )
 
   function setPeriodFilter(id: string) {
-    if (id === 'unbilled') localStorage.removeItem(LS_PERIOD)
-    else localStorage.setItem(LS_PERIOD, id)
+    if (id === 'unbilled') lsRemove(LS_PERIOD)
+    else lsSet(LS_PERIOD, id)
     setSelectedPeriodId(id)
   }
 
   function setOwnerFilter(id: string) {
-    if (id === 'all') localStorage.removeItem(LS_OWNER)
-    else localStorage.setItem(LS_OWNER, id)
+    if (id === 'all') lsRemove(LS_OWNER)
+    else lsSet(LS_OWNER, id)
     setFilterOwner(id)
   }
 
   function toggleUnlabeledFilter() {
     const next = !filterUnlabeled
-    if (next) localStorage.setItem(LS_UNLABELED, '1')
-    else localStorage.removeItem(LS_UNLABELED)
+    if (next) lsSet(LS_UNLABELED, '1')
+    else lsRemove(LS_UNLABELED)
     setFilterUnlabeled(next)
   }
 
   function setStatusFilter(s: string) {
-    if (s === 'all') localStorage.removeItem(LS_STATUS)
-    else localStorage.setItem(LS_STATUS, s)
+    if (s === 'all') lsRemove(LS_STATUS)
+    else lsSet(LS_STATUS, s)
     setFilterStatus(s)
   }
 
@@ -85,7 +86,7 @@ export default function Transactions() {
 
   const expenseByTx = new Map(expenses.map((e) => [e.transactionId, e]))
 
-  const testingMode = localStorage.getItem('testing_mode') === '1'
+  const testingMode = lsGet('testing_mode') === '1'
   const [editingTx, setEditingTx] = useState<Transaction | null>(null)
 
   async function deleteTx(id: string) {

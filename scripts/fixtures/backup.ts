@@ -27,10 +27,12 @@ export function buildBackup() {
     id: `own-${i}`, name, color: ['red', 'blue', 'pink', 'yellow', 'purple', 'teal'][i],
   }))
   const ownerId = (name: string) => owners.find((o) => o.name === name)!.id
-  const periods: any[] = []
-  const transactions: any[] = []
-  const expenses: any[] = []
-  const paymentAllocations: any[] = []
+  type Rec = Record<string, string | number | boolean | null | undefined>
+  type Amounted = Rec & { id: string; amount: number }
+  const periods: Rec[] = []
+  const transactions: Amounted[] = []
+  const expenses: Rec[] = []
+  const paymentAllocations: Amounted[] = []
   let tx = 0, ex = 0, al = 0
   const pad = (n: number) => String(n).padStart(4, '0')
 
@@ -98,7 +100,7 @@ export function buildBackup() {
     { id: 'plan-1', name: 'Garmin Forerunner', originalAmount: 5999000, totalMonths: 12, monthlyAmount: 499917, startPeriod: '2026-07', ownerId: ownerId('Andi'), notes: '' },
   ]
   for (const e of expenses) {
-    const t = transactions.find((x) => x.id === e.transactionId)
+    const t = transactions.find((x) => x.id === e.transactionId)!
     if (t.type === 'installment') e.installmentPlanId = 'plan-1'
     const paid = paymentAllocations.filter((a) => a.expenseId === e.id).reduce((s, a) => s + a.amount, 0)
     e.status = paid >= t.amount ? 'paid' : paid > 0 ? 'partial' : 'unpaid'
