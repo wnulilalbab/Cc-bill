@@ -71,7 +71,7 @@ describe('Claude Messages request', () => {
     const offline = vi.fn<FetchLike>(async () => {
       throw new Error(`failed with ${TEST_KEY}`)
     })
-    const err = await sendMessages({ apiKey: TEST_KEY, model: 'm', fetch: offline }, body).catch((e: Error) => e)
+    const err = (await sendMessages({ apiKey: TEST_KEY, model: 'm', fetch: offline }, body).catch((e: Error) => e)) as Error
     expect(err.message).toBe('Could not reach the AI service. Check the connection and try again.')
     expect(err.message).not.toContain(TEST_KEY)
   })

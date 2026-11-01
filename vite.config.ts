@@ -38,7 +38,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        globPatterns: ['**/*.{js,mjs,css,html,svg,png,ico,woff2}'],
         // Production's service worker scope also covers /staging/; never let it serve staging pages.
         navigateFallbackDenylist: isStaging ? [] : [/\/staging\//],
         runtimeCaching: [
