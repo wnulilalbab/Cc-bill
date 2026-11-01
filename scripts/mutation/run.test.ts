@@ -9,6 +9,8 @@ describe('domainSources', () => {
         'src/domain/sub/split.ts',
         'src/domain/money.test.ts',
         'src/domain/types.d.ts',
+        'src/domain/types.ts',
+        'src/domain/tagging/types.ts',
         'src/domain/readme.md',
         'src/data/db.ts',
         'src/domainish/x.ts',
