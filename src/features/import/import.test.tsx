@@ -6,7 +6,7 @@ import { freshNewDb } from '../../../test/data/oldDb'
 import { aiAnswerFor, expected, fileOf, mockFetch, pdfjsLib, seedCards, TEST_KEY } from '../../../test/import/helpers'
 import type { FetchLike } from '../../ai/client'
 import { recallPassword, rememberPassword } from '../../import/passwords'
-import { renderScreen } from '../../test-utils/ui'
+import { renderScreen, settle } from '../../test-utils/ui'
 import { saveAiKey } from '../settings/aiSettings'
 import { ImportPage, parseTyped } from './ImportPage'
 
@@ -18,7 +18,8 @@ beforeEach(() => {
   localStorage.clear()
   saveAiKey(TEST_KEY)
 })
-afterEach(() => {
+afterEach(async () => {
+  await settle() // the last action's reads finish inside the test, on every run
   cleanup()
   vi.unstubAllGlobals()
 })
@@ -87,6 +88,57 @@ describe('Import screen', () => {
     await user.click(await screen.findByRole('button', { name: 'Forget saved password' }))
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Forget saved password' })).toBeNull())
     expect(await recallPassword(db, cards.mandiri)).toBeNull()
+  })
+
+  it('I-05 the first PDF import of a card asks for the holder name once; it is saved on the card and never sent', async () => {
+    const fetch = mockFetch(aiAnswerFor(expected('statements/bca-2026-07')))
+    const { user, db, cards } = await setup(fetch)
+    await pickCard(user, 'BCA Keluarga')
+    expect(screen.queryByLabelText(/Card holder name/)).toBeNull() // no file yet
+    choose(asFile('statements/bca-2026-07.pdf'))
+    const field = await screen.findByLabelText('Card holder name, as printed on the statement')
+    expect(screen.getByText(/Asked once for BCA Keluarga/)).toBeTruthy()
+    await user.type(field, '  Andi Pratama ')
+    await user.click(screen.getByRole('button', { name: 'Read statement' }))
+    expect(await screen.findByText('Totals match the bank ✓')).toBeTruthy()
+    expect(((await db.cards.get(cards.bca)) as { holderName?: string }).holderName).toBe('Andi Pratama')
+    const body = String(fetch.mock.calls[0][1].body)
+    expect(body).not.toMatch(/PRATAMA/i)
+    // Asked once: the next PDF for this card does not ask again.
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    choose(asFile('statements/bca-2026-08.pdf'))
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Read statement' }) as HTMLButtonElement).disabled).toBe(false))
+    expect(screen.queryByLabelText(/Card holder name/)).toBeNull()
+  })
+
+  it('I-05 a holder name typed for one card is cleared when the card changes; it is never saved on another card', async () => {
+    const fetch = mockFetch(aiAnswerFor(expected('statements/bca-2026-07')))
+    const { user, db, cards } = await setup(fetch)
+    await pickCard(user, 'BCA Keluarga')
+    choose(asFile('statements/bca-2026-07.pdf'))
+    await user.type(await screen.findByLabelText(/Card holder name/), 'Andi Pratama')
+    await pickCard(user, 'Mandiri Pribadi')
+    expect((screen.getByLabelText(/Card holder name/) as HTMLInputElement).value).toBe('')
+    await pickCard(user, 'BCA Keluarga')
+    expect((screen.getByLabelText(/Card holder name/) as HTMLInputElement).value).toBe('')
+    await user.click(screen.getByRole('button', { name: 'Read statement' }))
+    expect(await screen.findByText('Totals match the bank ✓')).toBeTruthy()
+    expect(((await db.cards.get(cards.bca)) as { holderName?: string }).holderName).toBeUndefined()
+    expect(((await db.cards.get(cards.mandiri)) as { holderName?: string }).holderName).toBeUndefined()
+  })
+
+  it('I-05 the holder name question: only for a statement PDF; left empty, nothing is saved', async () => {
+    const fetch = mockFetch(aiAnswerFor(expected('statements/bca-2026-07')))
+    const { user, db, cards } = await setup(fetch)
+    await pickCard(user, 'BCA Keluarga')
+    choose(asFile('statements/bca-2026-07.pdf'))
+    await screen.findByLabelText(/Card holder name/)
+    await user.click(screen.getByRole('button', { name: 'Unbilled screenshots' }))
+    expect(screen.queryByLabelText(/Card holder name/)).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Statement' }))
+    await user.click(screen.getByRole('button', { name: 'Read statement' }))
+    expect(await screen.findByText('Totals match the bank ✓')).toBeTruthy()
+    expect(((await db.cards.get(cards.bca)) as { holderName?: string }).holderName).toBeUndefined()
   })
 
   it('I-04 without Remember nothing is saved; unticking Remember deletes a password saved earlier', async () => {

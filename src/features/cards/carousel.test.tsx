@@ -7,7 +7,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveCard } from '../../data/cards'
 import { freshNewDb } from '../../../test/data/oldDb'
-import { renderScreen } from '../../test-utils/ui'
+import { renderScreen, settle } from '../../test-utils/ui'
 import { PREF_KEYS, prefGet } from '../look/prefs'
 import { BillPage } from '../bill/BillPage'
 import { CardCarousel, plainTiles, SETTLE_MS, type CardTile } from './CardCarousel'
@@ -52,7 +52,7 @@ describe('carousel arithmetic', () => {
     expect(keyTarget('ArrowRight', 0, 0)).toBeNull()
   })
 
-  it('a swipe of more than 50px moves one card; a small one snaps back; the ends hold', () => {
+  it('U-05 a swipe of more than 50px moves one card; a small one snaps back; the ends hold', () => {
     expect(SWIPE_PX).toBe(50)
     expect(swipeTarget(0, -51, 3)).toBe(1)
     expect(swipeTarget(0, -400, 3)).toBe(1)
@@ -133,12 +133,13 @@ beforeEach(() => {
   vi.stubGlobal('PointerEvent', FakePointerEvent)
   vi.stubGlobal('__APP_ENV__', 'production')
 })
-afterEach(() => {
+afterEach(async () => {
+  vi.useRealTimers()
+  await settle() // the last action's reads finish inside the test, on every run
   cleanup()
   delete (HTMLElement.prototype as { scrollTo?: unknown }).scrollTo
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
-  vi.useRealTimers()
   localStorage.clear()
 })
 
@@ -171,7 +172,7 @@ describe('CardCarousel', () => {
     expect(Array.from(document.querySelectorAll('.dots i')).map((i) => i.className)).toEqual(['on', '', ''])
   })
 
-  it('tapping a peeking card selects it; the screen follows and the row glides to it', async () => {
+  it('U-05 tapping a peeking card selects it; the screen follows and the row glides to it', async () => {
     const onSelect = vi.fn()
     fakeLayout()
     render(<Harness onSelect={onSelect} />)
@@ -189,7 +190,7 @@ describe('CardCarousel', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
-  it('reduced motion: the row jumps instead of gliding', async () => {
+  it('U-06 reduced motion: the row jumps instead of gliding', async () => {
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(prefers-reduced-motion: reduce)' }))
     fakeLayout()
     render(<Harness />)
@@ -254,7 +255,7 @@ describe('CardCarousel', () => {
     expect(onSelect).toHaveBeenCalledTimes(1)
   })
 
-  it('mouse drag: more than 50px moves one card, less snaps back, and the drag is not taken as a tap', () => {
+  it('U-05 mouse drag: more than 50px moves one card, less snaps back, and the drag is not taken as a tap', () => {
     const onSelect = vi.fn()
     fakeLayout()
     render(<Harness onSelect={onSelect} />)

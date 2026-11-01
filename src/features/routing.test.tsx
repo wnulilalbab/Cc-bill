@@ -6,12 +6,14 @@ import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromLegacy, PATHS } from './shell/paths'
 import { STAGING_TEXT } from './shell/StagingBanner'
+import { settle } from '../test-utils/ui'
 
 beforeEach(() => {
   vi.stubGlobal('__APP_ENV__', 'production')
   vi.stubGlobal('__APP_VERSION__', '0.0.0-test')
 })
-afterEach(() => {
+afterEach(async () => {
+  await settle() // the last action's reads finish inside the test, on every run
   cleanup()
   vi.unstubAllGlobals()
 })
@@ -36,7 +38,7 @@ const current = () =>
     .map((a) => a.textContent)
 
 describe('app shell', () => {
-  it('"/" opens Bill; the bottom nav has Bill, Transactions, Import and Payments (no Settings); the active tab is marked', async () => {
+  it('"/" opens Bill; the bottom nav has Bill, Transactions, Import, Payments and Insights (no Settings); the active tab is marked', async () => {
     await openApp('#/')
     expect(await screen.findByRole('heading', { name: 'Bill' })).toBeTruthy()
     expect(window.location.hash).toBe('#/bill')
@@ -45,6 +47,7 @@ describe('app shell', () => {
       ['Transactions', '#/transactions'],
       ['Import', '#/import'],
       ['Payments', '#/payments'],
+      ['Insights', '#/insights'],
     ])
     // Icons as in the prototype; Import is the round "+" button.
     for (const a of within(nav()).getAllByRole('link')) expect(a.querySelector('.ic svg')).toBeTruthy()
@@ -58,6 +61,7 @@ describe('app shell', () => {
     ['Transactions', '#/transactions'],
     ['Payments', '#/payments'],
     ['Import', '#/import'],
+    ['Insights', '#/insights'],
     ['Bill', '#/bill'],
   ])('the %s tab opens its screen with the top bar and the gear', async (name, hash) => {
     const user = await openApp('#/settings')
@@ -123,12 +127,22 @@ describe('routes', () => {
     expect(window.location.hash).toBe('#/bill')
   })
 
+  it.each(['#/v2//evil.com', '#//evil.com', '#/v2///evil.com/x'])('%s never leaves the app: it lands on Bill', async (from) => {
+    await openApp(from)
+    expect(await screen.findByRole('heading', { name: 'Bill' })).toBeTruthy()
+    expect(window.location.hash).toBe('#/bill')
+    expect(window.location.origin).toBe('http://localhost:3000')
+  })
+
   it('fromLegacy maps /v2 paths (with their query) onto the short paths and leaves others alone', () => {
     expect(fromLegacy('/v2/bill/person/abc', '?s=oct')).toBe('/bill/person/abc?s=oct')
     expect(fromLegacy('/v2/payments/new')).toBe('/payments/new')
     expect(fromLegacy('/v2')).toBe(PATHS.bill)
     expect(fromLegacy('/v2x/bill')).toBe('/v2x/bill')
     expect(fromLegacy('/transactions')).toBe('/transactions')
+    // Never a protocol-relative "//host" path.
+    expect(fromLegacy('/v2//evil.com')).toBe('/evil.com')
+    expect(fromLegacy('/v2///evil.com', '?a=1')).toBe('/evil.com?a=1')
   })
 })
 
@@ -159,8 +173,18 @@ describe('the old database', () => {
     const user = await openApp('#/')
     await screen.findByRole('heading', { name: 'Bill' })
     // Visit every tab, as a user would.
-    for (const name of ['Transactions', 'Import', 'Payments', 'Bill']) {
+    for (const name of ['Transactions', 'Import', 'Payments', 'Insights', 'Bill']) {
       await user.click(tab(name))
+      await screen.findByRole('heading', { name, level: 1 })
+    }
+    // Settings (the gear), Tagging rules and Share too.
+    await user.click(gear()!)
+    await screen.findByRole('heading', { name: 'Settings', level: 1 })
+    for (const [hash, name] of [
+      ['#/rules', 'Tagging rules'],
+      ['#/share', 'Share'],
+    ]) {
+      window.location.hash = hash
       await screen.findByRole('heading', { name, level: 1 })
     }
     expect(await Dexie.exists('CCBillDB')).toBe(false)

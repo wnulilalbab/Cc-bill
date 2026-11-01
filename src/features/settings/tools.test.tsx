@@ -8,7 +8,7 @@ import { exportNewBackup } from '../../data/backup'
 import { saveCard } from '../../data/cards'
 import { MIGRATED_CARD } from '../../data/migration'
 import { readAll } from '../../data/repo'
-import { renderScreen } from '../../test-utils/ui'
+import { renderScreen, settle } from '../../test-utils/ui'
 import { dumpIdb, fixture, freshNewDb, seedOldDb } from '../../../test/data/oldDb'
 import { PREF_KEYS, prefGet, prefSet } from '../look/prefs'
 import { DataProvider, useData } from '../data/DataContext'
@@ -20,7 +20,8 @@ beforeEach(() => {
   vi.stubGlobal('__APP_ENV__', 'production')
   localStorage.clear()
 })
-afterEach(() => {
+afterEach(async () => {
+  await settle() // the last action's reads finish inside the test, on every run
   cleanup()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()

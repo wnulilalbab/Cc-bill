@@ -26,6 +26,7 @@ import { PdfPasswordError, type PdfJsLike } from '../../import/pdf'
 import { forgetPassword, hasPassword, recallPassword, rememberPassword } from '../../import/passwords'
 import type { ImportReport, RowSummary } from '../../import/plan'
 import { readImport, type ImportFile } from '../../import/read'
+import { setHolderName } from '../../data/cards'
 import { useData } from '../data/DataContext'
 import { useAppearance } from '../look/Appearance'
 import { readAiSettings } from '../settings/aiSettings'
@@ -71,6 +72,7 @@ export function ImportPage({ pdfjs = loadPdfjs, fetch }: ImportPageProps) {
   const [target, setTarget] = useState<ImportTarget>('statement')
   const [files, setFiles] = useState<ImportFile[]>([])
   const [password, setPassword] = useState('')
+  const [holder, setHolder] = useState('')
   const [remember, setRemember] = useState(false)
   const [saved, setSaved] = useState(false)
   const [locked, setLocked] = useState(false)
@@ -83,6 +85,8 @@ export function ImportPage({ pdfjs = loadPdfjs, fetch }: ImportPageProps) {
   const card = cards?.find((c) => c.card.id === cardId) ?? selected
   const pdf = files.length === 1 && /\.pdf$/i.test(files[0].name)
   const savedCardId = card?.card.id
+  /** First PDF import of a card without a holder name: ask for it once (it is removed before the AI call). */
+  const askHolder = pdf && target === 'statement' && !!card && !card.card.holderName
 
   // Whether the selected card has a remembered PDF password (shows "Forget saved password").
   useEffect(() => {
@@ -104,6 +108,7 @@ export function ImportPage({ pdfjs = loadPdfjs, fetch }: ImportPageProps) {
     setError('')
     setPhase('reading')
     try {
+      if (askHolder && holder.trim()) await setHolderName(db, card.card.id, holder)
       const typed = password || (pdf ? await recallPassword(db, card.card.id) : null) || undefined
       const ai = { ...readAiSettings(), fetch }
       const d = await readImport({ db, ai, pdfjs: pdf ? await pdfjs() : undefined }, { cardId: card.card.id, target, files, password: typed })
@@ -168,6 +173,7 @@ export function ImportPage({ pdfjs = loadPdfjs, fetch }: ImportPageProps) {
               options={(cards ?? []).map((c) => ({ value: c.card.id, label: c.card.name, sub: `${c.card.bank}${c.card.last4 ? ` •••• ${c.card.last4}` : ''}` }))}
               onChange={(v) => {
                 setCardId(v)
+                setHolder('') // a name typed for one card never goes to another
                 setLocked(false)
                 setError('')
               }}
@@ -202,6 +208,13 @@ export function ImportPage({ pdfjs = loadPdfjs, fetch }: ImportPageProps) {
               }}
             />
           </div>
+          {askHolder && (
+            <div className="field">
+              <label htmlFor="impHolder">Card holder name, as printed on the statement</label>
+              <input id="impHolder" className="inp" autoComplete="off" placeholder="e.g. ANDI PRATAMA" value={holder} onChange={(e) => setHolder(e.target.value)} />
+              <div className="xs muted">Asked once for {card?.card.name}. It is removed on this phone before anything goes to the AI. Leave it empty and the app guesses it from page 1; change it later in Settings → Cards.</div>
+            </div>
+          )}
           {target === 'unbilled' && <div className="xs muted">Charges and payment lines go to Unbilled. When the statement arrives, both move into it with their owners and assignments.</div>}
           {locked && (
             <div className="status draft">

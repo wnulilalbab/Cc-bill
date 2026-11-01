@@ -155,6 +155,14 @@ export async function saveCard(db: NewDb, d: CardDraft): Promise<string> {
   })
 }
 
+/** Sets the card holder's name as printed on statements (asked on the first PDF import). Empty text is ignored. */
+export async function setHolderName(db: NewDb, cardId: string, name: string): Promise<void> {
+  const holder = name.trim()
+  if (!holder) return
+  const n = await db.cards.update(cardId, { holderName: holder } as Partial<CardRecord>)
+  if (!n) throw new CardError('This card no longer exists.')
+}
+
 /** Deletes a card that has no history, with its owners, its (empty) statements, its rules and dismissed suggestions, its remembered PDF password and its share log. */
 export async function deleteCard(db: NewDb, cardId: string): Promise<void> {
   await db.transaction('rw', [db.cards, db.owners, db.statements, db.transactions, db.plans, db.payments, db.rules, db.meta], async () => {

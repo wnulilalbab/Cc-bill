@@ -6,6 +6,7 @@ import { Shell } from './features/Shell'
 import { BillPage } from './features/bill/BillPage'
 import { PersonPage } from './features/bill/PersonPage'
 import { ImportPage } from './features/import/ImportPage'
+import { InsightsPage } from './features/insights/InsightsPage'
 import { PaymentsRoutes } from './features/payments/PaymentsRoutes'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { BottomNav } from './features/shell/BottomNav'
@@ -32,6 +33,7 @@ export function AppRoutes() {
       <Route path={PATHS.settings} element={<SettingsPage />} />
       <Route path={PATHS.rules} element={<RulesPage />} />
       <Route path={PATHS.share} element={<SharePage />} />
+      <Route path={PATHS.insights} element={<InsightsPage />} />
       <Route path="/v2/*" element={<FromV2 />} />
       {/* Retired legacy screens (/dashboard, /installments) and unknown paths go home. */}
       <Route path="*" element={<Navigate to={PATHS.bill} replace />} />

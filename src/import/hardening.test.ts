@@ -91,6 +91,42 @@ describe('round 2: names, addresses', () => {
     expect(sent(['17 AGUSTUS RAYA NO 5', '12 JUNI RESIDENCE BLOK 7', '17 AGUSTUS RAYA NO 15'])).toEqual([])
     expect(sent(['17-AGU 18-AGU TOKO 5,00', '17-AGU 18-AGU TOKO 5.000'])).toEqual(['17-AGU 18-AGU TOKO 5,00', '17-AGU 18-AGU TOKO 5.000'])
   })
+
+  it('amounts under Rp 1.000: kept after two bank row dates (BCA "12-OKT", Mandiri "12-Oct-26"), with or without CR', () => {
+    const rows = ['12-OKT 12-OKT BEA METERAI 500', '03-OKT 04-OKT PARKIR 7', '05-OKT 05-OKT CASHBACK 999 CR', '07-OKT 07-OKT KOPI RP 950', '30-Sep-26 01-Oct-26 BEA METERAI 500']
+    expect(sent(rows)).toEqual(rows)
+    expect(sent(['12-OKT 12-OKT ANDI PRATAMA 500'], { holderName: 'Andi Pratama' })).toEqual(['12-OKT 12-OKT [name] [name] 500'])
+  })
+
+  it('amounts under Rp 1.000: address-like lines never leave the phone (spaced or slashed dates, long months, address words)', () => {
+    const addresses = [
+      '17 AGUSTUS 10 NOVEMBER BLOK 5',
+      '17 AGUSTUS 3 DESA SUKAMAJU RT 5',
+      '12 MARGONDA 5 DESA MEKAR 7',
+      '05/02 03/01 KEL SUKAJADI KEC CIBIRU 40',
+      '1/2 3/4 KOMPLEK ASRI BLOK C NO 12',
+      '01/10 02/10 JL MAWAR NO 7',
+      '01/10 02/10 ANDI PRATAMA 7',
+      '12 OKTOBER RAYA NO 500',
+      '17 AGUSTUS BLOK 999',
+      '12-OKT 13-OKT BLOK 5',
+      '12-OKT 13-OKT JL. MELATI NO 7',
+      '12-OKT 13-OKT PERUM INDAH RW 3',
+      '12-OKT 13-OKT JLN MAWAR 7',
+      '12-OKT 13-OKT GANG MELATI 7',
+      '12-OKT 13-OKT PERUMAHAN ASRI 9',
+      '12-OKT 13-OKT KOMPLEKS INDAH 9',
+      '12-OKT 13-OKT KAV 7',
+      '12-OKT 13-OKT GREEN RESIDENCE 9',
+      '12-OKTOBER 13-OKTOBER TOKO 5',
+      '12-DESA 13-DESA TOKO 5',
+      '12-OKT 12-OKT TOKO 1000',
+      '12-OKT 12-OKT TOKO 12345',
+    ]
+    expect(sent(addresses)).toEqual([])
+    // A name that is not the card holder's is not masked, but its line is not a row either.
+    expect(redactStatement([['01/10 02/10 BUDI SANTOSO 7']], { holderName: 'Andi Pratama' })).not.toContain('BUDI')
+  })
 })
 
 describe('on-device totals cross-check (prompt-injection guard)', () => {

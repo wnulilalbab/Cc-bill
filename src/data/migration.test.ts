@@ -161,6 +161,19 @@ describe('migration of the synthetic old-format backup', () => {
     expect(await readAll(db)).toEqual({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [], rules: [] })
     expect(await db.meta.count()).toBe(0)
   })
+
+  it.each([
+    ['a plan of 0 months', (p: MigrationPlan) => (p.data.plans[0].total = 0), "An installment plan can't be stored in the new app: total must be a whole number of months. Nothing was written. (plan plan-1)"],
+    ['a fractional amount', (p: MigrationPlan) => (p.data.transactions[0].amount = 10.5), "A transaction can't be stored in the new app: amount must be an integer number of rupiah, got 10.5. Nothing was written. (transaction tx-0001)"],
+    ['a payment without allocations list', (p: MigrationPlan) => ((p.data.payments[0] as { allocations: unknown }).allocations = null), "A payment can't be stored in the new app: allocations must be a list. Nothing was written. (payment "],
+  ])('G-01 applyMigration checks every planned record first: %s is refused and nothing is written', async (_name, damage, message) => {
+    const db = freshNewDb()
+    const plan = structuredClone(planMigration(fixture()))
+    damage(plan)
+    await expect(applyMigration(db, plan, NOW)).rejects.toThrow(message)
+    expect(await readAll(db)).toEqual({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [], rules: [] })
+    expect(await db.meta.count()).toBe(0)
+  })
 })
 
 describe('verification', () => {
@@ -396,6 +409,6 @@ describe('migration adjustments', () => {
     expect(() => planMigration(old, { statementDay: 0 })).toThrow('The statement day must be 1–31, got 0.')
     expect(() => planMigration(old, { statementDay: 2.5 })).toThrow(MigrationError)
     const bad = { ...old, periods: [{ id: 'px', label: 'X', month: 13, year: 2026, importedAt: NOW, type: 'billed' as const }], transactions: [] }
-    expect(() => planMigration(bad)).toThrow('Statement px has month 13; it must be 1–12.')
+    expect(() => planMigration(bad)).toThrow('A statement has month 13; it must be 1–12 (statement px).')
   })
 })

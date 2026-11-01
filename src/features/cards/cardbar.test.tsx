@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveCard } from '../../data/cards'
 import { freshNewDb } from '../../../test/data/oldDb'
-import { renderScreen } from '../../test-utils/ui'
+import { renderScreen, settle } from '../../test-utils/ui'
 import { PREF_KEYS, prefGet } from '../look/prefs'
 import { PaymentsPage } from '../payments/PaymentsPage'
 import { TransactionsPage } from '../transactions/TransactionsPage'
@@ -27,7 +27,8 @@ beforeEach(() => {
   vi.stubGlobal('PointerEvent', FakePointerEvent)
   vi.stubGlobal('__APP_ENV__', 'production')
 })
-afterEach(() => {
+afterEach(async () => {
+  await settle() // the last action's reads finish inside the test, on every run
   cleanup()
   vi.unstubAllGlobals()
   localStorage.clear()
@@ -71,7 +72,7 @@ describe('CardBar', () => {
     expect(bar().getAttribute('aria-haspopup')).toBe('listbox')
   })
 
-  it('tap opens the card picker; picking a card selects it and the bar slides that way', async () => {
+  it('U-03 tap opens the card picker; picking a card selects it and the bar slides that way', async () => {
     const onSelect = vi.fn()
     const user = userEvent.setup()
     render(<Harness onSelect={onSelect} />)

@@ -4,7 +4,7 @@ import 'fake-indexeddb/auto'
 import { cleanup, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { shareMessage } from '../../domain/share/message'
-import { renderRoutes } from '../../test-utils/ui'
+import { renderRoutes, settle } from '../../test-utils/ui'
 import { freshNewDb } from '../../../test/data/oldDb'
 import { BCA_OWNERS, householdLedger, seedHousehold } from '../../../test/payments/household'
 import { BillPage, personPath } from '../bill/BillPage'
@@ -20,7 +20,8 @@ beforeEach(() => {
   vi.stubGlobal('__APP_ENV__', 'production')
   localStorage.clear()
 })
-afterEach(() => {
+afterEach(async () => {
+  await settle() // the last action's reads finish inside the test, on every run
   cleanup()
   vi.unstubAllGlobals()
 })

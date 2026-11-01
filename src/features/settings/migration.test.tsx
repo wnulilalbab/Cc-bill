@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { migrate, MIGRATED_CARD, planMigration, type Verification } from '../../data/migration'
 import { readOldData } from '../../data/old'
 import { readAll } from '../../data/repo'
-import { renderScreen } from '../../test-utils/ui'
+import { renderScreen, settle } from '../../test-utils/ui'
 import { dumpIdb, fixture, freshNewDb, seedOldDb, uniqueName } from '../../../test/data/oldDb'
 import expected from '../../../test/fixtures/backup/old-backup.expected.json'
 import { Shell } from '../Shell'
@@ -19,7 +19,8 @@ beforeEach(() => {
   vi.stubGlobal('__APP_ENV__', 'production')
   localStorage.clear()
 })
-afterEach(() => {
+afterEach(async () => {
+  await settle() // the last action's reads finish inside the test, on every run
   cleanup()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()

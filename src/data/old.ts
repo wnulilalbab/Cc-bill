@@ -13,7 +13,7 @@ import { oldDbName } from './env'
 
 export type { OldAllocation, OldExpense, OldOwner, OldPayment, OldPeriod, OldPlan, OldTransaction }
 
-/** The old database, in the shape of the old app's JSON backup (exportData() in src/pages/Settings.tsx). */
+/** The old database, in the shape of the old app's JSON backup (the old app's Settings → Export; synthetic sample in test/fixtures/backup/old-backup.json). */
 export interface OldData {
   owners: OldOwner[]
   periods: OldPeriod[]
@@ -37,7 +37,7 @@ const OLD_TYPES = new Set(['purchase', 'installment', 'payment', 'refund', 'reve
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 const ISO_MONTH = /^\d{4}-\d{2}$/
 
-type Field = 'string' | 'text' | 'date' | 'month' | 'rupiah' | 'count' | 'type' | 'boolean'
+type Field = 'string' | 'text' | 'date' | 'month' | 'rupiah' | 'count' | 'months' | 'type' | 'boolean'
 type Shape = Record<string, `${Field}` | `${Field}?`>
 
 const SHAPES: Record<keyof OldData, Shape> = {
@@ -45,7 +45,7 @@ const SHAPES: Record<keyof OldData, Shape> = {
   periods: { id: 'string', month: 'count', year: 'count', dueDate: 'date?' },
   transactions: { id: 'string', periodId: 'string', date: 'date', description: 'text', amount: 'rupiah', type: 'type', hidden: 'boolean?' },
   expenses: { id: 'string', transactionId: 'string', ownerId: 'string', installmentPlanId: 'string?' },
-  installmentPlans: { id: 'string', name: 'string', totalMonths: 'count', monthlyAmount: 'rupiah', startPeriod: 'month', ownerId: 'string' },
+  installmentPlans: { id: 'string', name: 'string', totalMonths: 'months', monthlyAmount: 'rupiah', startPeriod: 'month', ownerId: 'string' },
   payments: { id: 'string', periodId: 'string', date: 'date', amount: 'rupiah', note: 'text?' },
   paymentAllocations: { id: 'string', paymentId: 'string', expenseId: 'string', amount: 'rupiah' },
 }
@@ -58,6 +58,7 @@ function fieldOk(kind: Field, v: unknown): boolean {
     case 'month': return typeof v === 'string' && ISO_MONTH.test(v)
     case 'rupiah': return Number.isSafeInteger(v)
     case 'count': return Number.isSafeInteger(v) && (v as number) >= 0
+    case 'months': return Number.isSafeInteger(v) && (v as number) >= 1
     case 'type': return typeof v === 'string' && OLD_TYPES.has(v)
     case 'boolean': return typeof v === 'boolean'
   }
@@ -70,8 +71,42 @@ const EXPECTED: Record<Field, string> = {
   month: 'a month (YYYY-MM)',
   rupiah: 'an integer number of rupiah',
   count: 'a whole number',
+  months: 'a whole number of months (1 or more)',
   type: `one of ${[...OLD_TYPES].join(', ')}`,
   boolean: 'true or false',
+}
+
+/** A row of each old list, in words: messages lead with these; list positions and ids go at the end, in parentheses. */
+const ROW_NAME: Record<keyof OldData, string> = {
+  owners: 'An owner',
+  periods: 'A statement',
+  transactions: 'A transaction',
+  expenses: 'A tag on a transaction',
+  installmentPlans: 'An installment plan',
+  payments: 'A payment recorded by hand',
+  paymentAllocations: 'A payment assignment',
+}
+const FIELD_NAME: Record<string, string> = {
+  id: 'id',
+  name: 'name',
+  month: 'month',
+  year: 'year',
+  dueDate: 'due date',
+  periodId: 'statement',
+  date: 'date',
+  description: 'description',
+  amount: 'amount',
+  type: 'type',
+  hidden: 'hidden flag',
+  transactionId: 'transaction',
+  ownerId: 'owner',
+  installmentPlanId: 'installment plan',
+  totalMonths: 'number of months',
+  monthlyAmount: 'monthly amount',
+  startPeriod: 'start month',
+  note: 'note',
+  paymentId: 'payment',
+  expenseId: 'tagged transaction',
 }
 
 /** `typeof` plus a short preview. Never serialises the value: a deeply nested one would overflow the stack. */
@@ -114,29 +149,30 @@ function parseOrThrow(input: unknown): OldData {
     const seen = new Set<string>()
     rows.forEach((row: unknown, i) => {
       const where = `${table}[${i}]`
-      if (typeof row !== 'object' || row === null) throw new MigrationError(`${where} is not a record.`)
+      if (typeof row !== 'object' || row === null) throw new MigrationError(`${ROW_NAME[table]} in the backup is not a record (${where}).`)
       const r = row as Record<string, unknown>
       for (const [key, spec] of Object.entries(SHAPES[table])) {
         const optional = spec.endsWith('?')
         const kind = spec.replace('?', '') as Field
         if (optional && r[key] === undefined) continue
-        if (!fieldOk(kind, r[key])) throw new MigrationError(`${where}.${key} must be ${EXPECTED[kind]}, got ${describeValue(r[key])}.`)
+        if (!fieldOk(kind, r[key]))
+          throw new MigrationError(`The ${FIELD_NAME[key] ?? key} of ${ROW_NAME[table].toLowerCase()} must be ${EXPECTED[kind]}, got ${describeValue(r[key])} (${where}.${key}).`)
       }
-      if (seen.has(r.id as string)) throw new MigrationError(`${table} has the id "${r.id}" twice.`)
+      if (seen.has(r.id as string)) throw new MigrationError(`Two rows of the same list have the same id (${table}, id "${r.id}").`)
       seen.add(r.id as string)
     })
     out[table] = rows
   }
   const periods = new Set((out.periods as OldPeriod[]).map((p) => p.id))
   for (const t of out.transactions as OldTransaction[]) {
-    if (!periods.has(t.periodId)) throw new MigrationError(`Transaction ${t.id} points to a statement (${t.periodId}) that is not in the backup.`)
-    if (t.type === 'payment' && t.amount >= 0) throw new MigrationError(`Transaction ${t.id} is a payment but its amount is not negative (${t.amount}).`)
+    if (!periods.has(t.periodId)) throw new MigrationError(`A transaction points to a statement that is not in the backup (transaction ${t.id}, statement ${t.periodId}).`)
+    if (t.type === 'payment' && t.amount >= 0) throw new MigrationError(`A bank payment line has an amount that is not negative, got ${t.amount} (transaction ${t.id}).`)
   }
   for (const p of out.payments as OldPayment[]) {
-    if (p.amount <= 0) throw new MigrationError(`Payment ${p.id} must have a positive amount, got ${p.amount}.`)
+    if (p.amount <= 0) throw new MigrationError(`A payment recorded by hand must have a positive amount, got ${p.amount} (payment ${p.id}).`)
   }
   for (const a of out.paymentAllocations as OldAllocation[]) {
-    if (a.amount < 0) throw new MigrationError(`Assignment ${a.id} has a negative amount (${a.amount}).`)
+    if (a.amount < 0) throw new MigrationError(`A payment assignment has a negative amount, got ${a.amount} (assignment ${a.id}).`)
   }
   JSON.stringify(out) // the plan fingerprints and backs up this data: anything that cannot be serialised fails here
   return out as unknown as OldData

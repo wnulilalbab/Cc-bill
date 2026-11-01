@@ -42,6 +42,18 @@ jobs:
           VITE_BASE: /Cc-bill/staging/
         run: npm run build
 
+      # Phase 1 scenario run: a local staging build at 390px, synthetic fixtures, AI mocked (never the real API).
+      # About 1 minute locally; it serves the staging build of the step above (PHASE1_PREBUILT).
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Phase 1 scenario run (e2e)
+        env:
+          PHASE1_PREBUILT: '1'
+          VITE_APP_ENV: staging
+          VITE_BASE: /Cc-bill/staging/
+        run: npm run test:e2e:phase1
+
   # Per-folder thresholds live in vitest.config.ts.
   coverage:
     name: coverage

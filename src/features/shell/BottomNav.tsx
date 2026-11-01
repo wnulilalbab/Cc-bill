@@ -1,8 +1,8 @@
-// Bottom navigation (prototype `tabbar()`): Bill · Transactions · (+) Import · Payments. Settings is the gear in the
-// top bar. Insights (preview) joins in Slice 13.
+// Bottom navigation (prototype `tabbar()`): Bill · Transactions · (+) Import · Payments · Insights (preview). Settings
+// is the gear in the top bar.
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
-import { BillIcon, ListIcon, PayIcon, PlusIcon } from '../../components/icons'
+import { BillIcon, ChartIcon, ListIcon, PayIcon, PlusIcon } from '../../components/icons'
 import { PATHS } from './paths'
 
 const TABS: { to: string; label: string; icon: ReactNode; plus?: boolean }[] = [
@@ -10,6 +10,7 @@ const TABS: { to: string; label: string; icon: ReactNode; plus?: boolean }[] = [
   { to: PATHS.transactions, label: 'Transactions', icon: <ListIcon /> },
   { to: PATHS.import, label: 'Import', icon: <PlusIcon />, plus: true },
   { to: PATHS.payments, label: 'Payments', icon: <PayIcon /> },
+  { to: PATHS.insights, label: 'Insights', icon: <ChartIcon /> },
 ]
 
 export function BottomNav() {

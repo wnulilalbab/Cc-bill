@@ -148,17 +148,22 @@ April 2026 Bill  —  Rp 6,248,348
 
 ---
 
-## Screens
+## Screens and routes
 
-| Screen | Purpose |
+Hash routes (`#/bill` …). The bottom nav is Bill · Transactions · (+) Import · Payments · Insights; Settings is the gear.
+
+| Route | Screen |
 |---|---|
-| Dashboard | Monthly summary, per-owner totals, installment overview |
-| Import | Upload PDF or screenshot, review parsed transactions |
-| Transactions | List all transactions for a period, filter by owner/type/status |
-| Enrich | Label a transaction, assign owner, link to installment plan |
-| Installment Plans | Create and manage installment plan records |
-| Payments | Payment pool, allocate payments to expenses |
-| Settings | API key, manage owners, export/import data |
+| `/bill` | Bill (home): card carousel, statement picker, Draft/Final, "To pay" hero, one row per person |
+| `/bill/person/:ownerId` | One person's bill (`_none` or `none` = rows without an owner) |
+| `/transactions` | Rows of a statement: filters, search, row sheet, bulk owner, add a missing row |
+| `/payments`, `/payments/:id` | Payments tabs; the full-screen assign page |
+| `/import` | Import a statement PDF (locked ones too) or screenshots |
+| `/insights` | Insights preview (phase 2): spend per person, kind, merchant, last statements |
+| `/share` | Share a bill as an image or WhatsApp text |
+| `/settings`, `/rules` | Cards, owners, look, AI key, data and migration, testing tools; tagging rules |
+
+Old `/v2/...` paths redirect to the short ones; unknown paths go to `/bill`.
 
 ---
 
@@ -214,14 +219,15 @@ Settings
 
 | Layer | Tool | Notes |
 |---|---|---|
-| Framework | React + Vite | Static build, no server |
-| Language | TypeScript | Type safety for financial data |
-| Styling | Tailwind CSS | Mobile-first, touch-friendly |
-| Storage | Dexie.js (IndexedDB) | Structured data, ~500MB limit, persistent |
-| PDF Parsing | PDF.js | Extracts raw text from BCA PDF in-browser |
-| AI | Claude API (Anthropic) | Parses extracted text + screenshots into structured data |
+| Framework | React 18 + Vite 6 | Static build, no server; React Router (hash routes) |
+| Language | TypeScript | Money in integer rupiah |
+| Styling | Plain CSS (`src/features/ccb.css`) | Card palettes and looks as CSS custom properties; Plus Jakarta Sans |
+| Storage | Dexie.js (IndexedDB) | `ccbill-v2` / `ccbill-v2-staging` |
+| PDF Parsing | PDF.js | Reads the PDF (and unlocks it) on the device; personal details removed before the AI call |
+| AI | Claude Messages API (fetch, from the browser) | One request parses a statement; answers cached by file hash + prompt version |
 | PWA | vite-plugin-pwa + Workbox | Service worker, manifest, offline shell |
-| Hosting | GitHub Pages | Free, HTTPS, required for PWA |
+| Tests | Vitest + Testing Library, Stryker (money core), Playwright | Synthetic fixtures only (`test/fixtures`) |
+| Hosting | GitHub Pages | `main` → `/staging/`; production only through the Release workflow |
 
 ---
 
@@ -339,6 +345,8 @@ git clone https://github.com/<username>/Cc-bill.git
 cd Cc-bill
 npm install
 npm run dev        # http://localhost:5173
+npm test           # unit and screen tests (synthetic fixtures)
+npm run test:e2e:phase1   # Phase 1 scenario run: staging build at 390px, AI mocked
 ```
 
 For PWA testing on real Android device during development:

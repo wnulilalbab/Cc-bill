@@ -12,6 +12,7 @@ import {
   listCards,
   ownersWithHistory,
   saveCard,
+  setHolderName,
   sortOwners,
   unbilledIdOf,
   type CardDraft,
@@ -189,5 +190,17 @@ describe('AI cache (testing tool)', () => {
     expect(await clearAiCache(db)).toBe(2)
     expect((await db.meta.toArray()).map((m) => m.key)).toEqual(['migration'])
     expect(await clearAiCache(db)).toBe(0)
+  })
+})
+
+describe('holder name (first PDF import)', () => {
+  it('I-05 setHolderName stores the trimmed name; empty text changes nothing; a missing card is an error', async () => {
+    const db = freshNewDb()
+    await db.cards.put({ id: 'c1', name: 'Synthetic', bank: 'BCA', defaultOwnerId: null })
+    await setHolderName(db, 'c1', '   ')
+    expect(((await db.cards.get('c1')) as { holderName?: string }).holderName).toBeUndefined()
+    await setHolderName(db, 'c1', ' Andi Pratama ')
+    expect(((await db.cards.get('c1')) as { holderName?: string }).holderName).toBe('Andi Pratama')
+    await expect(setHolderName(db, 'gone', 'X')).rejects.toThrow(new CardError('This card no longer exists.'))
   })
 })
