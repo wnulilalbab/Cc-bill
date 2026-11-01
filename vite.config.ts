@@ -39,9 +39,20 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        // The pdf.js worker (~1 MB) is only needed to import a PDF: cached on first use, not precached.
+        globIgnores: ['**/pdf.worker*'],
         // Production's service worker scope also covers /staging/; never let it serve staging pages.
         navigateFallbackDenylist: isStaging ? [] : [/\/staging\//],
         runtimeCaching: [
+          {
+            // Each environment caches only its own worker: production never matches /staging/ URLs.
+            urlPattern: isStaging ? /\/staging\/assets\/pdf\.worker[^/]*\.m?js$/ : /^(?!.*\/staging\/).*\/assets\/pdf\.worker[^/]*\.m?js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: isStaging ? 'pdf-worker-staging' : 'pdf-worker',
+              expiration: { maxEntries: 2 },
+            },
+          },
           {
             urlPattern: /^https:\/\/api\.anthropic\.com\/.*/i,
             handler: 'NetworkOnly',

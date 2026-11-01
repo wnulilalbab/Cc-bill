@@ -95,3 +95,10 @@
 @media (prefers-reduced-motion: reduce) {
   .ccb { transition: none; }
 }
+
+/* Import (Slice 6, minimal; Slice 12 does the look) */
+.ccb .chip { border: 1px solid #e3e5ea; border-radius: 999px; padding: 6px 12px; background: #fff; font: inherit; font-size: 13px; }
+.ccb .chip[aria-pressed='true'] { background: var(--acc); border-color: var(--acc); color: #fff; }
+.ccb .chip.mini { padding: 4px 10px; font-size: 12px; }
+.ccb .pill.ok { background: #e7f6ec; color: #166534; }
+.ccb .status.bad { background: #fdecec; border-color: #f5c2c2; }

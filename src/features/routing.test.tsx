@@ -27,4 +27,16 @@ describe('routing', () => {
     await user.click(screen.getByRole('link', { name: 'Old app settings' }))
     expect(window.location.hash).toBe('#/settings')
   })
+
+  it('Import opens the new Import screen; the old import stays reachable', async () => {
+    window.location.hash = '#/'
+    const { default: App } = await import('../App')
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('link', { name: 'Import' }))
+    expect(window.location.hash).toBe('#/v2/import')
+    expect(await screen.findByRole('heading', { name: 'Import' })).toBeTruthy()
+    await user.click(screen.getByRole('link', { name: 'Old import screen' }))
+    expect(window.location.hash).toBe('#/import')
+  })
 })

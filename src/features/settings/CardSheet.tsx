@@ -9,12 +9,13 @@ import { ownerColor, OWNER_COLORS, PALETTES, paletteOf } from '../look/palettes'
 export const BANKS = ['BCA', 'Mandiri', 'BNI', 'BRI', 'CIMB', 'Other'] as const
 
 export function draftOf(c: CardWithOwners | null): CardDraft {
-  if (!c) return { name: '', bank: 'BNI', last4: '', statementDay: '', palette: 'green', owners: [{ name: 'Me', color: ownerColor(0) }], defaultIndex: 0 }
+  if (!c) return { name: '', bank: 'BNI', last4: '', holderName: '', statementDay: '', palette: 'green', owners: [{ name: 'Me', color: ownerColor(0) }], defaultIndex: 0 }
   return {
     id: c.card.id,
     name: c.card.name,
     bank: c.card.bank,
     last4: c.card.last4 ?? '',
+    holderName: c.card.holderName ?? '',
     statementDay: c.card.statementDay ? String(c.card.statementDay) : '',
     palette: paletteOf(c.card.palette).id,
     owners: c.owners.map((o, i) => ({ id: o.id, name: o.name, color: o.color ?? ownerColor(i), ...(o.archived && { archived: true }) })),
@@ -103,6 +104,10 @@ export function CardSheet({ card, history, cardInUse, onClose, onSaved, onDelete
           <label htmlFor="cLast">Last 4 digits</label>
           <input className="inp" id="cLast" inputMode="numeric" maxLength={4} value={d.last4} onChange={(e) => patch({ last4: e.target.value.replace(/\D/g, '') })} />
         </div>
+      </div>
+      <div className="field">
+        <label htmlFor="cHolder">Name on the statement</label>
+        <input className="inp" id="cHolder" autoComplete="off" placeholder="So it is removed before anything goes to the AI" value={d.holderName ?? ''} onChange={(e) => patch({ holderName: e.target.value })} />
       </div>
       <div className="field">
         <label htmlFor="cDay">Statement day</label>
