@@ -125,7 +125,11 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
     }
     const followed = follow(i)
     // A linked row inherits the Check of the row it follows. A marketplace refund always keeps its own Check.
-    if (followed) return marketplace ? { ...followed, check: true, reason: `${followed.reason}. ${MARKETPLACE_NOTE}`, marketplace } : { ...followed, marketplace }
+    if (followed) {
+      return marketplace
+        ? { ...followed, check: true, confidence: Math.min(followed.confidence, 0.5), reason: `${followed.reason}. ${MARKETPLACE_NOTE}`, marketplace }
+        : { ...followed, marketplace }
+    }
 
     const finish = (d: Draft): Suggestion =>
       marketplace ? { ...d, check: true, confidence: Math.min(d.confidence, 0.5), reason: `${d.reason}. ${MARKETPLACE_NOTE}`, marketplace } : { ...d, marketplace }

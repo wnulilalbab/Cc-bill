@@ -85,10 +85,13 @@ describe('rules', () => {
     const conflict = pickRule([rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB', 'a-andi', { updatedAt: '2026-10-05T00:00:00.000Z' })], 'A', 'GRAB', usable)
     expect(conflict.rule?.id).toBe('y')
     expect(conflict.conflict?.id).toBe('x')
-    // Rules of different specificity that disagree are still a conflict: the most specific decides, Check stays.
+    // A more specific rule that extends a general one wins silently.
     const specific = pickRule([rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB FOOD', 'a-andi')], 'A', 'GRAB FOOD', usable)
-    expect([specific.rule?.id, specific.conflict?.id]).toEqual(['y', 'x'])
-    expect(pickRule([rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB', 'a-andi', { match: 'startsWith' })], 'A', 'GRAB', usable).conflict?.id).toBe('x')
+    expect([specific.rule?.id, specific.conflict]).toEqual(['y', undefined])
+    expect(pickRule([rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB', 'a-andi', { match: 'startsWith' })], 'A', 'GRAB', usable).conflict).toBeUndefined()
+    // Neither pattern contains the other: a real disagreement, whatever the lengths.
+    const apart = pickRule([rule('x', 'NETFLIX', 'a-sari'), rule('y', 'SPOTIFY BUNDLE', 'a-andi')], 'A', 'NETFLIX SPOTIFY BUNDLE', usable)
+    expect([apart.rule?.id, apart.conflict?.id]).toEqual(['y', 'x'])
     expect(pickRule([rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB', 'a-sari', { match: 'startsWith' })], 'A', 'GRAB', usable).conflict).toBeUndefined()
     expect(pickRule([rule('x', 'GRAB', 'a-bima')], 'A', 'GRAB', usable)).toEqual({ unusable: expect.objectContaining({ id: 'x' }) })
     expect(pickRule([rule('x', 'GRAB', 'a-bima'), rule('y', 'GRAB', 'a-sari')], 'A', 'GRAB', usable)).toEqual({ rule: expect.objectContaining({ id: 'y' }) })
@@ -171,9 +174,12 @@ describe('owner suggestions', () => {
   it('conflicting rules: newest wins, Check on, both named', () => {
     const s = one(row('GRAB'), [], [rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB', 'a-andi', { updatedAt: '2026-10-09T00:00:00.000Z' })])
     expect(s).toMatchObject({ ownerId: 'a-andi', check: true, ruleId: 'y', reason: 'Rule: Contains GRAB. Rules disagree: "Contains GRAB" says Sari' })
-    const nested = one(row('GRAB FOOD 12'), [], [rule('x', 'GRAB', 'a-sari'), rule('y', 'GRAB FOOD', 'a-andi')])
-    expect(nested).toMatchObject({ ownerId: 'a-andi', check: true, ruleId: 'y', reason: 'Rule: Contains GRAB FOOD. Rules disagree: "Contains GRAB" says Sari' })
-    expect(one(row('GRAB FOOD 12'), [], [rule('x', 'GRAB', 'a-andi'), rule('y', 'GRAB FOOD', 'a-andi')])).toMatchObject({ check: false })
+    // "Starts with GRAB → Andi" + "Starts with GRABFOOD → Sari": a GRABFOOD row is Sari's, no Check; other GRAB rows stay Andi's.
+    const grab = [rule('g', 'GRAB', 'a-andi', { match: 'startsWith' }), rule('f', 'GRABFOOD', 'a-sari', { match: 'startsWith' })]
+    expect(one(row('GRABFOOD* A-1 JAKARTA PUSATID'), [], grab)).toMatchObject({ ownerId: 'a-sari', check: false, ruleId: 'f', reason: 'Rule: Starts with GRABFOOD' })
+    expect(one(row('GRAB* A-2 JAKARTA PUSATID'), [], grab)).toMatchObject({ ownerId: 'a-andi', check: false, ruleId: 'g' })
+    const apart = one(row('NETFLIX SPOTIFY BUNDLE'), [], [rule('x', 'NETFLIX', 'a-sari'), rule('y', 'SPOTIFY BUNDLE', 'a-andi')])
+    expect(apart).toMatchObject({ ownerId: 'a-andi', check: true, reason: 'Rule: Contains SPOTIFY BUNDLE. Rules disagree: "Contains NETFLIX" says Sari' })
   })
 
   it('T-09 a rule of card A never applies on card B', () => {
@@ -261,7 +267,7 @@ describe('owner suggestions', () => {
   it('marketplace refunds keep their own Check even when they follow a confirmed purchase', () => {
     const rows = [row('SHOPEE A', { amount: 700, date: '2026-10-02', manualOwnerId: 'a-sari' }), row('REFUND SHOPEE A', { kind: 'refund', amount: -700, date: '2026-10-05' })]
     const s = suggestOwners(cardA, rows, [], { owners, rules: [] })[1]
-    expect(s).toMatchObject({ ownerId: 'a-sari', check: true, follows: 0, marketplace: true })
+    expect(s).toMatchObject({ ownerId: 'a-sari', check: true, follows: 0, marketplace: true, confidence: 0.5 })
     expect(s.reason).toBe("Same owner as the refunded purchase. Marketplace: the statement doesn't say who ordered")
     expect(one(row('REFUND SHOPEE A', { kind: 'refund', amount: -700 }), [past('SHOPEE A', 'a-sari', { amount: 700 })])).toMatchObject({ ownerId: 'a-sari', check: true })
   })

@@ -39,6 +39,16 @@ async function seedCard(db: NewDb, name = 'Synthetic Card', palette = 'blue') {
 }
 
 describe('Settings → Cards', () => {
+  it('the name on the statement is kept on the card (removed before anything goes to the AI)', async () => {
+    const db = freshNewDb()
+    const id = await seedCard(db)
+    const { user } = renderScreen(<SettingsPage />, { db })
+    await user.click(await screen.findByRole('button', { name: 'Edit Synthetic Card' }))
+    await user.type(screen.getByLabelText('Name on the statement'), 'Andi Pratama')
+    await user.click(screen.getByRole('button', { name: 'Save card' }))
+    await waitFor(async () => expect(((await db.cards.get(id)) as { holderName?: string }).holderName).toBe('Andi Pratama'))
+  })
+
   it('C-01 adds a card with its own owners and Unbilled; it becomes the selected card', async () => {
     const db = freshNewDb()
     await seedCard(db)

@@ -2,11 +2,14 @@
 import type { Card, Owner, UnbilledStatement } from '../domain/types'
 import type { NewDb } from './db'
 import { DISMISSED_PREFIX } from './rules'
+import { pdfPasswordKey } from './deviceSecrets'
 
 /** A card as stored: the domain card plus its look. */
 export interface CardRecord extends Card {
   /** Palette id (see src/features/look/palettes.ts). Unset = the first palette. */
   palette?: string
+  /** Card holder's name as printed on statements: removed from the text before it goes to the AI. */
+  holderName?: string
 }
 
 /** An owner as stored: the domain owner plus its chip colour. */
@@ -37,6 +40,8 @@ export interface CardDraft {
   name: string
   bank: string
   last4: string
+  /** Card holder's name as printed on statements (optional; unset = keep the current one when absent from the draft). */
+  holderName?: string
   /** Empty = not set. */
   statementDay: string
   palette: string
@@ -136,6 +141,8 @@ export async function saveCard(db: NewDb, d: CardDraft): Promise<string> {
       palette: d.palette,
     }
     if (d.last4) card.last4 = d.last4
+    const holder = d.holderName === undefined ? (existing as CardRecord | undefined)?.holderName : d.holderName.trim()
+    if (holder) card.holderName = holder
     if (d.statementDay) card.statementDay = Number(d.statementDay)
     await db.cards.put(card)
 
@@ -147,7 +154,7 @@ export async function saveCard(db: NewDb, d: CardDraft): Promise<string> {
   })
 }
 
-/** Deletes a card that has no history, with its owners and its (empty) statements. */
+/** Deletes a card that has no history, with its owners, its (empty) statements, its rules and dismissed suggestions, and its remembered PDF password. */
 export async function deleteCard(db: NewDb, cardId: string): Promise<void> {
   await db.transaction('rw', [db.cards, db.owners, db.statements, db.transactions, db.plans, db.payments, db.rules, db.meta], async () => {
     if (await cardHasHistory(db, cardId)) throw new CardError('This card has transactions or payments, so it cannot be deleted.')
@@ -155,6 +162,7 @@ export async function deleteCard(db: NewDb, cardId: string): Promise<void> {
     await db.rules.where('cardId').equals(cardId).delete()
     await db.meta.delete(DISMISSED_PREFIX + cardId)
     await db.statements.where('cardId').equals(cardId).delete()
+    await db.meta.delete(pdfPasswordKey(cardId)) // its remembered PDF password goes with it
     await db.cards.delete(cardId)
   })
 }

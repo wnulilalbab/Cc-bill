@@ -9,13 +9,14 @@ import { GearIcon } from './components/icons'
 import { Shell } from './features/Shell'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { RulesPage } from './features/tagging/RulesPage'
+import { ImportPage } from './features/import/ImportPage'
 
 function BottomNav() {
   const location = useLocation()
 
   const links = [
     { to: '/', label: 'Dashboard', icon: IconHome },
-    { to: '/import', label: 'Import', icon: IconUpload },
+    { to: '/v2/import', label: 'Import', icon: IconUpload },
     { to: '/transactions', label: 'Transaksi', icon: IconList },
     { to: '/payments', label: 'Bayar', icon: IconCard },
     { to: '/v2/settings', label: 'Settings', icon: IconGear },
@@ -64,6 +65,7 @@ export default function App() {
             {/* Phase-1 screens (new database). The legacy screens above are replaced in later slices. */}
             <Route path="/v2/settings" element={<Shell><SettingsPage /></Shell>} />
             <Route path="/v2/rules" element={<Shell><RulesPage /></Shell>} />
+            <Route path="/v2/import" element={<Shell><ImportPage /></Shell>} />
           </Routes>
         </main>
         <BottomNav />

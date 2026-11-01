@@ -24,7 +24,10 @@ export function bySpecificity(a: TagRule, b: TagRule): number {
 
 export interface RulePick {
   rule?: TagRule
-  /** Another matching rule (of any specificity) points to a different owner. */
+  /**
+   * Another matching rule points to a different owner and is not simply a narrower or wider version of the chosen
+   * one: equally specific (same match and pattern length), or neither pattern contains the other.
+   */
   conflict?: TagRule
   /** A matching rule whose owner is archived or not on the card (ignored). */
   unusable?: TagRule
@@ -36,7 +39,12 @@ export function pickRule(rules: readonly TagRule[], cardId: string, description:
   const ok = matching.filter((r) => usable(r.ownerId))
   const unusable = matching.find((r) => !usable(r.ownerId))
   const rule = ok[0]
-  const conflict = rule && ok.find((r) => r.ownerId !== rule.ownerId)
+  // "Starts with GRABFOOD → Sari" extends "Starts with GRAB → Andi": the more specific rule wins without a Check.
+  const disagrees = (r: TagRule) => {
+    const [a, b] = [cleanPattern(r.pattern), cleanPattern(rule.pattern)]
+    return (r.match === rule.match && a.length === b.length) || (!a.includes(b) && !b.includes(a))
+  }
+  const conflict = rule && ok.find((r) => r !== rule && r.ownerId !== rule.ownerId && disagrees(r))
   return { ...(rule && { rule }), ...(conflict && { conflict }), ...(!rule && unusable ? { unusable } : {}) }
 }
 
