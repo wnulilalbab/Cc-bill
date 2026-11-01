@@ -1,18 +1,19 @@
 // Merchant names from statement lines: strips ref numbers, dates, cities and country codes, so the same shop on
 // different days gives the same key ("GRAB* A-1JUL01AAAA JAKARTA PUSATID" → "GRAB").
 
-const PREFIX = /^(REVERSAL CICILAN(?: BCA)?|CICILAN(?: BCA)? KE \d+ DARI \d+,?|REVERSAL|REFUND|PEMBATALAN)\s+/
+// Matched on the canonical form (single spaces), so a plain space is enough.
+const PREFIX = /^(REVERSAL CICILAN(?: BCA)?|CICILAN(?: BCA)? KE \d+ DARI \d+,?|REVERSAL|REFUND|PEMBATALAN) /
 const DOMAIN = /\.(CO\.ID|COM|NET|ORG|ID)\b/g
-const MONTHS = new Set(['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'MEI', 'JUN', 'JUL', 'AUG', 'AGU', 'AGS', 'SEP', 'OCT', 'OKT', 'NOV', 'DEC', 'DES'])
-const COUNTRIES = new Set(['ID', 'IDN', 'USA', 'US', 'SGP', 'SG', 'IRL', 'NLD', 'GBR', 'AUS', 'MYS'])
+export const MONTHS = new Set(['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'MEI', 'JUN', 'JUL', 'AUG', 'AGU', 'AGS', 'SEP', 'OCT', 'OKT', 'NOV', 'DEC', 'DES'])
+export const COUNTRIES = new Set(['ID', 'IDN', 'USA', 'US', 'SGP', 'SG', 'IRL', 'NLD', 'GBR', 'AUS', 'MYS'])
 /** Cities and districts printed after the merchant. Longest first so "JAKARTA PUSAT" goes before "JAKARTA". */
-const CITIES = [
+export const CITIES = [
   'JAKARTA PUSAT', 'JAKARTA SELATAN', 'JAKARTA SELAT', 'JAKARTA BARAT', 'JAKARTA TIMUR', 'JAKARTA UTARA', 'TANGERANG SELATAN',
   'SAN FRANCISCO', 'LOS GATOS', 'JAKARTA', 'BANDUNG', 'SURABAYA', 'TANGERANG', 'BEKASI', 'DEPOK', 'BOGOR', 'CIPUTAT', 'DENPASAR',
   'MEDAN', 'YOGYAKARTA', 'SEMARANG', 'SINGAPORE', 'DUBLIN', 'AMSTERDAM',
 ].map((c) => c.split(' '))
 /** Last words a country code can be glued to ("PUSATID"). */
-const GLUE_BASES = new Set(['PUSAT', 'SELATAN', 'SELAT', 'BARAT', 'TIMUR', 'UTARA', ...CITIES.filter((c) => c.length === 1).map((c) => c[0])])
+export const GLUE_BASES = new Set(['PUSAT', 'SELATAN', 'SELAT', 'BARAT', 'TIMUR', 'UTARA', ...CITIES.filter((c) => c.length === 1).map((c) => c[0])])
 
 /** Upper case, single spaces. */
 export const canonical = (description: string) => description.toUpperCase().replace(/\s+/g, ' ').trim()
@@ -22,8 +23,8 @@ function unglue(word: string): string {
   return m && GLUE_BASES.has(m[1]) ? m[1] : word
 }
 
-function dropTail(words: string[]): string[] {
-  const out = words.slice()
+/** Strips country codes and cities from the end (in place). A single word is never shortened. */
+function dropTail(out: string[]): string[] {
   for (let changed = true; changed && out.length > 1; ) {
     changed = false
     out[out.length - 1] = unglue(out[out.length - 1])
@@ -44,10 +45,7 @@ function dropTail(words: string[]): string[] {
 /** The merchant part of a statement line, upper case. Falls back to the whole line when nothing is left. */
 export function normalizeMerchant(description: string): string {
   let s = canonical(description)
-  for (let prev = ''; prev !== s; ) {
-    prev = s
-    s = s.replace(PREFIX, '')
-  }
+  while (PREFIX.test(s)) s = s.replace(PREFIX, '')
   const words = s
     .replace(DOMAIN, '')
     .replace(/[/*,]/g, ' ')
