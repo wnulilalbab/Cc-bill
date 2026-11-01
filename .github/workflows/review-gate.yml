@@ -8,6 +8,13 @@ on:
     types: [opened, synchronize, reopened]
   issue_comment:
     types: [created, edited]
+  # Comments posted through an app token do not start issue_comment runs; the Lead dispatches this after posting markers.
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -15,7 +22,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: review-gate-${{ github.event.pull_request.number || github.event.issue.number }}
+  group: review-gate-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr }}
   cancel-in-progress: true
 
 jobs:
@@ -23,7 +30,7 @@ jobs:
     name: review-gate-job
     runs-on: ubuntu-latest
     # Comments on plain issues are ignored.
-    if: github.event_name == 'pull_request' || github.event.issue.pull_request
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event.issue.pull_request
     steps:
       # Run the gate script from the base branch (not the PR head) so a PR cannot approve itself by editing it.
       # For issue_comment events the default checkout is already the default branch.
