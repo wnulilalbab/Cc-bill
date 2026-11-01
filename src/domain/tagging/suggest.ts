@@ -27,8 +27,11 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
   const owners = new Map(ctx.owners.filter((o) => o.cardId === card.id).map((o) => [o.id, o]))
   const usable = (id: string | null | undefined): id is string => !!id && owners.has(id) && !owners.get(id)!.archived
   const nameOf = (id: string) => owners.get(id)!.name
-  const labels = confirmedLabels(history, card.id).filter((h) => usable(h.ownerId))
-  const keyOf = normalizeMerchant
+  // Merchant keys are computed once per label and once per row (normalizing is the costly part).
+  const labels = confirmedLabels(history, card.id)
+    .filter((h) => usable(h.ownerId))
+    .map((h) => ({ ...h, key: normalizeMerchant(h.description) }))
+  const keys = rows.map((r) => normalizeMerchant(r.description))
   /** Newest first (sorts the given array, always a fresh one here). */
   const newestFirst = <T extends { date: string }>(xs: T[]) => xs.sort((x, y) => y.date.localeCompare(x.date))
   const defaultId = usable(card.defaultOwnerId) ? card.defaultOwnerId : null
@@ -38,12 +41,12 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
   const resolve = (i: number): Suggestion => decide(i)
 
   /** A row in this batch (never a later one) or a past label that this row follows. */
-  function linked(i: number, kinds: readonly TxKind[], same: (description: string, amount: number) => boolean): { batch?: number; past?: LabelledRow } {
+  function linked(i: number, kinds: readonly TxKind[], same: (key: string, amount: number) => boolean): { batch?: number; past?: LabelledRow } {
     const row = rows[i]
     // Never a later row: a refund or reversal can only follow something already bought.
-    const inBatch = newestFirst(rows.map((r, j) => ({ ...r, j })).filter((r) => kinds.includes(r.kind) && r.date <= row.date && same(r.description, r.amount)))[0]
+    const inBatch = newestFirst(rows.map((r, j) => ({ ...r, j })).filter((r) => kinds.includes(r.kind) && r.date <= row.date && same(keys[r.j], r.amount)))[0]
     if (inBatch) return { batch: inBatch.j }
-    const past = newestFirst(labels.filter((h) => kinds.includes(h.kind) && same(h.description, h.amount)))[0]
+    const past = newestFirst(labels.filter((h) => kinds.includes(h.kind) && same(h.key, h.amount)))[0]
     return past ? { past } : {}
   }
 
@@ -57,25 +60,26 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
 
   function follow(i: number): Draft | undefined {
     const row = rows[i]
-    const key = keyOf(row.description)
+    const key = keys[i]
     const amount = Math.abs(row.amount)
     if (row.kind === 'refund') {
-      return link(linked(i, CHARGE_KINDS, (d, a) => keyOf(d) === key && Math.abs(a) === amount), 'Same owner as the refunded purchase', 'auto')
+      return link(linked(i, CHARGE_KINDS, (k, a) => k === key && Math.abs(a) === amount), 'Same owner as the refunded purchase', 'auto')
     }
     if (row.kind === 'reversal') {
-      const target = row.reverses && keyOf(row.reverses)
-      const same = target ? (d: string) => keyOf(d) === target : (d: string, a: number) => keyOf(d) === key && Math.abs(a) === amount
+      const target = row.reverses && normalizeMerchant(row.reverses)
+      const same = target ? (k: string) => k === target : (k: string, a: number) => k === key && Math.abs(a) === amount
       return link(linked(i, ['purchase'], same), 'Same owner as the purchase it cancels', 'auto')
     }
     if (row.kind === 'installment' && row.installment?.n === 1) {
       // Only a reversal in the same statement starts a plan.
-      return link({ batch: linked(i, ['reversal'], (d) => keyOf(d) === key).batch }, 'Same owner as the purchase moved to installment', 'plan')
+      return link({ batch: linked(i, ['reversal'], (k) => k === key).batch }, 'Same owner as the purchase moved to installment', 'plan')
     }
     return undefined
   }
 
-  function fallback(row: TagRow, note: string | undefined): Draft {
-    const key = keyOf(row.description)
+  function fallback(i: number, note: string | undefined): Draft {
+    const row = rows[i]
+    const key = keys[i]
     const guess = row.aiGuess && usable(row.aiGuess.ownerId) ? { ...row.aiGuess, ownerId: row.aiGuess.ownerId as string } : undefined
     const byDefault = (): Draft =>
       defaultId
@@ -86,7 +90,7 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
     // Per owner: how many past labels, and the newest one's date (labels are read newest first).
     const counts = new Map<string, { n: number; last: string }>()
     let total = 0
-    for (const h of newestFirst(labels.filter((x) => x.kind === 'purchase' && keyOf(x.description) === key))) {
+    for (const h of newestFirst(labels.filter((x) => x.kind === 'purchase' && x.key === key))) {
       total++
       const c = counts.get(h.ownerId!) ?? { n: 0, last: h.date }
       counts.set(h.ownerId!, { n: c.n + 1, last: c.last })
@@ -125,8 +129,7 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
     if (row.kind === 'installment') {
       const plan = row.planId ? ctx.plans?.find((p) => p.id === row.planId && usable(p.ownerId)) : undefined
       if (plan) return finish({ ownerId: plan.ownerId, check: false, source: 'plan', confidence: 0.95, reason: `Installment plan "${plan.name}"` })
-      const key = keyOf(row.description)
-      const earlier = newestFirst(labels.filter((h) => h.kind === 'installment' && keyOf(h.description) === key))[0]
+      const earlier = newestFirst(labels.filter((h) => h.kind === 'installment' && h.key === keys[i]))[0]
       if (earlier) return finish({ ownerId: earlier.ownerId, check: false, source: 'plan', confidence: 0.9, reason: 'Same owner as the earlier installments' })
     }
 
@@ -140,7 +143,7 @@ export function suggestOwners(card: Card, rows: readonly TagRow[], history: read
       )
     }
     const note = pick.unusable && `Rule "${describeMatch(pick.unusable)}" is for an archived owner`
-    const d = fallback(row, note)
+    const d = fallback(i, note)
     return finish(note ? { ...d, check: true, confidence: Math.min(d.confidence, 0.5), reason: `${d.reason}. ${note}` } : d)
   }
 
