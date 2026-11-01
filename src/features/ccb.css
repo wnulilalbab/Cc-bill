@@ -104,3 +104,33 @@
 .ccb .chip.mini { padding: 4px 10px; font-size: 12px; }
 .ccb .pill.ok { background: #e7f6ec; color: #166534; }
 .ccb .status.bad { background: #fdecec; border-color: #f5c2c2; }
+
+/* Transactions (Slice 8), from the prototype's list and row sheet */
+.ccb .pill.warn { background: var(--warn-soft); color: var(--warn); }
+.ccb .pill.bad { background: var(--bad-soft); color: var(--bad); }
+.ccb .pill.acc { background: var(--acc-soft); color: var(--ink); }
+.ccb .filters { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+.ccb .filters .pick { flex: none; }
+.ccb .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; }
+.ccb .summary div { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm, 12px); padding: 8px 4px; }
+.ccb .summary b { display: block; font-size: 13px; }
+.ccb .summary span { font-size: 10.5px; color: var(--muted); font-weight: 600; }
+.ccb .txlist { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r, 18px); overflow: hidden; }
+.ccb .tx { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 11px 12px; border: 0; background: var(--surface); border-bottom: 1px solid var(--line); text-align: left; width: 100%; }
+.ccb .tx:last-child { border-bottom: 0; }
+.ccb .tx.check { background: linear-gradient(90deg, var(--warn-soft), var(--surface) 55%); }
+.ccb .tx[aria-pressed='true'] { background: var(--acc-soft); }
+.ccb .tx .date { display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; background: var(--raise); padding: 4px 0; line-height: 1.05; }
+.ccb .tx .date b { font-size: 15px; }
+.ccb .tx .date span { font-size: 9.5px; color: var(--muted); text-transform: uppercase; font-weight: 700; }
+.ccb .tx .ttl { font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ccb .tx .raw { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ccb .tx .tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.ccb .tx .r { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.ccb .tx .r .a { font-weight: 800; font-size: 13px; }
+.ccb .strike { text-decoration: line-through; color: var(--muted); }
+.ccb .issues { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ccb .issues button { text-align: left; }
+.ccb .bulkbar { position: sticky; bottom: 72px; z-index: 30; background: var(--ink); color: #fff; border-radius: 18px; padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ccb .bulkbar .btn { padding: 7px 12px; font-size: 12px; }
+.ccb details summary { font-size: 12.5px; font-weight: 700; cursor: pointer; }
