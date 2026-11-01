@@ -88,7 +88,7 @@ export function DataSection({ version, onChanged }: { version: number; onChanged
           onDeleted={() => {
             setSheet(null)
             changed()
-            toast('Backup downloaded, old data deleted')
+            toast('Old data deleted. Keep the backup file safe.')
           }}
         />
       )}

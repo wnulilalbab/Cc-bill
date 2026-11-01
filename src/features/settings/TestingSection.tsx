@@ -18,18 +18,46 @@ const TABLE_LABELS: Record<DataTable, string> = {
   plans: 'Installment plans',
 }
 
+type ToolId = 'reset' | 'rerun' | 'demo'
+
+/** Tools that destroy or rewrite data: each asks first and says what will be lost. */
+const TOOLS: readonly { id: ToolId; label: string; question: string; loses: string; action: string }[] = [
+  {
+    id: 'reset',
+    label: 'Reset new data',
+    question: 'Reset new data?',
+    loses: 'Every card, owner, statement, transaction and payment in the new database is removed. The old data stays.',
+    action: 'Reset',
+  },
+  {
+    id: 'rerun',
+    label: 'Re-run migration',
+    question: 'Re-run migration?',
+    loses: `The migrated ${MIGRATED_CARD.name} records are rewritten from the old data: every change you made to them (owners, tags, payment assignments, deleted rows) is lost. Cards you added yourself stay.`,
+    action: 'Re-run',
+  },
+  {
+    id: 'demo',
+    label: 'Load demo data',
+    question: 'Load demo data?',
+    loses: 'Everything in the new database (all cards, owners, statements, transactions and payments) is erased and replaced by the synthetic demo household. The old data stays.',
+    action: 'Load demo data',
+  },
+]
+
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
 export function TestingSection({ onChanged }: { onChanged(): void }) {
   const { db, oldName } = useData()
   const toast = useToast()
   const [on, setOn] = useState(() => prefGet(PREF_KEYS.testingMode) === '1')
-  const [confirmReset, setConfirmReset] = useState(false)
+  const [confirm, setConfirm] = useState<ToolId | null>(null)
   const [table, setTable] = useState<DataTable>('transactions')
   const [id, setId] = useState('')
   const [record, setRecord] = useState<{ table: DataTable; id: string; json: string | null } | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [inspectError, setInspectError] = useState<string | null>(null)
 
   async function run(work: () => Promise<string>) {
     setBusy(true)
@@ -50,6 +78,31 @@ export function TestingSection({ onChanged }: { onChanged(): void }) {
   }
 
   const verified = (ok: boolean) => (ok ? 'verified ✓' : 'did not verify')
+  const work: Record<ToolId, () => Promise<string>> = {
+    reset: async () => {
+      await resetNewData(db)
+      return 'New data reset'
+    },
+    rerun: async () => {
+      const card = await db.cards.get(MIGRATED_CARD.id)
+      const v = await rerunMigration(db, { defaultOwnerId: card?.defaultOwnerId ?? null }, oldName)
+      return `Migration re-run: ${verified(v.ok)}`
+    },
+    demo: async () => `Demo data loaded: ${verified((await loadDemoData(db)).ok)}`,
+  }
+
+  async function inspect() {
+    const key = id.trim()
+    setConfirmDelete(false)
+    try {
+      const r = await inspectRecord(db, table, key)
+      setInspectError(null)
+      setRecord({ table, id: key, json: r ? JSON.stringify(r, null, 2) : null })
+    } catch (e) {
+      setRecord(null)
+      setInspectError(`Could not read the record: ${message(e)}`)
+    }
+  }
 
   return (
     <>
@@ -62,58 +115,35 @@ export function TestingSection({ onChanged }: { onChanged(): void }) {
         {on && (
           <>
             <div className="xs muted">Tools for trying things out. They only touch the new data; the old data is never changed here.</div>
-            {confirmReset ? (
-              <div className="status draft">
-                <div className="small">
-                  <b>Reset new data?</b> Every card, statement and payment in the new database is removed. The old data stays.
+            {TOOLS.map((t) =>
+              confirm === t.id ? (
+                <div className="status draft" key={t.id}>
+                  <div className="small">
+                    <b>{t.question}</b> {t.loses}
+                  </div>
+                  <div className="btns">
+                    <button type="button" className="btn ghost sm" disabled={busy} onClick={() => setConfirm(null)}>
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="btn danger sm"
+                      disabled={busy}
+                      onClick={() => {
+                        setConfirm(null)
+                        void run(work[t.id])
+                      }}
+                    >
+                      {t.action}
+                    </button>
+                  </div>
                 </div>
-                <div className="btns">
-                  <button type="button" className="btn ghost sm" onClick={() => setConfirmReset(false)}>
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="btn danger sm"
-                    disabled={busy}
-                    onClick={() => {
-                      setConfirmReset(false)
-                      void run(async () => {
-                        await resetNewData(db)
-                        return 'New data reset'
-                      })
-                    }}
-                  >
-                    Reset
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button type="button" className="btn ghost sm" onClick={() => setConfirmReset(true)}>
-                Reset new data
-              </button>
+              ) : (
+                <button key={t.id} type="button" className="btn ghost sm" disabled={busy} onClick={() => setConfirm(t.id)}>
+                  {t.label}
+                </button>
+              ),
             )}
-            <button
-              type="button"
-              className="btn ghost sm"
-              disabled={busy}
-              onClick={() =>
-                run(async () => {
-                  const card = await db.cards.get(MIGRATED_CARD.id)
-                  const v = await rerunMigration(db, { defaultOwnerId: card?.defaultOwnerId ?? null }, oldName)
-                  return `Migration re-run: ${verified(v.ok)}`
-                })
-              }
-            >
-              Re-run migration
-            </button>
-            <button
-              type="button"
-              className="btn ghost sm"
-              disabled={busy}
-              onClick={() => run(async () => `Demo data loaded: ${verified((await loadDemoData(db)).ok)}`)}
-            >
-              Load demo data
-            </button>
             <button type="button" className="btn ghost sm" disabled={busy} onClick={() => run(async () => `AI cache cleared (${await clearAiCache(db)} removed)`)}>
               Clear AI cache
             </button>
@@ -128,15 +158,16 @@ export function TestingSection({ onChanged }: { onChanged(): void }) {
                 type="button"
                 className="btn ghost sm"
                 disabled={!id.trim()}
-                onClick={async () => {
-                  const r = await inspectRecord(db, table, id.trim())
-                  setConfirmDelete(false)
-                  setRecord({ table, id: id.trim(), json: r ? JSON.stringify(r, null, 2) : null })
-                }}
+                onClick={inspect}
               >
                 Inspect
               </button>
             </div>
+            {inspectError && (
+              <div className="err" role="alert">
+                {inspectError}
+              </div>
+            )}
             {record &&
               (record.json === null ? (
                 <div className="small muted">
@@ -149,12 +180,13 @@ export function TestingSection({ onChanged }: { onChanged(): void }) {
                   </pre>
                   {confirmDelete ? (
                     <div className="btns">
-                      <button type="button" className="btn ghost sm" onClick={() => setConfirmDelete(false)}>
+                      <button type="button" className="btn ghost sm" disabled={busy} onClick={() => setConfirmDelete(false)}>
                         Keep it
                       </button>
                       <button
                         type="button"
                         className="btn danger sm"
+                        disabled={busy}
                         onClick={() =>
                           run(async () => {
                             await deleteRow(db, record.table, record.id)

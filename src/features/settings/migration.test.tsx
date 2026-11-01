@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import 'fake-indexeddb/auto'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MIGRATED_CARD, planMigration, type Verification } from '../../data/migration'
+import { migrate, MIGRATED_CARD, planMigration, type Verification } from '../../data/migration'
 import { readOldData } from '../../data/old'
 import { readAll } from '../../data/repo'
 import { renderScreen } from '../../test-utils/ui'
@@ -91,6 +92,26 @@ describe('Settings → Data → Migrate old data', () => {
     expect(screen.getByText('BCA Shared')).toBeTruthy()
   })
 
+  it('puts the default-owner picker above the counts, and cannot be closed while migrating', async () => {
+    const { user, db } = await openPreview()
+    const dialog = screen.getByRole('dialog', { name: 'Migration preview' })
+    const picker = within(dialog).getByRole('button', { name: 'Default owner: None' })
+    const counts = within(dialog).getByText('Transactions')
+    expect(picker.compareDocumentPosition(counts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    let release = () => {}
+    const real = db.transaction.bind(db) as (...a: unknown[]) => Promise<unknown>
+    vi.spyOn(db, 'transaction').mockImplementationOnce(((...args: unknown[]) => new Promise((resolve) => (release = () => resolve(real(...args))))) as never)
+    await user.click(screen.getByRole('button', { name: 'Confirm and migrate' }))
+    expect(screen.getByRole('button', { name: 'Migrating…' })).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement).disabled).toBe(true)
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByTestId('sheet-overlay'))
+    expect(screen.getByRole('dialog', { name: 'Migration preview' })).toBeTruthy()
+    release()
+    await screen.findByText('Everything matches ✓')
+  })
+
   it('offers the statement day in the preview and rejects an impossible one', async () => {
     const { user, db } = await openPreview()
     await user.type(screen.getByLabelText('Statement day (optional)'), '40')
@@ -156,71 +177,204 @@ describe('Settings → Data → Migrate old data', () => {
 })
 
 describe('Settings → Data → Delete old data', () => {
-  it('G-04 confirm, then the JSON backup downloads, then the old database is deleted', async () => {
-    const { user, oldName, db } = await openPreview()
-    await user.click(screen.getByRole('button', { name: 'Confirm and migrate' }))
+  async function migrated() {
+    const r = await openPreview()
+    await r.user.click(screen.getByRole('button', { name: 'Confirm and migrate' }))
     await screen.findByText('Everything matches ✓')
-    await user.click(screen.getByRole('button', { name: 'Done' }))
-    const migrated = await readAll(db)
-    await user.click(await screen.findByRole('button', { name: 'Delete old data (downloads a backup first)' }))
-    expect(screen.getByRole('dialog', { name: 'Delete old data?' })).toBeTruthy()
+    await r.user.click(screen.getByRole('button', { name: 'Done' }))
+    await screen.findByText('Old data migrated ✓ and kept as a backup.')
+    return r
+  }
 
-    // Cancel first: nothing happens.
-    await user.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(await Dexie.exists(oldName)).toBe(true)
-
+  function captureDownloads(oldName: string) {
     const downloads: { existed: boolean; blob: Blob }[] = []
-    let pending: Promise<void> = Promise.resolve()
+    const pending: Promise<void>[] = []
     URL.createObjectURL = vi.fn((blob: Blob | MediaSource) => {
-      pending = Dexie.exists(oldName).then((existed) => void downloads.push({ existed, blob: blob as Blob }))
+      pending.push(Dexie.exists(oldName).then((existed) => void downloads.push({ existed, blob: blob as Blob })))
       return 'blob:synthetic'
     })
     URL.revokeObjectURL = vi.fn()
     const clicks = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    return { downloads, clicks, settled: () => Promise.all(pending) }
+  }
 
-    await user.click(screen.getByRole('button', { name: 'Delete old data (downloads a backup first)' }))
-    await user.click(screen.getByRole('button', { name: 'Download backup and delete' }))
-    await screen.findByText('Backup downloaded, old data deleted')
-    await pending
-    expect(clicks).toHaveBeenCalledTimes(1)
-    expect(downloads).toHaveLength(1)
-    expect(downloads[0].existed).toBe(true) // the backup was produced while the old DB still existed
-    const text = await new Promise<string>((resolve) => {
+  const readBlob = (blob: Blob) =>
+    new Promise<string>((resolve) => {
       const reader = new FileReader()
       reader.onload = () => resolve(reader.result as string)
-      reader.readAsText(downloads[0].blob)
+      reader.readAsText(blob)
     })
-    const backup = JSON.parse(text)
+
+  const step2 = () => screen.getByRole('button', { name: "I've saved the backup file — delete old data" }) as HTMLButtonElement
+
+  it('G-04 step 1 downloads the backup, step 2 is a separate deliberate tap that deletes the old database', async () => {
+    const { user, oldName, db } = await migrated()
+    const data = await readAll(db)
+    const { downloads, clicks, settled } = captureDownloads(oldName)
+
+    await user.click(screen.getByRole('button', { name: 'Delete old data (downloads a backup first)' }))
+    expect(screen.getByRole('dialog', { name: 'Delete old data?' })).toBeTruthy()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Download backup' })) // focus starts on the safe step
+    expect(step2().disabled).toBe(true)
+
+    await user.click(screen.getByRole('button', { name: 'Download backup' }))
+    await screen.findByText(/Backup ready: ccbill-old-backup-/)
+    await settled()
+    expect(clicks).toHaveBeenCalledTimes(1)
+    expect(await Dexie.exists(oldName)).toBe(true) // step 1 alone deletes nothing
+    expect(downloads[0].existed).toBe(true)
+    const backup = JSON.parse(await readBlob(downloads[0].blob))
     expect(backup.transactions).toHaveLength(expected.counts.transactions)
+    expect(screen.getByRole('button', { name: 'Download backup again' })).toBeTruthy()
+
+    expect(step2().disabled).toBe(false)
+    await user.click(step2())
+    await screen.findByText('Old data deleted. Keep the backup file safe.')
     expect(await Dexie.exists(oldName)).toBe(false)
-    expect(await readAll(db)).toEqual(migrated) // the migrated data is not touched
+    expect(await readAll(db)).toEqual(data) // the migrated data is not touched
     await screen.findByText('Old data deleted. Everything is in the new database.')
   })
 
-  it('G-04 nothing is deleted when the backup cannot be saved or the migration did not verify', async () => {
+  it('G-04 the old database survives when step 2 is not confirmed (Cancel, Escape, overlay)', async () => {
+    const { user, oldName } = await migrated()
+    captureDownloads(oldName)
+    const open = () => user.click(screen.getByRole('button', { name: 'Delete old data (downloads a backup first)' }))
+
+    await open()
+    await user.click(screen.getByRole('button', { name: 'Download backup' }))
+    await screen.findByText(/Backup ready/)
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(await Dexie.exists(oldName)).toBe(true)
+
+    // Re-opening starts over: step 2 is disabled again until the backup is saved in this sheet.
+    await open()
+    expect(step2().disabled).toBe(true)
+    await user.click(screen.getByRole('button', { name: 'Download backup' }))
+    await screen.findByText(/Backup ready/)
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    await open()
+    await user.click(screen.getByTestId('sheet-overlay'))
+    expect(await Dexie.exists(oldName)).toBe(true)
+    expect(screen.getByText('Old data migrated ✓ and kept as a backup.')).toBeTruthy()
+  })
+
+  it('G-04 a failed or cancelled save keeps step 2 disabled; a changed old DB blocks the delete', async () => {
     const oldName = await seedOldDb(fixture())
     const db = freshNewDb()
     const onDeleted = vi.fn()
+    let fail = true
+    const save = vi.fn(async () => {
+      if (fail) throw new Error('The share was cancelled.')
+    })
+    const user = userEvent.setup()
     const r = render(
       <Shell db={db} oldName={oldName}>
-        <DeleteOldSheet onClose={() => {}} onDeleted={onDeleted} save={() => Promise.reject(new Error('Disk full'))} />
+        <DeleteOldSheet onClose={() => {}} onDeleted={onDeleted} save={save} now={() => '2026-11-01T00:00:00.000Z'} />
       </Shell>,
     )
-    screen.getByRole('button', { name: 'Download backup and delete' }).click()
-    expect((await screen.findByRole('alert')).textContent).toMatch(/Nothing was deleted. Old data can only be deleted after a migration has passed verification./)
-    r.unmount()
+    await user.click(screen.getByRole('button', { name: 'Download backup' }))
+    expect((await screen.findByRole('alert')).textContent).toBe('The backup was not saved. Old data can only be deleted after a migration has passed verification.')
+    expect(save).not.toHaveBeenCalled()
 
     const old = (await readOldData(oldName))!
-    const { migrate } = await import('../../data/migration')
     await migrate(db, old, planMigration(old))
-    render(
-      <Shell db={db} oldName={oldName}>
-        <DeleteOldSheet onClose={() => {}} onDeleted={onDeleted} save={() => Promise.reject(new Error('Disk full'))} />
-      </Shell>,
-    )
-    screen.getByRole('button', { name: 'Download backup and delete' }).click()
-    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Nothing was deleted. Disk full'))
+    await user.click(screen.getByRole('button', { name: 'Download backup' }))
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('The backup was not saved. The share was cancelled.'))
+    expect(save).toHaveBeenCalledWith(expect.objectContaining({ fileName: 'ccbill-old-backup-2026-11-01.json' }), 'download')
+    expect(step2().disabled).toBe(true)
+
+    fail = false
+    await user.click(screen.getByRole('button', { name: 'Download backup' }))
+    await screen.findByText('Backup ready: ccbill-old-backup-2026-11-01.json. Check it is in your files before you go on.')
+    // The old data changes after the file was saved: the saved file no longer matches, so nothing is deleted.
+    const raw = new Dexie(oldName)
+    await raw.open()
+    await raw.table('owners').put({ id: 'o-late', name: 'Added later' })
+    raw.close()
+    await user.click(step2())
+    expect((await screen.findByRole('alert')).textContent).toMatch(/^Nothing was deleted. The old data changed after it was verified/)
     expect(await Dexie.exists(oldName)).toBe(true)
     expect(onDeleted).not.toHaveBeenCalled()
+    expect(step2().disabled).toBe(true)
+    r.unmount()
+
+    // No old database at all.
+    const db2 = freshNewDb()
+    const other = await seedOldDb(fixture())
+    const o2 = (await readOldData(other))!
+    await migrate(db2, o2, planMigration(o2))
+    await Dexie.delete(other)
+    render(
+      <Shell db={db2} oldName={other}>
+        <DeleteOldSheet onClose={() => {}} onDeleted={onDeleted} save={save} />
+      </Shell>,
+    )
+    await user.click(screen.getByRole('button', { name: 'Download backup' }))
+    expect((await screen.findByRole('alert')).textContent).toBe('The backup was not saved. There is no old data to delete.')
+  })
+
+  it('G-04 the delete rebuilds the backup with the saved timestamp, so a moving clock still matches', async () => {
+    const oldName = await seedOldDb(fixture())
+    const db = freshNewDb()
+    const old = (await readOldData(oldName))!
+    await migrate(db, old, planMigration(old))
+    let t = 0
+    const user = userEvent.setup()
+    render(
+      <Shell db={db} oldName={oldName}>
+        {/* A clock that moves: the backup is rebuilt with the saved timestamp, so it still matches. */}
+        <DeleteOldSheet onClose={() => {}} onDeleted={() => {}} save={async () => {}} now={() => `2026-11-0${++t}T00:00:00.000Z`} />
+      </Shell>,
+    )
+    await user.click(screen.getByRole('button', { name: 'Download backup' }))
+    await screen.findByText(/Backup ready: ccbill-old-backup-2026-11-01.json/)
+    await user.click(step2())
+    await waitFor(async () => expect(await Dexie.exists(oldName)).toBe(false))
+  })
+
+  it('offers the share sheet as a save path when the browser can share files', async () => {
+    const share = vi.fn(async () => {})
+    vi.stubGlobal('navigator', { ...navigator, share, canShare: () => true })
+    const oldName = await seedOldDb(fixture())
+    const db = freshNewDb()
+    const old = (await readOldData(oldName))!
+    await migrate(db, old, planMigration(old))
+    const user = userEvent.setup()
+    render(
+      <Shell db={db} oldName={oldName}>
+        <DeleteOldSheet onClose={() => {}} onDeleted={() => {}} />
+      </Shell>,
+    )
+    await user.click(screen.getByRole('button', { name: 'Share backup file' }))
+    await screen.findByText(/Backup ready/)
+    expect(share).toHaveBeenCalledWith(expect.objectContaining({ title: expect.stringMatching(/^ccbill-old-backup-/) }))
+    expect(await Dexie.exists(oldName)).toBe(true)
+  })
+
+  it('blocks closing the sheet while it is working', async () => {
+    const oldName = await seedOldDb(fixture())
+    const db = freshNewDb()
+    const old = (await readOldData(oldName))!
+    await migrate(db, old, planMigration(old))
+    let release = () => {}
+    const save = () => new Promise<void>((resolve) => (release = resolve))
+    const onClose = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <Shell db={db} oldName={oldName}>
+        <DeleteOldSheet onClose={onClose} onDeleted={() => {}} save={save} />
+      </Shell>,
+    )
+    await user.click(screen.getByRole('button', { name: 'Download backup' }))
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement).disabled).toBe(true))
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByTestId('sheet-overlay'))
+    expect(onClose).not.toHaveBeenCalled()
+    release()
+    await screen.findByText(/Backup ready/)
+    await user.keyboard('{Escape}')
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })
