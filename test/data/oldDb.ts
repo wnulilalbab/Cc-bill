@@ -4,7 +4,7 @@ import { NewDb } from '../../src/data/db'
 import type { OldData } from '../../src/data/old'
 import backup from '../fixtures/backup/old-backup.json'
 
-/** The old app's schema (src/db.ts, version 2). */
+/** The old app's schema (its Dexie `CCBillDB`, version 2; the old screens were retired in Slice 12). */
 export const OLD_SCHEMA = {
   owners: '&id, name',
   periods: '&id, year, month, type',

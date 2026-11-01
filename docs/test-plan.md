@@ -177,6 +177,15 @@ Additional rules:
 | U-06 | Reduced motion | No slide animations; card still switches |
 | U-07 | Payment assignment | Opens as full-screen page (no overlay); header "Left to assign" updates live while typing; back closes without saving |
 
+## Insights preview (N)
+
+| ID | Case | Expected |
+|---|---|---|
+| N-01 | Bar widths | Share of the largest bar in percent; a positive amount gets at least 3%; nothing positive gets no bar |
+| N-02 | Spent on a statement | Charges − refunds (cancelled purchases and reversals count 0, payments never); per person (incl. no owner) and per kind |
+| N-03 | Top merchants | Same merchant grouped, refunds netted, fees left out, at most 5, nothing net-negative |
+| N-04 | Last statements | The card's last 6 billed statements up to the selected one, oldest first; Unbilled not a point |
+
 ## Golden flows (E2E)
 
 | ID | Flow |

@@ -161,6 +161,19 @@ describe('migration of the synthetic old-format backup', () => {
     expect(await readAll(db)).toEqual({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [], rules: [] })
     expect(await db.meta.count()).toBe(0)
   })
+
+  it.each([
+    ['a plan of 0 months', (p: MigrationPlan) => (p.data.plans[0].total = 0), 'plan plan-1 total must be a whole number of months'],
+    ['a fractional amount', (p: MigrationPlan) => (p.data.transactions[0].amount = 10.5), 'transaction tx-0001 amount'],
+    ['a payment without allocations list', (p: MigrationPlan) => ((p.data.payments[0] as { allocations: unknown }).allocations = null), 'allocations must be a list'],
+  ])('G-01 applyMigration checks every planned record first: %s is refused and nothing is written', async (_name, damage, message) => {
+    const db = freshNewDb()
+    const plan = structuredClone(planMigration(fixture()))
+    damage(plan)
+    await expect(applyMigration(db, plan, NOW)).rejects.toThrow(message)
+    expect(await readAll(db)).toEqual({ cards: [], owners: [], statements: [], transactions: [], payments: [], plans: [], rules: [] })
+    expect(await db.meta.count()).toBe(0)
+  })
 })
 
 describe('verification', () => {

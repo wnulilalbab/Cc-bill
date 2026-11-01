@@ -8,7 +8,7 @@ import { ownerBill } from '../../domain/bill'
 import type { NewDb } from '../../data/db'
 import { loadLedger } from '../../data/repo'
 import { listRules } from '../../data/rules'
-import { renderScreen } from '../../test-utils/ui'
+import { renderScreen, settle } from '../../test-utils/ui'
 import { parseAmount } from '../settings/format'
 import { freshNewDb } from '../../../test/data/oldDb'
 import { OCT, pay, seedCards, seedPaidRows, tx, UNB } from '../../../test/transactions/ledger'
@@ -22,7 +22,8 @@ beforeEach(() => {
   vi.stubGlobal('__APP_ENV__', 'production')
   localStorage.clear()
 })
-afterEach(() => {
+afterEach(async () => {
+  await settle() // the last action's reads finish inside the test, on every run
   cleanup()
   vi.unstubAllGlobals()
 })
@@ -224,6 +225,45 @@ describe('Transactions screen', () => {
     await screen.findByText('OK. It stays in Unbilled for the next statement.')
     await waitFor(() => expect(within(screen.getByLabelText('Draft or Final')).getByText('Draft · 6 things to resolve')).toBeTruthy())
     expect((await db.transactions.get('u'))?.keepWaiting).toBe(true)
+  })
+
+  it('F-01 Fix the sign: the confirm shows each fix with the bill it gives; flip saves the negative amount, change-kind keeps it', async () => {
+    const db = await seedCards(freshNewDb())
+    await db.transactions.bulkPut([
+      tx('a', OCT.id, '2026-10-05', 'TOKO A', 40_000, 'andi', { tagSource: 'manual' }),
+      tx('w', OCT.id, '2026-10-05', 'REFUND TOKO', 5_000, 'andi', { kind: 'refund' }),
+      tx('v', OCT.id, '2026-10-06', 'ODD CREDIT', -3_000, 'andi', { kind: 'purchase' }),
+    ])
+    const { user } = renderScreen(<TransactionsPage />, { db })
+    const draft = await screen.findByLabelText('Draft or Final')
+    expect(within(draft).getByText('Draft · 2 things to resolve')).toBeTruthy()
+
+    // REFUND TOKO is stored as a refund of +5.000: flip it.
+    await user.click(within(draft).getByRole('button', { name: 'Sign looks wrong: REFUND TOKO 5.000' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'REFUND TOKO' })).getByRole('button', { name: 'Fix the sign: −5.000' }))
+    const confirm = screen.getByRole('dialog', { name: 'Fix the sign' })
+    expect(within(confirm).getByText('REFUND TOKO: Rp 5.000 is stored as a refund, but a refund should be negative.')).toBeTruthy()
+    // Andi's Oct bill now: 40.000 + 5.000 − 3.000 = 42.000.
+    expect(within(within(confirm).getByLabelText('Flip the sign')).getByText("Andi's Oct 2026 bill: Rp 42.000 → Rp 32.000")).toBeTruthy()
+    expect(within(within(confirm).getByLabelText('Change to purchase')).getByText("Andi's Oct 2026 bill: Rp 42.000 → Rp 42.000")).toBeTruthy()
+    expect(within(confirm).queryByLabelText('Accept as rebate')).toBeNull() // only for fees and interest
+    // Cancel goes back to the row sheet without saving.
+    await user.click(within(confirm).getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('dialog', { name: 'REFUND TOKO' })).toBeTruthy()
+    expect((await db.transactions.get('w'))?.amount).toBe(5_000)
+    await user.click(within(screen.getByRole('dialog', { name: 'REFUND TOKO' })).getByRole('button', { name: 'Fix the sign: −5.000' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Fix the sign' })).getByRole('button', { name: 'Keep as refund, flip the sign' }))
+    await screen.findByText('Sign fixed')
+    await waitFor(async () => expect((await db.transactions.get('w'))?.amount).toBe(-5_000))
+    await waitFor(() => expect(within(screen.getByLabelText('Draft or Final')).getByText('Draft · 1 thing to resolve')).toBeTruthy())
+
+    // ODD CREDIT is a purchase of −3.000: change the kind to refund, keep the amount.
+    await user.click(within(screen.getByLabelText('Draft or Final')).getByRole('button', { name: 'Sign looks wrong: ODD CREDIT −3.000' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'ODD CREDIT' })).getByRole('button', { name: 'Fix the sign: 3.000' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Fix the sign' })).getByRole('button', { name: "It's a refund: change the kind" }))
+    await screen.findByText('Changed to refund')
+    await waitFor(async () => expect(await db.transactions.get('v')).toMatchObject({ amount: -3_000, kind: 'refund' }))
+    await waitFor(() => expect(within(screen.getByLabelText('Draft or Final')).getByText('Final ✓')).toBeTruthy())
   })
 
   it('F-09 Final ✓ when nothing is left; no card → asks to add one', async () => {
@@ -461,9 +501,11 @@ describe('row sheet', () => {
     expect(within(preview).getByText(/someone else's deposit/)).toBeTruthy() // p1's deposit is Andi's: conflict
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Convert' }))
     await screen.findByText('Converted. A payment leftover went back to "Decide later".')
-    await waitFor(() => expect(within(row('REVERSAL CICILAN BCA BLIBLI.COM *121 −1.200.000')).getByText('Not counted')).toBeTruthy())
+    // A reversal shows "Not counted" before the conversion too, so wait on what the conversion changes: the
+    // installment's owner and its payment (waiting on "Not counted" alone let the next line race the re-read).
+    await waitFor(() => expect(within(row('CICILAN BCA KE 01 DARI 06, BLIBLI.COM 200.000')).getByText('Paid')).toBeTruthy())
     expect(within(row('CICILAN BCA KE 01 DARI 06, BLIBLI.COM 200.000')).getByText('Sari')).toBeTruthy()
-    expect(within(row('CICILAN BCA KE 01 DARI 06, BLIBLI.COM 200.000')).getByText('Paid')).toBeTruthy()
+    expect(within(row('REVERSAL CICILAN BCA BLIBLI.COM *121 −1.200.000')).getByText('Not counted')).toBeTruthy()
 
     await user.click(row('REVERSAL CICILAN BCA BLIBLI.COM *121 −1.200.000'))
     expect(within(screen.getByRole('dialog')).getByText(/This reversal cancels BLIBLI.COM \*121 JAKARTA/)).toBeTruthy()

@@ -14,7 +14,7 @@ import { TopBar } from '../shell/TopBar'
 import { ShareSheet } from '../share/ShareSheet'
 import { StatusPill } from '../transactions/RowSheet'
 import { dayLabel, fmt, MONTHS, statementName, TAG_SOURCE_LABEL } from '../transactions/view'
-import { HeroBox, NO_OWNER, ownerLabel, payPath, txPath } from './BillPage'
+import { HeroBox, NO_OWNER, NO_OWNER_ALIAS, ownerLabel, payPath, txPath } from './BillPage'
 import { todayIso, useBill } from './useBill'
 import { groupByKind, KIND_GROUP_LABEL, monthName, personPayments, type Hero } from './view'
 
@@ -23,9 +23,10 @@ const payLine = (p: Payment) => p.description ?? (p.source === 'manual' ? 'Recor
 export function PersonPage() {
   const { ownerId: param } = useParams()
   const { selected, ledger, statement } = useBill()
-  const ownerId = param === NO_OWNER ? null : (param ?? null)
-
   if (!selected || !ledger || !statement) return <div className="screen small muted">Loading…</div>
+  // "_none" (what the app links to) and the readable alias "none" both mean rows without an owner, unless an owner
+  // really has the id "none".
+  const ownerId = param === NO_OWNER || (param === NO_OWNER_ALIAS && !selected.owners.some((o) => o.id === NO_OWNER_ALIAS)) ? null : (param ?? null)
   const known = ownerId === null || selected.owners.some((o) => o.id === ownerId)
   if (!known) {
     return (

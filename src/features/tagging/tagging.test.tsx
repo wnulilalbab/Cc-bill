@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Transaction } from '../../domain/types'
 import type { NewDb } from '../../data/db'
 import { listDismissals, listRules, saveRule } from '../../data/rules'
-import { renderScreen } from '../../test-utils/ui'
+import { renderScreen, settle } from '../../test-utils/ui'
 import { freshNewDb } from '../../../test/data/oldDb'
 import { PREF_KEYS } from '../look/prefs'
 import { lsSet } from '../../lib/storage'
@@ -22,7 +22,8 @@ beforeEach(() => {
   vi.stubGlobal('__APP_ENV__', 'production')
   localStorage.clear()
 })
-afterEach(() => {
+afterEach(async () => {
+  await settle() // the last action's reads finish inside the test, on every run
   cleanup()
   vi.unstubAllGlobals()
 })
@@ -226,9 +227,16 @@ describe('Settings → Tagging rules', () => {
     expect(await screen.findByText('Bima (archived)')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: '+ Add rule' }))
     await user.type(screen.getByLabelText('Text'), 'NETFLIX')
-    await db.owners.delete('bca-andi')
+    // The owner disappears while the rule is being saved: the sheet's own check passed, the database's refuses.
+    // (Deleting it before the tap raced with the sheet's re-read under load: then the sheet's check answered.)
+    const real = db.transaction.bind(db) as (...a: unknown[]) => Promise<unknown>
+    vi.spyOn(db, 'transaction').mockImplementationOnce((async (...args: unknown[]) => {
+      await db.owners.delete('bca-andi')
+      return real(...args)
+    }) as never)
     await user.click(screen.getByRole('button', { name: 'Save rule' }))
     expect(await screen.findByText('Pick who this merchant belongs to.')).toBeTruthy()
+    expect(await db.rules.count()).toBe(1)
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('dialog')).toBeNull()
   })

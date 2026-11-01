@@ -32,6 +32,8 @@ const shortDay = (iso: string) => dayLabel(iso).slice(0, -5)
 
 /** Path segment for rows without an owner. Real owner ids are generated ("owner-…"), so this can't collide. */
 export const NO_OWNER = '_none'
+/** Also accepted in a typed or shared link: /bill/person/none. */
+export const NO_OWNER_ALIAS = 'none'
 export const personPath = (ownerId: string | null, statementId: string) =>
   `/bill/person/${encodeURIComponent(ownerId ?? NO_OWNER)}?s=${encodeURIComponent(statementId)}`
 export const txPath = (statementId: string, extra: Record<string, string> = {}) => `/transactions?${new URLSearchParams({ statement: statementId, ...extra })}`

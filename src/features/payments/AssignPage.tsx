@@ -27,6 +27,7 @@ import type { CardWithOwners } from '../../data/cards'
 import { keepPaymentWaiting, movePayment, newPaymentId, removePayment, saveAssign } from '../../data/payments'
 import { loadLedger } from '../../data/repo'
 import { Picker } from '../../components/Picker'
+import { localIsoDate } from '../data/today'
 import { useData } from '../data/DataContext'
 import { useDbQuery } from '../data/useDbQuery'
 import { useAppearance } from '../look/Appearance'
@@ -36,7 +37,7 @@ import { ownerLook, Pill } from './PaymentsPage'
 import { bankLabel, deleteEffect, typedRupiah, unbilledNotOnStatement } from './view'
 
 const LIST = '/payments'
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => localIsoDate()
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
 /** Loads the payment (or, for a new one, the selected card) and its card's ledger, then shows the form. */

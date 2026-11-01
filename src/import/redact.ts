@@ -1,6 +1,7 @@
 // Strips personal details from statement text on the device, before anything is sent to the AI (phase-1 §4, I-05).
 // Allow-list first: only these lines go out, and only the parts named here:
-//   - transaction lines: a date at the start AND an amount at the end (optionally CR);
+//   - transaction lines: a date at the start AND an amount at the end (optionally CR); an amount under Rp 1.000
+//     printed without separators ("500") only after two dates (transaction + booking date), which no address has;
 //   - labelled header values (statement date, due date, new balance…): the label and its date/amount only;
 //   - balance lines (SALDO SEBELUMNYA 5.846.117) and the summary table (its words, and lines of amounts that carry
 //     thousands separators — a bare 10000001, 40111 or 081234567890 is never an amount).
@@ -17,6 +18,8 @@ const LINE_AMOUNT = String.raw`(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?|\d{1,3}[.,
 const DATED_VALUE = String.raw`\d{1,2}[ -]${MONTH}[ -]\d{2,4}|\d{1,2}/\d{1,2}/\d{2,4}`
 
 const TX_LINE = new RegExp(`^${DATE}\\s+(?:${DATE}\\s+)?\\S.*\\s(?:RP\\.?\\s*)?-?${LINE_AMOUNT}(?:\\s*CR)?$`, 'i')
+/** A small amount without separators (Rp 1 to 999): only on a line with two dates, so "17 AGUSTUS RAYA NO 5" stays out. */
+const SMALL_TX_LINE = new RegExp(`^${DATE}\\s+${DATE}\\s+\\S.*\\s(?:RP\\.?\\s*)?-?\\d{1,3}(?:\\s*CR)?$`, 'i')
 const LABELS = [
   'TANGGAL REKENING',
   'TANGGAL JATUH TEMPO',
@@ -68,7 +71,7 @@ export function holderNameWords(firstPage: readonly string[]): string[] {
 
 function keep(line: string): string | null {
   const l = line.trim().replace(/\s+/g, ' ')
-  if (TX_LINE.test(l)) return l
+  if (TX_LINE.test(l) || SMALL_TX_LINE.test(l)) return l
   const balance = BALANCE_LINE.exec(l)
   if (balance) return `${balance[1]} ${balance[2]}${balance[3] ?? ''}`
   const labelled = [...l.matchAll(LABELLED)].map((m) => `${m[1]}: ${m[2]}`)

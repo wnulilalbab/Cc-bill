@@ -30,6 +30,8 @@ describe('parseOldBackup', () => {
     ['bad hidden', broken((d) => (row(d, 'transactions').hidden = 'no')), 'transactions[0].hidden must be true or false, got string "no".'],
     ['empty id', broken((d) => (row(d, 'owners').id = '')), 'owners[0].id must be a non-empty text, got string "".'],
     ['bad month', broken((d) => (row(d, 'installmentPlans').startPeriod = '2026-7')), 'installmentPlans[0].startPeriod must be a month (YYYY-MM), got string "2026-7".'],
+    ['plan of 0 months', broken((d) => (row(d, 'installmentPlans').totalMonths = 0)), 'installmentPlans[0].totalMonths must be a whole number of months (1 or more), got number 0.'],
+    ['plan of 2.5 months', broken((d) => (row(d, 'installmentPlans').totalMonths = 2.5)), 'installmentPlans[0].totalMonths must be a whole number of months (1 or more), got number 2.5.'],
     ['negative count', broken((d) => (row(d, 'periods').month = -1)), 'periods[0].month must be a whole number, got number -1.'],
     ['bad due date', broken((d) => (row(d, 'periods').dueDate = 'soon')), 'periods[0].dueDate must be a date (YYYY-MM-DD), got string "soon".'],
     ['duplicate id', broken((d) => (row(d, 'owners', 1).id = 'own-0')), 'owners has the id "own-0" twice.'],

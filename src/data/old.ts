@@ -13,7 +13,7 @@ import { oldDbName } from './env'
 
 export type { OldAllocation, OldExpense, OldOwner, OldPayment, OldPeriod, OldPlan, OldTransaction }
 
-/** The old database, in the shape of the old app's JSON backup (exportData() in src/pages/Settings.tsx). */
+/** The old database, in the shape of the old app's JSON backup (the old app's Settings → Export; synthetic sample in test/fixtures/backup/old-backup.json). */
 export interface OldData {
   owners: OldOwner[]
   periods: OldPeriod[]
@@ -37,7 +37,7 @@ const OLD_TYPES = new Set(['purchase', 'installment', 'payment', 'refund', 'reve
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 const ISO_MONTH = /^\d{4}-\d{2}$/
 
-type Field = 'string' | 'text' | 'date' | 'month' | 'rupiah' | 'count' | 'type' | 'boolean'
+type Field = 'string' | 'text' | 'date' | 'month' | 'rupiah' | 'count' | 'months' | 'type' | 'boolean'
 type Shape = Record<string, `${Field}` | `${Field}?`>
 
 const SHAPES: Record<keyof OldData, Shape> = {
@@ -45,7 +45,7 @@ const SHAPES: Record<keyof OldData, Shape> = {
   periods: { id: 'string', month: 'count', year: 'count', dueDate: 'date?' },
   transactions: { id: 'string', periodId: 'string', date: 'date', description: 'text', amount: 'rupiah', type: 'type', hidden: 'boolean?' },
   expenses: { id: 'string', transactionId: 'string', ownerId: 'string', installmentPlanId: 'string?' },
-  installmentPlans: { id: 'string', name: 'string', totalMonths: 'count', monthlyAmount: 'rupiah', startPeriod: 'month', ownerId: 'string' },
+  installmentPlans: { id: 'string', name: 'string', totalMonths: 'months', monthlyAmount: 'rupiah', startPeriod: 'month', ownerId: 'string' },
   payments: { id: 'string', periodId: 'string', date: 'date', amount: 'rupiah', note: 'text?' },
   paymentAllocations: { id: 'string', paymentId: 'string', expenseId: 'string', amount: 'rupiah' },
 }
@@ -58,6 +58,7 @@ function fieldOk(kind: Field, v: unknown): boolean {
     case 'month': return typeof v === 'string' && ISO_MONTH.test(v)
     case 'rupiah': return Number.isSafeInteger(v)
     case 'count': return Number.isSafeInteger(v) && (v as number) >= 0
+    case 'months': return Number.isSafeInteger(v) && (v as number) >= 1
     case 'type': return typeof v === 'string' && OLD_TYPES.has(v)
     case 'boolean': return typeof v === 'boolean'
   }
@@ -70,6 +71,7 @@ const EXPECTED: Record<Field, string> = {
   month: 'a month (YYYY-MM)',
   rupiah: 'an integer number of rupiah',
   count: 'a whole number',
+  months: 'a whole number of months (1 or more)',
   type: `one of ${[...OLD_TYPES].join(', ')}`,
   boolean: 'true or false',
 }

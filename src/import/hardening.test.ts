@@ -91,6 +91,13 @@ describe('round 2: names, addresses', () => {
     expect(sent(['17 AGUSTUS RAYA NO 5', '12 JUNI RESIDENCE BLOK 7', '17 AGUSTUS RAYA NO 15'])).toEqual([])
     expect(sent(['17-AGU 18-AGU TOKO 5,00', '17-AGU 18-AGU TOKO 5.000'])).toEqual(['17-AGU 18-AGU TOKO 5,00', '17-AGU 18-AGU TOKO 5.000'])
   })
+
+  it('amounts under Rp 1.000: kept after two dates (BCA prints "500"), with or without CR; never on a one-date line', () => {
+    const rows = ['12-OKT 12-OKT BEA METERAI 500', '03-OKT 04-OKT PARKIR 7', '05-OKT 05-OKT CASHBACK 999 CR', '06/10 06/10 TOLL 750', '07-OKT 07-OKT KOPI RP 950']
+    expect(sent(rows)).toEqual(rows)
+    expect(sent(['12 OKTOBER RAYA NO 500', '17 AGUSTUS BLOK 999', '12-OKT 12-OKT TOKO 1000', '12-OKT 12-OKT TOKO 12345'])).toEqual([])
+    expect(sent(['12-OKT 12-OKT ANDI PRATAMA 500'], { holderName: 'Andi Pratama' })).toEqual(['12-OKT 12-OKT [name] [name] 500'])
+  })
 })
 
 describe('on-device totals cross-check (prompt-injection guard)', () => {

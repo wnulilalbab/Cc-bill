@@ -4,7 +4,7 @@ import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveCard, sortOwners, type OwnerRecord } from '../../data/cards'
 import type { NewDb } from '../../data/db'
-import { renderScreen, token } from '../../test-utils/ui'
+import { renderScreen, token, settle } from '../../test-utils/ui'
 import { freshNewDb } from '../../../test/data/oldDb'
 import { paletteOf } from '../look/palettes'
 import { PREF_KEYS } from '../look/prefs'
@@ -15,7 +15,8 @@ beforeEach(() => {
   localStorage.clear()
   document.documentElement.removeAttribute('style')
 })
-afterEach(() => {
+afterEach(async () => {
+  await settle() // the last action's reads finish inside the test, on every run
   cleanup()
   vi.unstubAllGlobals()
 })

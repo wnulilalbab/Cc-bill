@@ -12,7 +12,7 @@ import { saveCard, unbilledIdOf } from '../../data/cards'
 import type { NewDb } from '../../data/db'
 import { loadLedger } from '../../data/repo'
 import { markReviewed } from '../../data/transactions'
-import { renderRoutes, token } from '../../test-utils/ui'
+import { renderRoutes, token, settle } from '../../test-utils/ui'
 import { freshNewDb } from '../../../test/data/oldDb'
 import { assignAll, seedHousehold, tagAsExpected } from '../../../test/bill/household'
 import type { Seeded } from '../../../test/import/helpers'
@@ -34,7 +34,8 @@ beforeEach(() => {
   vi.stubGlobal('__APP_ENV__', 'production')
   localStorage.clear()
 })
-afterEach(() => {
+afterEach(async () => {
+  await settle() // the last action's reads finish inside the test, on every run
   cleanup()
   vi.unstubAllGlobals()
 })
@@ -416,6 +417,12 @@ describe('person detail', () => {
     await screen.findByRole('heading', { name: 'Andi' })
     await r.user.click(screen.getByRole('link', { name: 'Open Payments' }))
     expect(location()).toBe('/payments')
+    cleanup()
+
+    // "none" is a readable alias of the "_none" sentinel.
+    renderRoutes(ROUTES, `/bill/person/none?s=${nov.id}`, { db })
+    expect(await screen.findByRole('heading', { name: 'No owner' })).toBeTruthy()
+    expect(big()).toBe(rp(30_000))
     cleanup()
 
     renderRoutes(ROUTES, `/bill/person/nobody?s=${nov.id}`, { db })

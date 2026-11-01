@@ -3,6 +3,10 @@
 import Dexie from 'dexie'
 import { useEffect, useState } from 'react'
 
+let pending = 0
+/** Reads started by useDbQuery that have not finished yet. Tests wait for 0 before they end (src/test-utils/ui.tsx). */
+export const pendingDbReads = () => pending
+
 export function useDbQuery<T>(read: () => Promise<T>, deps: readonly unknown[]): T | undefined {
   const [value, setValue] = useState<T | undefined>(undefined)
   const [tick, setTick] = useState(0)
@@ -13,12 +17,15 @@ export function useDbQuery<T>(read: () => Promise<T>, deps: readonly unknown[]):
   }, [])
   useEffect(() => {
     let live = true
-    read().then(
-      (v) => {
-        if (live) setValue(v)
-      },
-      () => {},
-    )
+    pending++
+    read()
+      .then(
+        (v) => {
+          if (live) setValue(v)
+        },
+        () => {},
+      )
+      .finally(() => pending--)
     return () => {
       live = false
     }

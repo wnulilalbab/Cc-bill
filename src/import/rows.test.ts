@@ -141,3 +141,35 @@ describe('the review draft', () => {
     expect(mergeOverlaps([row('a', 0), row('c', 1), row('d', 1, 'HALODOC')])).toEqual({ rows: [row('a', 0), row('d', 1, 'HALODOC')], merged: 1 })
   })
 })
+
+describe('amounts under Rp 1.000', () => {
+  it('a 500 stamp duty and a 1-rupiah rounding credit keep their exact rupiah through rows, totals check and save', async () => {
+    const db = freshNewDb()
+    const cards = await seedCards(db)
+    const e = expected('statements/bca-2026-11')
+    const base = aiAnswerFor(e)
+    // The AI reads two extra small lines; the printed totals stay the bank's, so the check is off by exactly 499.
+    const answer: AiStatement = {
+      ...base,
+      rows: [
+        ...base.rows,
+        { page: 1, date: '2026-11-12', postDate: '2026-11-12', description: 'BEA METERAI', amount: 500, credit: false },
+        { page: 1, date: '2026-11-12', postDate: '2026-11-12', description: 'PEMBULATAN', amount: 1, credit: true },
+      ],
+    }
+    const draft = await readImport({ db, ai: aiConfig(mockFetch(answer)), pdfjs: pdfjsLib }, { cardId: cards.bca, target: 'statement', files: [fileOf('statements/bca-2026-11.pdf')] })
+    expect(draft.rows.find((r) => r.description === 'BEA METERAI')).toMatchObject({ amount: 500, kind: 'fee' })
+    expect(draft.rows.find((r) => r.description === 'PEMBULATAN')).toMatchObject({ amount: -1, kind: 'unknownCredit' })
+    const picked = setCreditKind(draft, draft.rows.find((r) => r.description === 'PEMBULATAN')!.key, 'refund')
+    const check = checkTotals(picked)!
+    expect(check.ok).toBe(false)
+    expect(Math.abs(check.difference)).toBe(499)
+    expect(check.computed.newBalance).toBe(e.printed!.newBalance + 499)
+    const report = await commitImport(db, picked, { acceptDifference: true })
+    expect(Math.abs(report.difference!)).toBe(499)
+    expect(report.added).toContainEqual({ date: '2026-11-12', description: 'BEA METERAI', amount: 500 })
+    const stored = await db.transactions.where('cardId').equals(cards.bca).toArray()
+    expect(stored.find((t) => t.description === 'BEA METERAI')).toMatchObject({ amount: 500, kind: 'fee' })
+    expect(stored.find((t) => t.description === 'PEMBULATAN')).toMatchObject({ amount: -1, kind: 'refund' })
+  })
+})

@@ -71,3 +71,11 @@ export function PayIcon() {
     </Svg>
   )
 }
+
+export function ChartIcon() {
+  return (
+    <Svg>
+      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+    </Svg>
+  )
+}

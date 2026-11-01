@@ -10,6 +10,7 @@ import { DATA_TABLES, emptyData, type DataTable, type NewData, type NewDb } from
 import { oldDbName } from './env'
 import { fingerprint, MigrationError, oldBackupJson, readOldData, type OldData, type OldExpense, type OldPeriod, type OldTransaction } from './old'
 import { readAll } from './repo'
+import { checkRecord } from './validate'
 
 export const MIGRATED_CARD = { id: 'card-bca-shared', name: 'BCA Shared', bank: 'BCA' } as const
 export const MIGRATED_UNBILLED_ID = `${MIGRATED_CARD.id}-unbilled`
@@ -391,6 +392,8 @@ const META_VERIFICATION = 'verification'
  * so running it again replaces them cleanly. Never touches the old database.
  */
 export async function applyMigration(db: NewDb, plan: MigrationPlan, now: string = new Date().toISOString()): Promise<void> {
+  // Every record passes the same checks as any other write (src/data/validate) before anything is written.
+  for (const t of DATA_TABLES) for (const r of plan.data[t]) checkRecord(t, r as never)
   await db.transaction('rw', [...db.dataTables(), db.meta], async () => {
     const previous = (await db.meta.get(META_MIGRATION))?.value as MigrationRecord | undefined
     if (previous) for (const t of DATA_TABLES) await db.table(t).bulkDelete(previous.ids[t] ?? []) // runs before Slice 7 have no rules ids

@@ -19,6 +19,7 @@ import { Shell } from '../Shell'
 import { TransactionsPage } from '../transactions/TransactionsPage'
 import { PaymentsRoutes } from './PaymentsRoutes'
 import { deleteEffect, ownerDeposits, paymentLists, typedRupiah } from './view'
+import { settle } from '../../test-utils/ui'
 
 // Synthetic data only: the fictional household (test/payments/household.ts) and the small "BCA Keluarga" ledger
 // (test/transactions/ledger.ts: Andi, Sari, archived Bima; Sep and Oct statements and Unbilled; a Mandiri card).
@@ -27,7 +28,8 @@ beforeEach(() => {
   vi.stubGlobal('__APP_ENV__', 'production')
   localStorage.clear()
 })
-afterEach(() => {
+afterEach(async () => {
+  await settle() // the last action's reads finish inside the test, on every run
   cleanup()
   vi.unstubAllGlobals()
 })
@@ -558,14 +560,31 @@ describe('payment actions', () => {
     expect(draftIssues(await loadLedger(db, 'bca'), OCT.id).notOnStatementPayments).toEqual([])
   })
 
-  it('a failed write shows its reason on the page', async () => {
+  it('a failed write shows its reason on the page; the page stays, Save works again', async () => {
     const db = await seedAssign()
     const { user } = renderAt('/payments/p5', db)
     await user.click(await findWho('Andi'))
     await user.click(screen.getByRole('button', { name: 'TOKO SATU' }))
-    await db.payments.delete('p5')
+    // The write itself fails (not a concurrent delete, which the page may notice first: that raced under load).
+    vi.spyOn(db, 'transaction').mockRejectedValueOnce(new Error('The phone is out of storage.'))
     await user.click(save())
+    expect((await screen.findByRole('alert')).textContent).toBe('The phone is out of storage.')
+    expect(where()).toBe('/payments/p5')
+    expect(save().disabled).toBe(false)
+    vi.restoreAllMocks()
+    await user.click(save())
+    await waitFor(() => expect(where()).toBe('/payments'))
+    expect((await db.payments.get('p5'))!.allocations).toEqual([{ txId: 'a1', amount: 100_000 }])
+  })
+
+  it('a payment deleted elsewhere while its page is open: Save says it no longer exists', async () => {
+    const db = await seedAssign()
+    const { user } = renderAt('/payments/p5', db)
+    await user.click(await findWho('Andi'))
+    await db.payments.delete('p5')
+    // Wait for the page to notice the delete (its re-read), so the outcome never depends on timing.
     expect(await screen.findByText('This payment no longer exists.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
   })
 })
 
