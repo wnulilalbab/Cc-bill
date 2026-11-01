@@ -6,7 +6,8 @@ import type { Statement, TxKind } from '../../domain/types'
 import type { OwnerRecord } from '../../data/cards'
 import { addRow, RowError } from '../../data/transactions'
 import { useData } from '../data/DataContext'
-import { parseAmount, signedFor, statementName } from './view'
+import { parseAmount } from '../settings/format'
+import { signedFor, statementName } from './view'
 
 const KINDS: { value: TxKind; label: string }[] = [
   { value: 'purchase', label: 'Charge' },

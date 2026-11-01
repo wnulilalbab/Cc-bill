@@ -19,6 +19,7 @@ import type { Seeded } from '../../../test/import/helpers'
 import householdFixture from '../../../test/fixtures/household.json'
 import { PREF_KEYS, prefSet } from '../look/prefs'
 import { rp } from '../settings/format'
+import { PaymentsRoutes } from '../payments/PaymentsRoutes'
 import { TransactionsPage } from '../transactions/TransactionsPage'
 import { fmt } from '../transactions/view'
 import { BillPage } from './BillPage'
@@ -42,6 +43,7 @@ const ROUTES = {
   '/v2/bill': <BillPage />,
   '/v2/bill/person/:ownerId': <PersonPage />,
   '/v2/transactions': <TransactionsPage />,
+  '/v2/payments/*': <PaymentsRoutes />,
 }
 
 async function household(): Promise<{ db: NewDb; cards: Seeded }> {
@@ -293,6 +295,8 @@ describe('person detail', () => {
     const pays = screen.getByLabelText('Payments for this bill')
     expect(within(pays).getByText(/30 Oct 2026 · PEMBAYARAN/)).toBeTruthy()
     expect(within(pays).getByText('after due')).toBeTruthy()
+    // Each payment opens its assign page (Slice 9).
+    expect(within(pays).getByRole('link', { name: /30 Oct 2026 · PEMBAYARAN/ }).getAttribute('href')).toBe(`/v2/payments/${late.id}`)
   })
 
   it('M-05 a refund lowers the owner\'s charges and shows as Refund; M-06 reversal and moved purchase count 0', async () => {
@@ -391,7 +395,7 @@ describe('person detail', () => {
     const r = renderRoutes(ROUTES, `/v2/bill/person/${cards.owners.bca.Andi}?s=${nov.id}`, { db })
     await screen.findByRole('heading', { name: 'Andi' })
     await r.user.click(screen.getByRole('link', { name: 'Open Payments' }))
-    expect(location()).toBe(`/v2/payments?owner=${cards.owners.bca.Andi}`)
+    expect(location()).toBe('/v2/payments')
     cleanup()
 
     renderRoutes(ROUTES, `/v2/bill/person/nobody?s=${nov.id}`, { db })
@@ -411,7 +415,7 @@ describe('Draft / Final on Bill', () => {
     expect(within(panel).getByText(`Draft · ${issues.count} to finish`)).toBeTruthy()
     expect(within(panel).getByText('1 row needs a check')).toBeTruthy()
     expect(within(panel).getByText('2 payments not assigned (Rp 3.500.000)')).toBeTruthy()
-    expect(within(panel).getByRole('link', { name: 'Assign' }).getAttribute('href')).toBe(`/v2/payments?pay=${issues.blockingPayments[0]}`)
+    expect(within(panel).getByRole('link', { name: 'Assign' }).getAttribute('href')).toBe(`/v2/payments/${issues.blockingPayments[0]}`)
     await user.click(within(panel).getByRole('link', { name: 'Review' }))
     expect(location()).toBe(`/v2/transactions?statement=${d.s}&status=check`)
     // Transactions opens on that statement with the Needs check filter.
@@ -442,10 +446,16 @@ describe('Draft / Final on Bill', () => {
     await db.payments.put({ id: 'hand-bima', cardId: cards.bca, source: 'manual', date: bima.date, amount: bima.amount, allocations: [], forOwnerIds: [cards.owners.bca.Bima] })
     const d = await domain(db, cards, 'bca')
     expect(draftIssues(d.l, d.s).missingPayments).toEqual(['hand-bima'])
-    await openBill(db, cards.bca)
+    const { user } = await openBill(db, cards.bca)
     const panel = screen.getByLabelText('Draft or Final')
     expect(within(panel).getByText("1 payment you recorded isn't on a statement")).toBeTruthy()
-    expect(within(panel).getAllByRole('link', { name: 'Resolve' })[0].getAttribute('href')).toBe('/v2/payments?pay=hand-bima')
+    expect(within(panel).getAllByRole('link', { name: 'Resolve' })[0].getAttribute('href')).toBe('/v2/payments/hand-bima')
+    // The Assign link opens that payment's full-screen assign page (Slice 9).
+    const assign = within(panel).getByRole('link', { name: 'Assign' })
+    const target = assign.getAttribute('href')!
+    await user.click(assign)
+    expect(location()).toBe(target)
+    expect(await screen.findByLabelText('Left to assign')).toBeTruthy()
   })
 
   it('F-08 an Unbilled row dated before the latest statement blocks the latest statement only; Resolve opens the row', async () => {

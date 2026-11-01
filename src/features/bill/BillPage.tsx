@@ -30,7 +30,8 @@ const shortDay = (iso: string) => dayLabel(iso).slice(0, -5)
 
 export const personPath = (ownerId: string | null, statementId: string) => `/v2/bill/person/${ownerId ?? 'none'}?s=${encodeURIComponent(statementId)}`
 export const txPath = (statementId: string, extra: Record<string, string> = {}) => `/v2/transactions?${new URLSearchParams({ statement: statementId, ...extra })}`
-export const payPath = (extra: Record<string, string> = {}) => `/v2/payments${Object.keys(extra).length ? `?${new URLSearchParams(extra)}` : ''}`
+/** The Payments list, or one payment's full-screen assign page (Slice 9 routes). */
+export const payPath = (paymentId?: string) => (paymentId ? `/v2/payments/${encodeURIComponent(paymentId)}` : '/v2/payments')
 
 /** A card with no billed statement and nothing in Unbilled has nothing to bill yet. */
 export const isEmptyCard = (l: Ledger) => !l.statements.some((s) => s.kind === 'billed') && l.transactions.length === 0 && l.payments.length === 0
@@ -270,7 +271,7 @@ function DraftPanel({ ledger, statement }: { ledger: Ledger; statement: Statemen
     ids.length > 0 && (
       <li className="it">
         <span>{text}</span>
-        <Link className="link" to={payPath({ pay: ids[0] })}>
+        <Link className="link" to={payPath(ids[0])}>
           {action}
         </Link>
       </li>

@@ -110,10 +110,10 @@ function Person({ ledger, statement, ownerId, owners, cardName }: { ledger: Ledg
         <div className="lbl">Paid on these charges</div>
         {pays.payments.map((s) => (
           <div key={s.payment.id} className="row small">
-            <span>
+            <Link to={payPath(s.payment.id)} style={{ color: 'inherit' }}>
               {dayLabel(s.payment.date)} · {payLine(s.payment)}
               {s.afterDue && <span className="pill warn"> after due</span>}
-            </span>
+            </Link>
             <span className="num" style={{ color: 'var(--ok)' }}>
               − {fmt(s.amount)}
             </span>
@@ -132,7 +132,7 @@ function Person({ ledger, statement, ownerId, owners, cardName }: { ledger: Ledg
           <b>Already paid</b>
           <b className="num">− {fmt(bill.alreadyPaid)}</b>
         </div>
-        <Link className="link" to={payPath(ownerId ? { owner: ownerId } : {})}>
+        <Link className="link" to={payPath()}>
           Open Payments
         </Link>
       </section>
