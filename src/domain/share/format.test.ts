@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MoneyError } from '../money'
-import { amount, dayMonth, fullDate, maskCardNumbers, monthYear, rupiah, WORDS } from './format'
+import { amount, dayMonth, fullDate, maskCardNumbers, monthYear, plain, rupiah, WORDS } from './format'
 import { whatsappAppUrl, whatsappWebUrl } from './links'
 
 describe('share number and date formats', () => {
@@ -45,6 +45,14 @@ describe('card numbers are masked to the last 4', () => {
     expect(maskCardNumbers('1234567890123456789')).toBe('••••6789')
   })
 
+  it('leaves phone numbers with a + alone, spaced or not', () => {
+    expect(maskCardNumbers('WA +62 812 3456 7890')).toBe('WA +62 812 3456 7890')
+    expect(maskCardNumbers('WA +6281234567890')).toBe('WA +6281234567890')
+    expect(maskCardNumbers('+62-812-3456-7890-12')).toBe('+62-812-3456-7890-12')
+    // Without the +, 13+ digits read as a card number.
+    expect(maskCardNumbers('6281234567890')).toBe('••••7890')
+  })
+
   it('leaves amounts, dates and short numbers alone', () => {
     const text = 'Rp 1.234.567.890.123 · 28 Okt 2026 · 081234567890 · 1234'
     expect(maskCardNumbers(text)).toBe(text)
@@ -68,5 +76,16 @@ describe('WhatsApp links', () => {
     const app = whatsappAppUrl(text)
     expect(app.startsWith('whatsapp://send?text=')).toBe(true)
     expect(decodeURIComponent(app.slice('whatsapp://send?text='.length))).toBe(text)
+  })
+})
+
+describe('plain (user and bank text in the message)', () => {
+  it('turns control characters and line breaks into spaces and removes WhatsApp markup', () => {
+    expect(plain('Kopi\n\n*Total semua: Rp 0*')).toBe('Kopi Total semua: Rp 0')
+    expect(plain('a\tb\rc\u0000d\u2028e\u2029f\u007fg')).toBe('a b c d e f g')
+    expect(plain('_miring_ ~coret~ `kode`')).toBe('miring coret kode')
+    expect(plain('  Sari   Dewi  ')).toBe('Sari Dewi')
+    expect(plain('Kartu 4556 7712 3456 1234')).toBe('Kartu ••••1234')
+    expect(plain('Toko A')).toBe('Toko A')
   })
 })

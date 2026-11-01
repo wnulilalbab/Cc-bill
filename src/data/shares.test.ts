@@ -1,7 +1,10 @@
 import 'fake-indexeddb/auto'
 import { describe, expect, it } from 'vitest'
 import { freshNewDb } from '../../test/data/oldDb'
-import { listShares, logShare, sameTarget, shareLogKey } from './shares'
+import { deleteCard, saveCard, type CardDraft } from './cards'
+
+const CARD = (name: string): CardDraft => ({ name, bank: 'BCA', last4: '', statementDay: '', palette: 'blue', owners: [], defaultIndex: -1 })
+import { listShares, logShare, sameTarget, SHARE_LOG_LIMIT, shareLogKey } from './shares'
 
 describe('share log (S-05 data)', () => {
   it('logs per card and statement, once per target, amount and day', async () => {
@@ -49,5 +52,34 @@ describe('share log (S-05 data)', () => {
     expect(sameTarget({ ownerId: 'a' }, 'all')).toBe(false)
     expect(sameTarget({ ownerId: 'a' }, { ownerId: 'a' })).toBe(true)
     expect(sameTarget({ ownerId: null }, { ownerId: 'a' })).toBe(false)
+  })
+
+  it('keeps the last 20 entries per target; other targets keep theirs', async () => {
+    const db = freshNewDb()
+    expect(SHARE_LOG_LIMIT).toBe(20)
+    await logShare(db, 'bca', 'oct', { target: 'all', total: 999, date: '2026-10-01' })
+    for (let i = 1; i <= 25; i++) await logShare(db, 'bca', 'oct', { target: { ownerId: 'sari' }, total: i, date: '2026-10-02' })
+    await logShare(db, 'bca', 'oct', { target: { ownerId: 'bima' }, total: 1, date: '2026-10-03' })
+    const list = await listShares(db, 'bca', 'oct')
+    expect(list.filter((x) => x.target !== 'all' && x.target.ownerId === 'sari').map((x) => x.total)).toEqual(Array.from({ length: 20 }, (_, i) => i + 6))
+    expect(list[0]).toEqual({ target: 'all', total: 999, date: '2026-10-01' })
+    expect(list.at(-1)).toEqual({ target: { ownerId: 'bima' }, total: 1, date: '2026-10-03' })
+    expect(list).toHaveLength(22)
+  })
+
+  it("deleting a card removes its share log, not other cards' logs", async () => {
+    const db = freshNewDb()
+    const a = await saveCard(db, CARD('Kartu A'))
+    const b = await saveCard(db, CARD('Kartu B'))
+    for (const card of [a, b]) {
+      await logShare(db, card, 'oct', { target: 'all', total: 1, date: '2026-10-01' })
+      await logShare(db, card, `${card}-unbilled`, { target: 'all', total: 1, date: '2026-10-01' })
+    }
+    await logShare(db, `${a}x`, 'oct', { target: 'all', total: 1, date: '2026-10-01' })
+    await deleteCard(db, a)
+    expect(await listShares(db, a, 'oct')).toEqual([])
+    expect(await listShares(db, a, `${a}-unbilled`)).toEqual([])
+    expect(await listShares(db, b, 'oct')).toHaveLength(1)
+    expect(await listShares(db, `${a}x`, 'oct')).toHaveLength(1)
   })
 })

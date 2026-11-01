@@ -329,3 +329,22 @@ describe('share card (the model the text and the image are drawn from)', () => {
     expect([c.who, c.blocks[0].name, c.blocks[0].rows[0].label]).toEqual(['Sari ••••9999', 'Sari ••••9999', '1 Okt Kartu ••••1234'])
   })
 })
+
+describe('hardening', () => {
+  it('a label or name cannot add lines or markup (no fake total line)', () => {
+    const l = ledger({ statements: months(), transactions: [tx('a', 'oct', '2026-10-01', 1000, 'o', { label: 'Kopi\n\n*Total semua: Rp 0*' })] })
+    const text = shareMessage({ ledger: l, card: { name: 'K*_~' }, owners: [{ id: 'o', name: '*Sari*\nBos' }], statementId: 'oct', today: '2026-10-20' }, 'all').text
+    expect(text).toBe(['*Tagihan K · Okt 2026* (jatuh tempo 28 Okt)', 'Per 20 Okt 2026', '', '*Sari Bos: Rp 1.000*', '- 1 Okt Kopi Total semua: Rp 0: 1.000', '', '*Total semua: Rp 1.000*'].join('\n'))
+  })
+
+  it('everyone includes an owner whose only balance is a deposit waiting', () => {
+    const l = ledger({
+      statements: months(),
+      transactions: [tx('a', 'oct', '2026-10-01', 1000, 'sari')],
+      payments: [pay('p', '2026-10-05', 50000, { source: 'statement', statementId: 'oct', allocations: [], depositOwnerId: 'bima' })],
+    })
+    const owners = [{ id: 'sari', name: 'Sari' }, { id: 'bima', name: 'Bima' }, { id: 'zed', name: 'Zed' }]
+    const text = shareMessage({ ledger: l, card: { name: 'K' }, owners, statementId: 'oct', today: '2026-10-20' }, 'all').text
+    expect(text.split('\n').slice(2)).toEqual(['', '*Sari: Rp 1.000*', '- 1 Okt A: 1.000', '', '*Bima: Rp 0* ✓ lunas', 'Deposit tersisa: Rp 50.000', 'Tidak ada transaksi di tagihan ini.', '', '*Total semua: Rp 1.000*'])
+  })
+})

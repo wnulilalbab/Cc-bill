@@ -13,7 +13,7 @@ import { renderScreen } from '../../test-utils/ui'
 import { freshNewDb } from '../../../test/data/oldDb'
 import { BCA_OWNERS, householdLedger, seedHousehold, TODAY } from '../../../test/payments/household'
 import { TransactionsPage } from '../transactions/TransactionsPage'
-import { imageIO, localToday, nav, ShareSheet } from './ShareSheet'
+import { imageIO, localToday, nav, SEND_LIMIT, ShareSheet } from './ShareSheet'
 import { paletteOf } from '../look/palettes'
 import { shareCard } from '../../domain/share/message'
 import { SharePage } from './SharePage'
@@ -308,5 +308,54 @@ describe('entry points', () => {
   it('localToday is the local calendar date', () => {
     expect(localToday(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05')
     expect(localToday(new Date(2026, 10, 30, 0, 1))).toBe('2026-11-30')
+  })
+})
+
+describe('limits', () => {
+  /** One owner with 300 rows on Oct (synthetic): the full text is far over 6.000 characters. */
+  const longLedger = () => ({
+    statements: [{ id: 'oct', cardId: 'c', kind: 'billed' as const, statementDate: '2026-10-12', dueDate: '2026-10-28', printed: { prevBalance: 0, credits: 0, purchases: 0, feesInterest: 0, newBalance: 0 } }],
+    transactions: Array.from({ length: 300 }, (_, i) => ({ id: `t${i}`, cardId: 'c', statementId: 'oct', date: '2026-10-01', description: `TOKO NOMOR ${i}`, amount: 1000, kind: 'purchase' as const, ownerId: 'o' })),
+    payments: [],
+    plans: [],
+  })
+  const owners = [{ id: 'o', cardId: 'c', name: 'Sari' }]
+  const lctx = { ledger: longLedger(), card: { name: 'K' }, owners, statementId: 'oct', today: TODAY }
+
+  it(`over ${SEND_LIMIT} characters, WhatsApp and Share… go without the list (and say so); Copy keeps it all`, async () => {
+    expect(SEND_LIMIT).toBe(6000)
+    const full = shareMessage(lctx, 'all').text
+    const short = shareMessage({ ...lctx, list: false }, 'all').text
+    expect(full.length).toBeGreaterThan(6000)
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    const share = vi.fn().mockResolvedValue(undefined)
+    setNavigator('share', share)
+    const { user } = renderScreen(<ShareSheet ledger={lctx.ledger} card={{ id: 'c', name: 'K' }} owners={owners} statementId="oct" today={TODAY} onClose={() => {}} />)
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    setNavigator('clipboard', { writeText })
+    expect(screen.getByLabelText('Long message').textContent).toContain('without the list of charges')
+    await user.click(screen.getByRole('button', { name: 'Send via WhatsApp' }))
+    expect(new URL(open.mock.calls[0][0] as string).searchParams.get('text')).toBe(short)
+    await user.click(screen.getByRole('button', { name: 'Share…' }))
+    expect(share).toHaveBeenCalledWith({ text: short })
+    await user.click(screen.getByRole('button', { name: 'Copy as text' }))
+    expect(writeText).toHaveBeenCalledWith(full)
+    // With the list off there is nothing to shorten.
+    await user.click(screen.getByRole('checkbox', { name: 'Include the list of charges' }))
+    expect(screen.queryByLabelText('Long message')).toBeNull()
+  })
+
+  it('Share… waits for the phone before it can be tapped again', async () => {
+    let done: () => void = () => {}
+    const share = vi.fn(() => new Promise<void>((r) => (done = r)))
+    setNavigator('share', share)
+    const { user } = renderScreen(<ShareSheet ledger={HH} card={{ id: 'bca', name: 'BCA Keluarga' }} owners={OWNERS.map((o) => ({ ...o, cardId: 'bca' }))} statementId={NOV} today={TODAY} onClose={() => {}} />)
+    const button = screen.getByRole('button', { name: 'Share…' })
+    await user.click(button)
+    expect((button as HTMLButtonElement).disabled).toBe(true)
+    await user.click(button)
+    expect(share).toHaveBeenCalledTimes(1)
+    done()
+    await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false))
   })
 })

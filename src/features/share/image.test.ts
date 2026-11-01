@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 // Share image: pure layout (lines and positions) and the painting, with a mocked 2D context. Synthetic household.
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { shareCard, type ShareContext } from '../../domain/share/message'
+import { shareCard, type ShareCard, type ShareContext } from '../../domain/share/message'
 import { BCA_OWNERS, householdLedger, TODAY } from '../../../test/payments/household'
 import { paletteOf } from '../look/palettes'
-import { downloadBlob, drawShareImage, fit, wrap, font, imageFileName, layoutShareImage, renderSharePng, type ImageLayout, type Op } from './image'
+import { canvasScale, downloadBlob, drawShareImage, fit, MAX_CANVAS_AREA, MAX_CANVAS_HEIGHT, MAX_IMAGE_ROWS, wrap, font, imageFileName, layoutShareImage, renderSharePng, type ImageLayout, type Op } from './image'
 
 const HH = householdLedger()
 const ctx = (statementId: string, extra: Partial<ShareContext> = {}): ShareContext => ({
@@ -214,5 +214,71 @@ describe('files', () => {
     expect(revoke).toHaveBeenCalledWith('blob:x')
     vi.useRealTimers()
     vi.unstubAllGlobals()
+  })
+})
+
+describe('size limits', () => {
+  /** 2.000 rows over 5 owners on one statement (synthetic). */
+  const big = () => {
+    const owners = ['a', 'b', 'c', 'd', 'e'].map((id) => ({ id, name: `Owner ${id}` }))
+    const transactions = Array.from({ length: 2000 }, (_, i) => ({
+      id: `t${i}`,
+      cardId: 'c',
+      statementId: 'oct',
+      date: '2026-10-01',
+      description: `TOKO ${i}`,
+      amount: 1000 + i,
+      kind: 'purchase' as const,
+      ownerId: owners[i % 5].id,
+    }))
+    const statements = [{ id: 'oct', cardId: 'c', kind: 'billed' as const, statementDate: '2026-10-12', dueDate: '2026-10-28', printed: { prevBalance: 0, credits: 0, purchases: 0, feesInterest: 0, newBalance: 0 } }]
+    return shareCard({ ledger: { statements, transactions, payments: [], plans: [] }, card: { name: 'K' }, owners, statementId: 'oct', today: '2026-10-20', lang: 'en' }, 'all')
+  }
+
+  it('draws at most 40 charge lines per person, then "+N more"', () => {
+    expect(MAX_IMAGE_ROWS).toBe(40)
+    const card = big()
+    expect(card.blocks[0].rows).toHaveLength(400)
+    const l = layoutShareImage(card, BLUE, measure)
+    expect(l.ops.filter((o) => o.kind === 'line' && o.dash)).toHaveLength(5 * 41)
+    expect(texts(l).filter((o) => o.text === '+360 more')).toHaveLength(5)
+    expect(texts(layoutShareImage(shareCard(ctx('bca-2026-11'), 'all'), BLUE, measure)).some((o) => o.text.startsWith('+'))).toBe(false)
+    expect(textOf(layoutShareImage({ ...card, lang: 'id' }, BLUE, measure), '+360 lainnya')).toBeTruthy()
+  })
+
+  it('keeps the canvas within 16M device pixels and 16.000 px tall', () => {
+    expect([MAX_CANVAS_AREA, MAX_CANVAS_HEIGHT]).toEqual([16_000_000, 16_000])
+    expect(canvasScale(360, 1000, 2)).toBe(2)
+    expect(canvasScale(2000, 9000, 2)).toBeCloseTo(Math.sqrt(16_000_000 / (2000 * 9000)))
+    expect(canvasScale(100, 20_000, 2)).toBe(0.8)
+    const l = layoutShareImage(big(), BLUE, measure)
+    const k = canvasScale(l.width, l.height, 2)
+    expect(l.width * k * l.height * k).toBeLessThanOrEqual(16_000_001)
+    expect(l.height * k).toBeLessThanOrEqual(16_000)
+  })
+
+  it('renderSharePng uses the clamped size', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(mockCtx().c as never)
+    let size: number[] = []
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (this: HTMLCanvasElement, cb) {
+      size = [this.width, this.height]
+      cb(new Blob(['p']))
+    })
+    const one = big().blocks[0]
+    const tall: ShareCard = { ...big(), blocks: Array.from({ length: 30 }, () => one) }
+    await renderSharePng(tall, BLUE)
+    expect(size[0] * size[1]).toBeLessThanOrEqual(16_000_000)
+    expect(size[1]).toBeLessThanOrEqual(16_000)
+    expect(size[1]).toBeGreaterThan(10_000)
+  })
+
+  it('a long owner name is shortened in the pill so the title keeps its room', () => {
+    const card = { ...shareCard(ctx('bca-2026-11'), { ownerId: 'Sari' }), who: 'Sari Kusumawardhani Putri Ayuningtyas' }
+    const l = layoutShareImage(card, BLUE, measure)
+    const pill = texts(l).find((o) => o.align === 'right' && o.text.startsWith('Sari K'))!
+    expect(pill.text.endsWith('…')).toBe(true)
+    expect(measure(pill.text)).toBeLessThanOrEqual(320 * 0.4 - 20)
+    const title = texts(l).find((o) => o.text.startsWith('Tagihan BCA'))!
+    expect(measure(title.text)).toBeGreaterThanOrEqual(320 - (320 * 0.4) - 8 - 7)
   })
 })

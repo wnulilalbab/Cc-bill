@@ -25,6 +25,9 @@ export const nav = { assign: (url: string) => window.location.assign(url) }
 /** Draws the share image (canvas). Replaceable in tests: jsdom has no canvas. */
 export const imageIO = { render: renderSharePng }
 
+/** Longer messages go to WhatsApp and Share… without the list of charges (long wa.me links fail); Copy keeps all. */
+export const SEND_LIMIT = 6000
+
 const PROBE = () => new File([new Uint8Array(0)], 'share.png', { type: 'image/png' })
 
 /** Today on this phone (local calendar date, not UTC). */
@@ -66,6 +69,9 @@ export function ShareSheet({ ledger, card, owners, statementId, initialTarget = 
   const message = { text: shareText(shared), total: shared.total, final: shared.final }
   const [canShareImage] = useState(() => canShareFile(PROBE()))
   const [imageBusy, setImageBusy] = useState(false)
+  const [textBusy, setTextBusy] = useState(false)
+  const shortened = list && message.text.length > SEND_LIMIT
+  const sendText = shortened ? shareText(shareCard({ ...ctx, list: false }, target)) : message.text
   const bills = useMemo(() => cardBill(ledger, owners.map((o) => o.id), statementId, today), [ledger, owners, statementId, today])
   const nowOf = (t: ShareTarget) => (t === 'all' ? bills.total : (bills.owners.find((b) => b.ownerId === t.ownerId)?.mustPay ?? 0))
   const nameOf = (t: ShareTarget) => (t === 'all' ? 'Everyone' : t.ownerId === null ? 'No owner' : (owners.find((o) => o.id === t.ownerId)?.name ?? 'Unknown'))
@@ -86,20 +92,25 @@ export function ShareSheet({ ledger, card, owners, statementId, initialTarget = 
     )
 
   const sendWhatsApp = () => {
-    const w = window.open(whatsappWebUrl(message.text), '_blank')
+    // No "noopener" feature: with it window.open always returns null, so a blocked tab could not be told apart and the
+    // whatsapp:// fallback would never run. The opener is cut by hand instead; the target is WhatsApp's own wa.me.
+    const w = window.open(whatsappWebUrl(sendText), '_blank')
     if (w) w.opener = null
-    else nav.assign(whatsappAppUrl(message.text))
+    else nav.assign(whatsappAppUrl(sendText))
     void log()
   }
 
   const shareNative = async () => {
+    if (textBusy) return
+    setTextBusy(true)
     try {
-      await navigator.share({ text: message.text })
+      await navigator.share({ text: sendText })
       void log()
     } catch (e) {
       // The person closed the phone's share sheet: nothing was sent.
-      if (e instanceof Error && e.name === 'AbortError') return
-      toast(`Could not share: ${e instanceof Error ? e.message : String(e)}`)
+      if (!(e instanceof Error && e.name === 'AbortError')) toast(`Could not share: ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setTextBusy(false)
     }
   }
 
@@ -160,6 +171,12 @@ export function ShareSheet({ ledger, card, owners, statementId, initialTarget = 
         <input type="checkbox" checked={list} onChange={(e) => setList(e.target.checked)} /> Include the list of charges
       </label>
 
+      {shortened && (
+        <div className="status draft" role="note" aria-label="Long message">
+          <div className="xs">This message is long, so Send via WhatsApp and Share… send it without the list of charges. Copy as text keeps the full list.</div>
+        </div>
+      )}
+
       {!message.final && (
         <div className="status draft" role="note" aria-label="Draft warning">
           <h3>This bill is still a Draft</h3>
@@ -200,7 +217,7 @@ export function ShareSheet({ ledger, card, owners, statementId, initialTarget = 
           {canShareImage ? 'Share image' : 'Save image'}
         </button>
         {canShare && (
-          <button type="button" className="btn ghost" onClick={shareNative}>
+          <button type="button" className="btn ghost" disabled={textBusy} onClick={shareNative}>
             Share…
           </button>
         )}

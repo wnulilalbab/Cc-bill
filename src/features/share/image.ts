@@ -2,6 +2,7 @@
 // in the look of the prototype's share preview (.waimg: white card, bold title with a "who" pill, "Jatuh tempo … ·
 // Per …", one row per person, dashed charge lines, paid amounts struck through) with the card's palette.
 // `layoutShareImage` is pure (lines and positions); `drawShareImage` only paints them.
+import { WORDS } from '../../domain/share/format'
 import type { ShareCard } from '../../domain/share/message'
 
 export interface ImagePalette {
@@ -33,6 +34,16 @@ const OK = '#166534'
 const WARN_BG = '#fff4d6'
 const WARN = '#8a5a00'
 const PAD = 20
+/** Charge lines drawn per person; the rest become "+N more" (the text message keeps them all). */
+export const MAX_IMAGE_ROWS = 40
+/** Canvas limits that hold on iOS Safari and Chrome. */
+export const MAX_CANVAS_AREA = 16_000_000
+export const MAX_CANVAS_HEIGHT = 16_000
+
+/** Device pixels per CSS pixel: `wanted`, lowered so the canvas stays within MAX_CANVAS_AREA and MAX_CANVAS_HEIGHT. */
+export function canvasScale(width: number, height: number, wanted: number): number {
+  return Math.min(wanted, Math.sqrt(MAX_CANVAS_AREA / (width * height)), MAX_CANVAS_HEIGHT / height)
+}
 
 /** `text`, shortened with "…" until it fits in `max` pixels. */
 export function fit(text: string, f: string, max: number, measure: Measure): string {
@@ -87,9 +98,11 @@ export function layoutShareImage(card: ShareCard, palette: ImagePalette, measure
   ops.push({ kind: 'rect', x: 0, y: 0, w: width, h: 6, r: 0, fill: palette.acc })
   y += 16
   const pillFont = font(12, true)
-  const pillW = measure(card.who, pillFont) + 20
+  // A long name must not push the title out: the pill takes at most 40% of the width.
+  const who = fit(card.who, pillFont, inner * 0.4 - 20, measure)
+  const pillW = measure(who, pillFont) + 20
   ops.push({ kind: 'rect', x: right - pillW, y: y - 15, w: pillW, h: 22, r: 11, fill: palette.soft })
-  text(card.who, right - 10, pillFont, palette.deep, 'right')
+  text(who, right - 10, pillFont, palette.deep, 'right')
   text(fit(card.title, font(16, true), inner - pillW - 8, measure), left, font(16, true), INK)
   para(card.due ? `${cap(card.due)} · ${card.asOf}` : card.asOf, 20, font(12), MUTED)
 
@@ -110,6 +123,8 @@ export function layoutShareImage(card: ShareCard, palette: ImagePalette, measure
       ...b.rows.map((r) => ({ label: r.label, value: r.mark ? `${r.amount} (${r.mark})` : r.amount, strike: r.paid })),
       ...b.older.map((g) => ({ label: g.label, value: g.amount, strike: false })),
     ]
+    const hidden = lines.length - MAX_IMAGE_ROWS
+    if (hidden > 0) lines.splice(MAX_IMAGE_ROWS, hidden, { label: `+${hidden} ${WORDS[card.lang].more}`, value: '', strike: false })
     for (const l of lines) {
       y += 20
       pair(l.label, l.value, font(12), INK, font(12), INK, l.strike)
@@ -192,9 +207,10 @@ export async function renderSharePng(card: ShareCard, palette: ImagePalette, sca
     return ctx.measureText(t).width
   }
   const layout = layoutShareImage(card, palette, measure)
-  canvas.width = Math.ceil(layout.width * scale)
-  canvas.height = Math.ceil(layout.height * scale)
-  drawShareImage(ctx, layout, scale)
+  const k = canvasScale(layout.width, layout.height, scale)
+  canvas.width = Math.floor(layout.width * k)
+  canvas.height = Math.floor(layout.height * k)
+  drawShareImage(ctx, layout, k)
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not make the image.'))), 'image/png'))
 }
 

@@ -12,7 +12,7 @@ import { MoneyError, sum } from '../money'
 import { statementById } from '../statements'
 import { ruleKeyOf } from '../tagging/merchant'
 import type { Card, ISODate, Ledger, Owner, Rupiah, Transaction } from '../types'
-import { amount, dayMonth, fullDate, maskCardNumbers, monthYear, rupiah, WORDS, type ShareLang } from './format'
+import { amount, dayMonth, fullDate, monthYear, plain, rupiah, WORDS, type ShareLang } from './format'
 
 export interface ShareContext {
   ledger: Ledger
@@ -94,7 +94,7 @@ type Words = (typeof WORDS)[ShareLang]
 
 /** The row's name in the list: the user's label, else the merchant ("GRAB", "IKEA ALAM"), plus "(cicilan 2/6)". */
 function itemName(tx: Transaction, w: Words): string {
-  const name = maskCardNumbers(tx.label || ruleKeyOf(tx.description))
+  const name = plain(tx.label || ruleKeyOf(tx.description))
   return tx.installment ? `${name} (${w.installment} ${tx.installment.n}/${tx.installment.of})` : name
 }
 
@@ -110,6 +110,8 @@ function row(l: BillLine, lang: ShareLang): ShareRow {
 }
 
 const hasRows = (b: OwnerBill) => b.lines.length > 0 || b.older.length > 0
+/** Everyone: an owner gets a block when they have rows, older unpaid, or a deposit waiting. */
+const shown = (b: OwnerBill) => hasRows(b) || b.depositWaiting > 0
 
 function block(b: OwnerBill, name: string, label: string, list: boolean, lang: ShareLang): ShareBlock {
   const w = WORDS[lang]
@@ -143,20 +145,20 @@ export function shareCard(ctx: ShareContext, target: ShareTarget): ShareCard {
     if (id === null) return w.noOwner
     const o = ctx.owners.find((x) => x.id === id)
     if (!o) throw new MoneyError(`unknown owner ${id}`)
-    return maskCardNumbers(o.name)
+    return plain(o.name)
   }
 
   const all = target === 'all'
   const who = all ? w.everyone : nameOf(target.ownerId)
   const bills = all
-    ? cardBill(ctx.ledger, ctx.owners.map((o) => o.id), s.id, ctx.today).owners.filter(hasRows)
+    ? cardBill(ctx.ledger, ctx.owners.map((o) => o.id), s.id, ctx.today).owners.filter(shown)
     : [ownerBill(ctx.ledger, target.ownerId, s.id, ctx.today)]
   const label = s.kind === 'billed' ? monthYear(s.statementDate, lang) : w.unbilled
   const final = draftIssues(ctx.ledger, s.id).final
   const total = sum(bills.map((b) => b.mustPay))
   return {
     lang,
-    title: `${w.bill} ${maskCardNumbers(ctx.card.name)} · ${label}`,
+    title: `${w.bill} ${plain(ctx.card.name)} · ${label}`,
     due: s.kind === 'billed' ? `${w.due} ${dayMonth(s.dueDate, lang)}` : null,
     asOf: `${w.asOf} ${fullDate(ctx.today, lang)}`,
     draft: final ? null : { label: w.draftLabel, note: w.draftNote },

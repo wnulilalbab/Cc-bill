@@ -12,7 +12,12 @@ export interface ShareLogEntry {
   date: ISODate
 }
 
-export const shareLogKey = (cardId: string, statementId: string) => `shares/${cardId}/${statementId}`
+/** Entries kept per target (person or everyone) and statement: the oldest go first. */
+export const SHARE_LOG_LIMIT = 20
+
+/** Every share-log key of a card starts with this (removed with the card). */
+export const shareLogPrefix = (cardId: string) => `shares/${cardId}/`
+export const shareLogKey = (cardId: string, statementId: string) => `${shareLogPrefix(cardId)}${statementId}`
 
 export const sameTarget = (a: ShareTarget, b: ShareTarget) =>
   a === 'all' || b === 'all' ? a === b : a.ownerId === b.ownerId
@@ -34,12 +39,14 @@ export async function listShares(db: NewDb, cardId: string, statementId: string)
   return Array.isArray(value) ? value.filter(isEntry) : []
 }
 
-/** Logs a share. The same target, amount and day is logged once. */
+/** Logs a share. The same target, amount and day is logged once; each target keeps its last SHARE_LOG_LIMIT entries. */
 export async function logShare(db: NewDb, cardId: string, statementId: string, entry: ShareLogEntry): Promise<void> {
   const key = shareLogKey(cardId, statementId)
   await db.transaction('rw', db.meta, async () => {
     const list = await listShares(db, cardId, statementId)
     if (list.some((x) => sameTarget(x.target, entry.target) && x.total === entry.total && x.date === entry.date)) return
-    await db.meta.put({ key, value: [...list, entry] })
+    const next = [...list, entry]
+    const drop = new Set(next.filter((x) => sameTarget(x.target, entry.target)).slice(0, -SHARE_LOG_LIMIT))
+    await db.meta.put({ key, value: next.filter((x) => !drop.has(x)) })
   })
 }

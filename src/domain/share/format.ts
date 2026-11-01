@@ -52,6 +52,7 @@ export const WORDS = {
     credit: 'Kredit refund (mengurangi tagihan berikutnya)',
     deposit: 'Deposit tersisa',
     nothing: 'Tidak ada transaksi di tagihan ini.',
+    more: 'lainnya',
     noOwner: 'Tanpa pemilik',
     total: 'Total semua',
     installment: 'cicilan',
@@ -75,6 +76,7 @@ export const WORDS = {
     credit: 'Refund credit (lowers the next bill)',
     deposit: 'Deposit waiting',
     nothing: 'No transactions on this bill.',
+    more: 'more',
     noOwner: 'No owner',
     total: 'Total, everyone',
     installment: 'installment',
@@ -83,8 +85,24 @@ export const WORDS = {
 
 /**
  * Masks anything that looks like a full card number (13–19 digits, spaces or dashes allowed between them) down to
- * its last 4: "4556 7712 3456 1234" → "••••1234". Amounts are grouped with dots, so they never match.
+ * its last 4: "4556 7712 3456 1234" → "••••1234". Amounts are grouped with dots, so they never match. A run that
+ * starts with "+" is a phone number ("+62 812 3456 7890") and is left alone.
  */
 export function maskCardNumbers(text: string): string {
-  return text.replace(/\d(?:[ -]?\d){12,18}/g, (m) => `••••${m.replace(/\D/g, '').slice(-4)}`)
+  return text.replace(/\+?\d(?:[ -]?\d){12,18}/g, (m) => (m.startsWith('+') ? m : `••••${m.replace(/\D/g, '').slice(-4)}`))
+}
+
+/**
+ * Text the user typed or the bank printed (card and owner names, labels, merchants), made safe for the message:
+ * control characters and line breaks become spaces (a label cannot add lines, e.g. a fake total), WhatsApp markup
+ * (* _ ~ `) is removed (a label cannot turn bold or strike numbers), spaces are collapsed, and card numbers masked.
+ */
+export function plain(text: string): string {
+  return maskCardNumbers(
+    text
+      .replace(/[\p{Cc}\u2028\u2029]/gu, ' ')
+      .replace(/[*_~`]/g, '')
+      .replace(/ {2,}/g, ' ')
+      .trim(),
+  )
 }
