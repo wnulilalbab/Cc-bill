@@ -360,6 +360,28 @@ describe('migration adjustments', () => {
     expect(p.adjustments.map((a) => a.kind)).not.toContain('unbilledMerged')
   })
 
+  it('G-02 an empty description does not stop the migration: the row is kept and listed in the preview', () => {
+    const data = messy()
+    data.transactions.find((t) => t.id === 't3')!.description = ''
+    data.transactions.find((t) => t.id === 't11')!.description = '   '
+    const p = planMigration(data)
+    expect(p.adjustments.find((a) => a.kind === 'emptyDescription')).toEqual({ kind: 'emptyDescription', message: '2 rows with an empty description are kept as they are.', ids: ['t3', 't11'] })
+    expect(p.data.transactions.find((t) => t.id === 't3')).toMatchObject({ description: '', amount: 30000 })
+    expect(verifyMigration(data, p.data).ok).toBe(true)
+    expect(plan.adjustments.map((a) => a.kind)).not.toContain('emptyDescription')
+  })
+
+  it('G-03 options: default owner and statement day are optional; without them Unknown rows are unowned + Check', () => {
+    const p = planMigration(old)
+    expect(p.data.cards[0]).toEqual({ id: MIGRATED_CARD.id, name: 'BCA Shared', bank: 'BCA', defaultOwnerId: null })
+    expect(p.data.transactions.find((t) => t.id === 't2')).toMatchObject({ ownerId: null, check: true })
+    expect(p.adjustments.find((a) => a.kind === 'unknownOwner')!.message).toContain('card default (None)')
+    const q = planMigration(old, { defaultOwnerId: 'o-a', statementDay: 12 })
+    expect(q.data.cards[0]).toMatchObject({ defaultOwnerId: 'o-a', statementDay: 12 })
+    expect(q.data.transactions.find((t) => t.id === 't2')).toMatchObject({ ownerId: 'o-a', check: true })
+    expect((q.data.statements.find((s) => s.id === 'p2') as BilledStatement).statementDate).toBe('2026-08-12')
+  })
+
   it('G-01 empty old data plans just the card and its Unbilled list', () => {
     const empty: OldData = { owners: [], periods: [], transactions: [], expenses: [], installmentPlans: [], payments: [], paymentAllocations: [] }
     const p = planMigration(empty)

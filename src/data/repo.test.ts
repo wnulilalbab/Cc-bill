@@ -20,19 +20,21 @@ describe('database names', () => {
     expect(oldDbName('staging')).toBe('CCBillDB-staging')
   })
 
-  it('G-05 defaults to the build environment, production when it is not defined', () => {
-    expect(appEnv()).toBe('production')
-    vi.stubGlobal('__APP_ENV__', 'staging')
+  it('G-05 defaults to the build environment, staging (the safe side) when it is not defined', () => {
     expect(appEnv()).toBe('staging')
     expect(newDbName()).toBe('ccbill-v2-staging')
     expect(new NewDb().name).toBe('ccbill-v2-staging')
     vi.stubGlobal('__APP_ENV__', 'production')
+    expect(appEnv()).toBe('production')
     expect(oldDbName()).toBe('CCBillDB')
+    expect(newDbName()).toBe('ccbill-v2')
+    vi.stubGlobal('__APP_ENV__', 'bogus')
+    expect(appEnv()).toBe('staging')
   })
 
   it('G-05 getNewDb returns one shared database', () => {
     expect(getNewDb()).toBe(getNewDb())
-    expect(getNewDb().name).toBe('ccbill-v2')
+    expect(getNewDb().name).toBe('ccbill-v2-staging')
   })
 })
 

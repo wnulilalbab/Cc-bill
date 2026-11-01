@@ -2,8 +2,9 @@
 // database (the same way src/db.ts picks `CCBillDB-staging`). Names follow docs/intent/dev-loop.md.
 export type AppEnv = 'staging' | 'production'
 
+/** The build environment. Staging when it is not defined: a mistake then never touches production data. */
 export function appEnv(): AppEnv {
-  return typeof __APP_ENV__ !== 'undefined' && __APP_ENV__ === 'staging' ? 'staging' : 'production'
+  return typeof __APP_ENV__ !== 'undefined' && __APP_ENV__ === 'production' ? 'production' : 'staging'
 }
 
 /** The Phase-1 database: `ccbill-v2` / `ccbill-v2-staging`. */

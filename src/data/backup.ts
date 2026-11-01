@@ -1,6 +1,7 @@
 // JSON backup of the Phase-1 database (export, and import that replaces everything).
-import { DATA_TABLES, type NewData, type NewDb } from './db'
+import { DATA_TABLES, type DataRecords, type NewData, type NewDb } from './db'
 import { MigrationError } from './old'
+import { checkRecord } from './validate'
 
 export const BACKUP_FORMAT = 'ccbill-v2-backup'
 export const BACKUP_VERSION = 1
@@ -26,8 +27,15 @@ export function parseNewBackup(json: string): NewData {
   for (const t of DATA_TABLES) {
     const rows = obj.data?.[t]
     if (!Array.isArray(rows)) throw new MigrationError(`The backup is missing the "${t}" list.`)
-    rows.forEach((r: { id?: unknown } | null, i) => {
-      if (typeof r?.id !== 'string') throw new MigrationError(`${t}[${i}] has no id.`)
+    const seen = new Set<string>()
+    rows.forEach((r: DataRecords[typeof t], i) => {
+      try {
+        checkRecord(t, r)
+      } catch (e) {
+        throw new MigrationError(`${t}[${i}] is invalid: ${(e as Error).message}.`)
+      }
+      if (seen.has(r.id)) throw new MigrationError(`${t} has the id "${r.id}" twice.`)
+      seen.add(r.id)
     })
   }
   return obj.data as unknown as NewData

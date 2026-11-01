@@ -1,8 +1,7 @@
-// CRUD on the Phase-1 database. Thin and typed: money rules live in src/domain.
-import { allocatedOf } from '../domain/amounts'
-import { assertRupiah } from '../domain/money'
+// CRUD on the Phase-1 database. Thin and typed: money rules live in src/domain; every write is checked (validate.ts).
 import type { Card, InstallmentPlan, Ledger, Owner, Payment, Statement, Transaction } from '../domain/types'
 import { DATA_TABLES, emptyData, type DataRecords, type DataTable, type NewData, type NewDb } from './db'
+import { checkRecord } from './validate'
 
 export interface TableRepo<T> {
   get(id: string): Promise<T | undefined>
@@ -16,26 +15,22 @@ export interface CardScopedRepo<T> extends TableRepo<T> {
   byCard(cardId: string): Promise<T[]>
 }
 
-function tableRepo<K extends DataTable>(db: NewDb, name: K, check: (r: DataRecords[K]) => void = () => {}): TableRepo<DataRecords[K]> {
+function tableRepo<K extends DataTable>(db: NewDb, name: K): TableRepo<DataRecords[K]> {
   const table = () => db.table<DataRecords[K], string>(name)
   return {
     get: (id) => table().get(id),
     list: () => table().toArray(),
     put: async (record) => {
-      check(record)
+      checkRecord(name, record)
       await table().put(record)
     },
     remove: (id) => table().delete(id),
   }
 }
 
-function cardScoped<K extends Exclude<DataTable, 'cards'>>(db: NewDb, name: K, check?: (r: DataRecords[K]) => void): CardScopedRepo<DataRecords[K]> {
-  return { ...tableRepo(db, name, check), byCard: (cardId) => db.table<DataRecords[K], string>(name).where('cardId').equals(cardId).toArray() }
+function cardScoped<K extends Exclude<DataTable, 'cards'>>(db: NewDb, name: K): CardScopedRepo<DataRecords[K]> {
+  return { ...tableRepo(db, name), byCard: (cardId) => db.table<DataRecords[K], string>(name).where('cardId').equals(cardId).toArray() }
 }
-
-const checkTx = (t: Transaction) => void assertRupiah(t.amount, `transaction ${t.id} amount`)
-const checkPayment = (p: Payment) => void allocatedOf(p) // throws on non-integer, non-positive or negative allocations
-const checkPlan = (p: InstallmentPlan) => void assertRupiah(p.monthly, `plan ${p.id} monthly amount`)
 
 export interface Repos {
   cards: TableRepo<Card>
@@ -51,9 +46,9 @@ export function repos(db: NewDb): Repos {
     cards: tableRepo(db, 'cards'),
     owners: cardScoped(db, 'owners'),
     statements: cardScoped(db, 'statements'),
-    transactions: { ...cardScoped(db, 'transactions', checkTx), byStatement: (id) => db.transactions.where('statementId').equals(id).toArray() },
-    payments: cardScoped(db, 'payments', checkPayment),
-    plans: cardScoped(db, 'plans', checkPlan),
+    transactions: { ...cardScoped(db, 'transactions'), byStatement: (id) => db.transactions.where('statementId').equals(id).toArray() },
+    payments: cardScoped(db, 'payments'),
+    plans: cardScoped(db, 'plans'),
   }
 }
 
