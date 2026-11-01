@@ -1,0 +1,45 @@
+name: Review gate
+
+# Sets the `review-gate` commit status on the PR head SHA from reviewer marker comments
+# (see docs/intent/dev-loop.md). Never uses pull_request_target; comment text is only ever read
+# by the script from the API, never interpolated into a shell command.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write
+
+concurrency:
+  group: review-gate-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  review-gate:
+    name: review-gate-job
+    runs-on: ubuntu-latest
+    # Comments on plain issues are ignored.
+    if: github.event_name == 'pull_request' || github.event.issue.pull_request
+    steps:
+      # Run the gate script from the base branch (not the PR head) so a PR cannot approve itself by editing it.
+      # For issue_comment events the default checkout is already the default branch.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Set review-gate status
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx tsx scripts/review-gate/run.ts

@@ -16,11 +16,14 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Holds ANTHROPIC_API_KEY_CI; the environment is restricted to main so other branches cannot use it.
+    environment: release
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -41,47 +44,81 @@ jobs:
           echo "next=$next" >> "$GITHUB_OUTPUT"
           echo "Releasing v$next (previous $last)"
 
-      # Release checks (real Claude API test on synthetic fixtures, full Playwright suite on staging)
-      # are added in Slice 2. Until then this step only confirms the release secret is present.
-      - name: Release checks
+      - name: Require the release secret
         env:
           ANTHROPIC_API_KEY_CI: ${{ secrets.ANTHROPIC_API_KEY_CI }}
         run: |
           if [ -z "$ANTHROPIC_API_KEY_CI" ]; then
-            echo "::warning::Secret ANTHROPIC_API_KEY_CI is not set. It becomes required once the real API test is added in Slice 2."
+            echo "::error::Secret ANTHROPIC_API_KEY_CI is empty or missing. Add it to the 'release' environment. Production is unchanged."
+            exit 1
           fi
+
+      # Slice 6 extends the API check to parse the synthetic statements.
+      - name: Release check 1/2 - live Anthropic API
+        env:
+          ANTHROPIC_API_KEY_CI: ${{ secrets.ANTHROPIC_API_KEY_CI }}
+        run: npx tsx scripts/release/api-check.ts
+
+      # Staging must be serving the commit being released, otherwise the suite would test an older build.
+      - name: Wait until staging serves this commit
+        env:
+          STAGING_URL: https://${{ github.repository_owner }}.github.io/Cc-bill/staging/
+          EXPECTED_SHA: ${{ steps.ver.outputs.sha }}
+        run: |
+          for i in $(seq 1 30); do
+            body=$(curl -fsSL -H 'Cache-Control: no-cache' "${STAGING_URL}build.json?nocache=$i" || true)
+            if echo "$body" | grep -q "\"sha\":\"$EXPECTED_SHA\""; then echo "Staging serves $EXPECTED_SHA"; exit 0; fi
+            echo "Attempt $i: not yet (got: ${body:-nothing})"
+            sleep 10
+          done
+          echo "::error::Staging does not serve $EXPECTED_SHA (main). Wait for the staging deploy to finish. Production is unchanged."; exit 1
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Release check 2/2 - Playwright suite on staging
+        env:
+          STAGING_URL: https://${{ github.repository_owner }}.github.io/Cc-bill/staging/
+        run: npm run test:e2e:staging
 
       - name: Build (production)
         env:
           VITE_APP_ENV: production
           VITE_BASE: /Cc-bill/
           VITE_APP_VERSION: ${{ steps.ver.outputs.next }}
+          RELEASE_SHA: ${{ steps.ver.outputs.sha }}
+          RELEASE_VERSION: ${{ steps.ver.outputs.next }}
         run: |
           npm run build
-          printf '{"env":"production","sha":"%s","version":"%s","builtAt":"%s"}\n' "${{ steps.ver.outputs.sha }}" "${{ steps.ver.outputs.next }}" "$(date -u +%FT%TZ)" > dist/build.json
+          printf '{"env":"production","sha":"%s","version":"%s","builtAt":"%s"}\n' "$RELEASE_SHA" "$RELEASE_VERSION" "$(date -u +%FT%TZ)" > dist/build.json
 
       - name: Publish to gh-pages root (keeps /staging)
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           keep_files: true
           commit_message: "release: v${{ steps.ver.outputs.next }}"
 
-      - name: Tag and create GitHub release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git tag "v${{ steps.ver.outputs.next }}"
-          git push origin "v${{ steps.ver.outputs.next }}"
-          gh release create "v${{ steps.ver.outputs.next }}" --generate-notes --title "v${{ steps.ver.outputs.next }}"
-
       - name: Production smoke test
+        env:
+          PROD_URL: https://${{ github.repository_owner }}.github.io/Cc-bill/build.json
+          EXPECTED_SHA: ${{ steps.ver.outputs.sha }}
         run: |
-          url="https://${{ github.repository_owner }}.github.io/Cc-bill/build.json"
           for i in $(seq 1 30); do
-            body=$(curl -fsSL "$url?nocache=$i" || true)
-            if echo "$body" | grep -q "\"sha\":\"${{ steps.ver.outputs.sha }}\""; then echo "Production serves ${{ steps.ver.outputs.sha }}"; exit 0; fi
+            body=$(curl -fsSL "$PROD_URL?nocache=$i" || true)
+            if echo "$body" | grep -q "\"sha\":\"$EXPECTED_SHA\""; then echo "Production serves $EXPECTED_SHA"; exit 0; fi
             sleep 10
           done
           echo "::error::Production did not serve the new build within 5 minutes"; exit 1
+
+      # Only after production is verified, so a failed release never leaves a tag behind.
+      - name: Tag and create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ steps.ver.outputs.next }}
+          RELEASE_SHA: ${{ steps.ver.outputs.sha }}
+        run: |
+          # Creates the tag on RELEASE_SHA through the API, so the checkout needs no stored credentials.
+          gh release create "v$RELEASE_VERSION" --target "$RELEASE_SHA" --generate-notes --title "v$RELEASE_VERSION"

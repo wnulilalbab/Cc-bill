@@ -3,3 +3,10 @@ dist/
 .DS_Store
 *.local
 /fixtures/
+coverage/
+reports/
+.stryker-tmp/
+test-results/
+playwright-report/
+.claude/worktrees/
+.claude/settings.local.json

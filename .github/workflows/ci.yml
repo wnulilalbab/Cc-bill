@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -25,7 +27,13 @@ jobs:
       - name: Type check and build (production config)
         run: npm run build
 
-      - name: Tests (fixtures and harness)
+      - name: Type check scripts, tests and configs
+        run: npm run typecheck:node
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests (fixtures, harness, pipeline scripts)
         run: npm test
 
       - name: Build (staging config)
@@ -33,3 +41,57 @@ jobs:
           VITE_APP_ENV: staging
           VITE_BASE: /Cc-bill/staging/
         run: npm run build
+
+  # Per-folder thresholds live in vitest.config.ts.
+  coverage:
+    name: coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Tests with coverage thresholds
+        run: npm run test:coverage
+
+  # Money core only (src/domain). PRs mutate just the changed files; pushes to main run everything.
+  mutation:
+    name: mutation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Mutation tests on changed domain files (pull request)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: npm run test:mutation -- --base "origin/$BASE_REF"
+
+      - name: Mutation tests on all domain files (main)
+        if: github.event_name != 'pull_request'
+        run: npm run test:mutation
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: reports/mutation
+          if-no-files-found: ignore
