@@ -7,12 +7,12 @@ Ask **one question at a time**. Each question should come with options and a rec
 **People and pain**
 - Who uses it, and on what device? Who else sees the result?
 - What do you do today instead? Which step is the most painful or the most often wrong?
-- Show me the last real time this went wrong. (Ask for a screenshot, never the raw data.)
+- Tell me about the last real time this went wrong. If you share a screenshot, crop or blur names, card numbers and addresses first. Never share raw data.
 
 **Shape of the data**
 - Where does the data come from (PDF, screenshot, manual entry, another app)? How often does it arrive?
 - What does a normal month look like, and what does a messy month look like?
-- What existing data must carry over? How was it recorded: which statuses, which fields, which shortcuts? (This feeds the synthetic fixtures. Ask about the shape, never the content.)
+- What existing data must carry over? How was it recorded: which statuses, which fields, which shortcuts? (This feeds the synthetic fixtures. Ask about the shape, never the content, or offer a counts-only script the owner runs.)
 
 **Rules**
 - How is money split, rounded and owed? Who decides when it's ambiguous?
